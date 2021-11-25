@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>Daily Spatial Video Demo</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="entry">
+        <form id="enterCall">
+          <label
+            >Your Name: <input type="text" id="userName" required="true"
+          /></label>
+          <label
+            >Room URL: <input type="text" id="roomURL" required="true"
+          /></label>
+          <button type="submit">Join Room</button>
+        </form>
+        <form id="createCall">
+            <button type ="submit">Create Room</button>
+        </form>
+      </div>
+      <div id="call">
+        <canvas id="canvas"></canvas>
+        <div id="controls"></div>
+      </div>
+    </div>
+    <script src="https://unpkg.com/@daily-co/daily-js"></script>
+    <script type="module" src="./js/client/call.js"></script>
+  </body>
+</html>

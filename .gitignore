@@ -1,0 +1,6 @@
+/src/js/server/*.js
+/src/js/client/room.js
+/src/js/client/desk.js
+/dist/*
+/node_modules/*
+*.log
