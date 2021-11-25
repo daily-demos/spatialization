@@ -1,0 +1,9 @@
+{
+  "name": "daily-spatial-audio",
+  "version": "1.0.0",
+  "description": "A small demo implementing spatial audio using the Daily WebRTC API.",
+  "repository": "git@github.com:daily-demos/spatial-audio.git",
+  "author": "Liza Shulyayeva",
+  "license": "BSD-2-Clause",
+  "private": true
+}
