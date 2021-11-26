@@ -2,6 +2,10 @@
   <head>
     <title>Daily Spatial Video Demo</title>
     <link rel="stylesheet" href="style.css" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; frame-src 'self' https://*.daily.co; script-src 'self' https://unpkg.com/@daily-co/daily-js 'unsafe-eval'; connect-src ws: https://*.daily.co https://*.pluot.blue wss:; worker-src 'self' blob:;"
+    />
   </head>
   <body>
     <div id="wrapper">
@@ -15,16 +19,12 @@
           /></label>
           <button type="submit">Join Room</button>
         </form>
-        <form id="createCall">
-            <button type ="submit">Create Room</button>
-        </form>
       </div>
-      <div id="call">
-        <canvas id="canvas"></canvas>
+      <div id="room">
         <div id="controls"></div>
       </div>
     </div>
     <script src="https://unpkg.com/@daily-co/daily-js"></script>
-    <script type="module" src="./js/client/call.js"></script>
+    <script type="module" src="./dist/call.js"></script>
   </body>
 </html>

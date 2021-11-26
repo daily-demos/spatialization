@@ -1,30 +1,27 @@
 const joinForm = document.getElementById("enterCall");
-const createForm = document.getElementById("createCall");
 
-export function registerCreateFormListener(f) {
+export function registerCreateFormListener(f: Function) {}
 
-}
-
-export function registerJoinFormListener(f) {
+export function registerJoinFormListener(f: Function) {
   joinForm.addEventListener("submit", (event) => {
     event.preventDefault();
     joinForm.style.display = "none";
-    const urlEle = document.getElementById("roomURL");
-    const nameEle = document.getElementById("userName");
+    const urlEle = <HTMLFormElement>document.getElementById("roomURL");
+    const nameEle = <HTMLFormElement>document.getElementById("userName");
     f(urlEle.value, nameEle.value);
   });
 }
 
-export function updateCallControls(joined) {
+export function updateCallControls(joined: boolean) {
   const entry = document.getElementById("entry");
-  const call = document.getElementById("call");
+  const room = document.getElementById("room");
   // If the user has joined a call, remove the call entry form
   // and display the call controls. Otherwise, do the opposite.
   if (joined) {
     entry.style.display = "none";
-    call.style.display = "inline-block";
+    room.style.display = "inline-block";
   } else {
     entry.style.display = "inline-block";
-    call.style.display = "none";
+    room.style.display = "none";
   }
 }

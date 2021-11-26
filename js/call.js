@@ -1,15 +1,24 @@
-import registerJoinFormListener from "./nav.js";
-import { Room } from "./room.js";
+console.log("init");
+
+import { registerJoinFormListener, updateCallControls } from "./nav.js";
+import { Participant, localParticipant } from "./participant.js";
+import { generateDefaultRoom, Room } from "./room.js";
 
 registerJoinFormListener(initAndJoin);
-let room;
+let room = null;
+let callObject = null;
+const playableState = "playable";
+console.log("starting");
 
 async function initAndJoin(roomURL, name) {
+  room = generateDefaultRoom(roomURL);
+  console.log("joining");
   callObject = DailyIframe.createCallObject()
     .on("camera-error", handleCameraError)
     .on("joined-meeting", handleJoinedMeeting)
     .on("left-meeting", handleLeftMeeting)
     .on("error", handleError)
+    .on("app-message", handleAppMessage)
     .on("participant-updated", handleParticipantUpdated)
     .on("participant-joined", handleParticipantJoined)
     .on("participant-left", handleParticipantLeft);
@@ -29,13 +38,31 @@ function handleError(event) {
   console.error(event);
 }
 
+function handleAppMessage(event) {
+  const data = event.data[""];
+  const sessionID = event.fromId;
+
+  const p = callObject.participants[sessionID];
+  const tracks = getParticipantTracks(p);
+  // Update tracks if the participant is at the same desk
+  if (localParticipant.deskID === data.deskID) {
+    room.updateParticipantTracks(sessionID, tracks.video, tracks.audio);
+  }
+  console.log(event);
+}
+
 function handleJoinedMeeting(event) {
-  // Create the room
-  room = new Room(4, 40, 100);
-  room.start();
   updateCallControls(true);
-  //   const p = event.participants.local;
-  //   updateLocal(p);
+  const p = event.participants.local;
+  const tracks = getParticipantTracks(p);
+  const local = new Participant(
+    p.session_id,
+    p.userName,
+    tracks.video,
+    tracks.audio,
+    true
+  );
+  room.addParticipant(local);
 }
 
 function handleLeftMeeting() {
@@ -44,15 +71,20 @@ function handleLeftMeeting() {
 
 function handleParticipantUpdated(event) {
   const up = event.participant;
-  if (up.session_id === callObject.participants().local.session_id) {
-    updateLocal(up);
-    return;
-  }
-  updateRemote(up);
+  const tracks = getParticipantTracks(up);
+  room.updateParticipantTracks(up.session_id, tracks.video, tracks.audio);
 }
 
 function handleParticipantJoined(event) {
-  const up = event.participant;
+  const p = event.participant;
+  let tracks = getParticipantTracks(p);
+  const participant = new Participant(
+    p.session_id,
+    p.userName,
+    tracks.video,
+    tracks.audio
+  );
+  room.addParticipant(participant);
 }
 
 function getParticipantTracks(participant) {
@@ -70,7 +102,3 @@ function getParticipantTracks(participant) {
 function handleParticipantLeft(event) {
   const up = event.participant;
 }
-
-function updateLocal(p) {}
-
-function updatRemote(p) {}
