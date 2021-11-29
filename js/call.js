@@ -1,3 +1,4 @@
+var exports = {};
 console.log("init");
 
 import { registerJoinFormListener, updateCallControls } from "./nav.js";
@@ -8,12 +9,14 @@ registerJoinFormListener(initAndJoin);
 let room = null;
 let callObject = null;
 const playableState = "playable";
+const participantMovedMsg = "participant-moved";
 console.log("starting");
 
 async function initAndJoin(roomURL, name) {
-  room = generateDefaultRoom(roomURL);
   console.log("joining");
-  callObject = DailyIframe.createCallObject()
+  callObject = DailyIframe.createCallObject({
+    subscribeToTracksAutomatically: true,
+  })
     .on("camera-error", handleCameraError)
     .on("joined-meeting", handleJoinedMeeting)
     .on("left-meeting", handleLeftMeeting)
@@ -39,19 +42,30 @@ function handleError(event) {
 }
 
 function handleAppMessage(event) {
-  const data = event.data[""];
-  const sessionID = event.fromId;
-
-  const p = callObject.participants[sessionID];
-  const tracks = getParticipantTracks(p);
-  // Update tracks if the participant is at the same desk
-  if (localParticipant.deskID === data.deskID) {
-    room.updateParticipantTracks(sessionID, tracks.video, tracks.audio);
+  const data = event.data;
+  if (data.name === participantMovedMsg) {
+    room.seatParticipant(event.fromId, event.deskID, event.spotID);
+    if (event.deskID === localParticipant.deskID) {
+      callObject.updateParticipant("b95ec8cc-499f-480c-f68c-3373c8553693", {
+        setSubscribedTracks: {
+          audio: true,
+          video: "staged",
+          screenVideo: false,
+        },
+      });
+      const p = callObject.participants[sessionID];
+      const tracks = getParticipantTracks(p);
+      room.updateParticipantTracks(sessionID, tracks.video, tracks.audio);
+    }
   }
-  console.log(event);
+
+  // console.log(event);
 }
 
 function handleJoinedMeeting(event) {
+  if (!room) {
+    room = generateDefaultRoom(roomURL, handleParticipantSeated);
+  }
   updateCallControls(true);
   const p = event.participants.local;
   const tracks = getParticipantTracks(p);
@@ -70,12 +84,18 @@ function handleLeftMeeting() {
 }
 
 function handleParticipantUpdated(event) {
+  if (!room) {
+    room = generateDefaultRoom(roomURL, handleParticipantSeated);
+  }
   const up = event.participant;
   const tracks = getParticipantTracks(up);
   room.updateParticipantTracks(up.session_id, tracks.video, tracks.audio);
 }
 
 function handleParticipantJoined(event) {
+  if (!room) {
+    room = generateDefaultRoom(roomURL, handleParticipantSeated);
+  }
   const p = event.participant;
   let tracks = getParticipantTracks(p);
   const participant = new Participant(
@@ -85,6 +105,7 @@ function handleParticipantJoined(event) {
     tracks.audio
   );
   room.addParticipant(participant);
+  // Send local position to this participant
 }
 
 function getParticipantTracks(participant) {
@@ -101,4 +122,15 @@ function getParticipantTracks(participant) {
 
 function handleParticipantLeft(event) {
   const up = event.participant;
+}
+
+function handleParticipantSeated(deskID, spotID) {
+  callObject.sendAppMessage(
+    {
+      name: participantMovedMsg,
+      deskID: deskID,
+      spotID: spotID,
+    },
+    "*"
+  );
 }

@@ -1,24 +1,26 @@
-import { RoomID, Position, Size, SessionID } from "./types";
+import { RoomID, Position, Size, SessionID, DeskID } from "./types";
 import { getSize, Desk, deskPadding } from "./desk";
 import { Participant, participantPadding } from "./participant";
+import { SessionState } from "http2";
 
 const room = <HTMLElement>document.getElementById("room");
 console.log("got room", room);
 // Each desk should have 25px of padding around it
 
-export function generateDefaultRoom(roomID: RoomID): Room {
-  return generateNewRoom(roomID, 4, 4);
+export function generateDefaultRoom(
+  roomID: RoomID,
+  sitHandler: Function
+): Room {
+  return generateNewRoom(roomID, 4, 4, sitHandler);
 }
 
 function generateNewRoom(
   roomID: RoomID,
   deskCount: number,
-  participantsPerDesk: number
+  participantsPerDesk: number,
+  sitHandler: Function
 ): Room {
   const deskSize = getSize(participantsPerDesk);
-
-  // What dimensions does the canvas need to be to fit the
-  // requested desk count and dimensions?
 
   // How many desks we have per row depends on the available screen space
   const desksPerRow = Math.floor(
@@ -31,14 +33,14 @@ function generateNewRoom(
     (deskSize.height + deskPadding * 2);
   room.style.height = `${cHeight}px`;
 
-  const desks = [];
+  const desks = new Map<DeskID, Desk>();
 
-  const presenterDesk = new Desk(1, true);
+  const presenterDesk = new Desk(0, 1, sitHandler, true);
 
   // Add the rest of the desks
   for (let i = 1; i < deskCount; i++) {
-    const desk = new Desk(participantsPerDesk);
-    desks.push(desk);
+    const desk = new Desk(i, participantsPerDesk, sitHandler);
+    desks.set(desk.id, desk);
   }
   const r = new Room(roomID, desks);
   r.presenterDesk = presenterDesk;
@@ -48,15 +50,18 @@ function generateNewRoom(
 export class Room {
   id: RoomID;
   presenterDesk: Desk;
-  desks: Array<Desk>;
+  desks: Map<DeskID, Desk>;
+  allParticipants: Array<Participant>;
 
-  constructor(roomID: RoomID, desks: Array<Desk> = new Array<Desk>()) {
+  constructor(roomID: RoomID, desks = new Map<DeskID, Desk>()) {
     this.id = roomID;
     this.desks = desks;
+    this.allParticipants = new Array<Participant>();
   }
 
   addParticipant(participant: Participant) {
-    this.seatParticipant(participant);
+    this.allParticipants.push(participant);
+    participant.render();
   }
 
   updateParticipantTracks(
@@ -66,51 +71,61 @@ export class Room {
   ) {
     console.log("updating participant", sessionID);
     // First, check unseated participants
-    for (let i = 0; i < this.desks.length; i++) {
-      const d = this.desks[i];
-      for (let n = 0; n < d.spots.length; n++) {
-        const s = d.spots[n];
-
-        if (s.participant?.sessionID === sessionID) {
-          console.log("found matching session", vt, at);
-          const p = s.participant;
-          p.videoTrack = vt;
-          p.audioTrack = at;
-          p.render();
-        }
-      }
-    }
-  }
-
-  removeParticipant(sessionID: SessionID) {
-    for (let i = 0; i < this.desks.length; i++) {
-      const d = this.desks[i];
-      d.tryUnseat(sessionID);
-    }
-  }
-
-  seatParticipant(p: Participant) {
-    // TODO: are JS arrays ordered? We probably want to seat oldest unseated
-    // participants first, hence not iterating backwards
-    for (let n = 0; n < this.desks.length; n++) {
-      const d = this.desks[n];
-      if (d.trySeat(p)) {
+    for (let p of this.allParticipants) {
+      if (p.sessionID === sessionID) {
+        p.videoTrack = vt;
+        p.audioTrack = at;
+        p.render();
         return;
       }
     }
+  }
 
-    // Time to add another desk
-    this.addDesk();
-    this.seatParticipant(p);
+  removeParticipant(sessionID: SessionID): boolean {
+    for (let d of this.desks.values()) {
+      if (d.tryUnseat(sessionID)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // temp
+  seatParticipant(
+    participantID: SessionID,
+    deskID: DeskID,
+    spotID: string
+  ): boolean {
+    let desk = this.desks.get(deskID);
+    if (!desk) {
+      this.addDesk();
+      desk = this.desks.get(deskID);
+    }
+
+    for (let i = 0; i < this.allParticipants.length; i++) {
+      const p = this.allParticipants[i];
+      if (p.sessionID === participantID) {
+        const seat = p.seat;
+        if (seat) {
+          this.desks.get(seat.deskID);
+          desk.tryUnseat(participantID);
+        }
+        if (desk.trySeat(p, seat.id)) {
+          return true;
+        }
+        return false;
+      }
+    }
+    return false;
   }
 
   addDesk() {
-    const lastDesk = this.desks[this.desks.length - 1];
+    const lastDesk = this.desks.get(this.desks.size - 1);
 
     const newHeight = room.offsetHeight + lastDesk.sizePx.height + deskPadding;
     room.style.height = `${newHeight}px`;
 
-    const desk = new Desk(lastDesk.spots.length);
-    this.desks.push(desk);
+    const desk = new Desk(lastDesk.id + 1, lastDesk.spots.size);
+    this.desks.set(desk.id, desk);
   }
 }

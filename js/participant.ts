@@ -1,4 +1,5 @@
-import { DeskID, Position, SessionID } from "./types";
+import { SeatingSpot } from "./desk";
+import { DeskID, SpotID, Position, SessionID } from "./types";
 
 export const participantSize = 100;
 export const participantPadding = 25;
@@ -14,8 +15,7 @@ export class Participant {
   videoTrack: MediaStreamTrack;
   audioTrack: MediaStreamTrack;
   isLocal: boolean;
-  deskID?: DeskID;
-  position: Position;
+  seat?: SeatingSpot;
   audio: HTMLAudioElement;
   mutedAudio: HTMLAudioElement;
 
@@ -53,15 +53,14 @@ export class Participant {
     participantDiv.remove();
   }
 
-  updateDesk(deskID: DeskID, pos: Position) {
-    this.deskID = deskID;
-    this.position = pos;
+  updateDesk(seat: SeatingSpot) {
+    this.seat = seat;
 
     if (this.isLocal) {
       console.log("listener set");
       let listener = audioCtx.listener;
-      listener.positionX.value = pos.x;
-      listener.positionY.value = pos.y;
+      listener.positionX.value = this.seat.position.x;
+      listener.positionY.value = this.seat.position.y;
       listener.positionZ.value = posZ - 5;
       listener.forwardX.value = 0;
       listener.forwardY.value = 0;
@@ -74,52 +73,56 @@ export class Participant {
   }
 
   render() {
+    if (!this.seat.deskID) {
+      console.log("participant not seated");
+      return;
+    }
     // Get current div if already exists
     let participantDiv = document.getElementById(this.getID());
     let video: HTMLVideoElement;
     if (participantDiv) {
-      if (participantDiv.parentElement.id === this.deskID) {
+      if (participantDiv.parentElement.id === this.seat.deskID.toString()) {
         video = <HTMLVideoElement>document.getElementById(this.getVideoID());
         this.stream(video);
         return;
       }
-      if (participantDiv.parentElement.id !== this.deskID) {
-        participantDiv.parentElement.removeChild(participantDiv);
+      if (participantDiv.parentElement.id !== this.seat.deskID.toString()) {
+        participantDiv.remove();
       }
-    } else {
-      participantDiv = document.createElement("div");
-      participantDiv.id = this.getID();
-      participantDiv.classList.add("participant");
-      participantDiv.style.top = `${this.position.y}px`;
-      participantDiv.style.left = `${this.position.x}px`;
-
-      // Create tile
-      const tile = document.createElement("div");
-      tile.id = this.getTileID();
-      tile.classList.add("tile");
-      tile.style.width = `${participantSize}px`;
-      tile.style.height = `${participantSize}px`;
-      tile.style.backgroundImage = generateLinearGradient();
-
-      // Create video element
-      video = <HTMLVideoElement>document.createElement("video");
-      video.id = this.getVideoID();
-      video.classList.add("fit");
-      video.playsInline = true;
-      video.autoplay = true;
-      if (this.isLocal) {
-        video.muted = true;
-      }
-      tile.appendChild(video);
-      participantDiv.appendChild(tile);
     }
-    let desk = document.getElementById(this.deskID);
+    participantDiv = document.createElement("div");
+    participantDiv.id = this.getID();
+    participantDiv.classList.add("participant");
+    participantDiv.style.top = `${this.seat.position.y}px`;
+    participantDiv.style.left = `${this.seat.position.x}px`;
+
+    // Create tile
+    const tile = document.createElement("div");
+    tile.id = this.getTileID();
+    tile.classList.add("tile");
+    tile.style.width = `${participantSize}px`;
+    tile.style.height = `${participantSize}px`;
+    tile.style.backgroundImage = generateLinearGradient();
+
+    // Create video element
+    video = <HTMLVideoElement>document.createElement("video");
+    video.id = this.getVideoID();
+    video.classList.add("fit");
+    video.playsInline = true;
+    video.autoplay = true;
+    if (this.isLocal) {
+      video.muted = true;
+    }
+    tile.appendChild(video);
+    participantDiv.appendChild(tile);
+
+    let desk = document.getElementById(this.seat.deskID.toString());
     this.stream(video);
     desk.appendChild(participantDiv);
   }
 
   private async stream(trackTag: HTMLVideoElement) {
-    if (this.deskID !== localParticipant?.deskID) {
+    if (this.seat?.deskID !== localParticipant?.seat.deskID) {
       return;
     }
 
@@ -139,8 +142,8 @@ export class Participant {
       const panner = new PannerNode(audioCtx, {
         panningModel: "HRTF",
         distanceModel: "linear",
-        positionX: this.position.x,
-        positionY: this.position.y,
+        positionX: this.seat.position.x,
+        positionY: this.seat.position.y,
         positionZ: posZ,
         orientationX: 0.0,
         orientationY: 0.0,

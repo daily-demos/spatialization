@@ -1,4 +1,5 @@
-export type DeskID = string;
+export type DeskID = number;
+export type SpotID = number;
 export type RoomID = string;
 export type SessionID = string;
 
