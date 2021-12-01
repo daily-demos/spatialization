@@ -9,9 +9,8 @@ let packets = [];
 let localAvatar = null;
 let socket = null;
 
-const app = new PIXI.Application(800, 600, { 
-    backgroundColor: 0xFFFF00,
-    backgroundAlpha: 1,
+const app = new PIXI.Application({
+    width: 800, height: 600, backgroundColor: 0x1099bb, resolution: window.devicePixelRatio || 1,
 });
 
 // Create window frame
@@ -23,7 +22,7 @@ frame.position.set(0,0);
 app.stage.addChild(frame);
 
 // Add container that will hold our masked content
-let usersContainer = new PIXI.Container(0xFFFF00);
+let usersContainer = new PIXI.Container();
 // Offset by the window's frame width
 // And add the container to the window
 frame.addChild(usersContainer);
