@@ -1,0 +1,21 @@
+{
+  "name": "daily-spatial-video",
+  "version": "1.0.0",
+  "description": "Daily spatial video/audio demo",
+  "main": "index.js",
+  "scripts": {
+    "startdev": "nodemon ./server/index.js",
+    "start": "node ./server/index.js"
+  },
+  "keywords": [
+    "webrtc",
+    "spatial audio",
+    "spatial video"
+  ],
+  "author": "Liza Shulyayeva",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "express": "^4.17.1",
+    "ws": "^3.3.3"
+  }
+}
