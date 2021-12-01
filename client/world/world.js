@@ -31,7 +31,7 @@ frame.addChild(usersContainer);
 document.getElementById("world").appendChild(app.view);
 
 
-export function initWorld(localUserID, onSight = null) {
+export function initWorld(localUserID, onEnterEarshot = null) {
     socket = new Socket();
     socket.connection.onopen = () => {
       joinUser(localUserID);
@@ -43,7 +43,7 @@ export function initWorld(localUserID, onSight = null) {
       switch (payload.type) {
         case "init":
             
-          localAvatar = createAvatar(payload.data, onSight);
+          localAvatar = createAvatar(payload.data, onEnterEarshot, true);
           break;
         case "update":
           packets.unshift(payload);
@@ -74,8 +74,8 @@ function joinUser(userID) {
   }
 
 
-function createAvatar(data, onSight) {
-    const avatar = new User(data.userID, data, onSight = onSight);
+function createAvatar(data, onEnterEarshot, isLocal = false) {
+    const avatar = new User(data.userID, data, isLocal = isLocal, onEnterEarshot = onEnterEarshot);
     usersContainer.addChild(avatar);
     return avatar;
   }
@@ -90,7 +90,7 @@ function createAvatar(data, onSight) {
   
   function update(delta) {
     if (localAvatar) {
-        localAvatar.checkSight(usersContainer.children);
+        localAvatar.checkProximity(usersContainer.children);
     }
    
     keyListener.on("w", () => {
@@ -110,7 +110,6 @@ function createAvatar(data, onSight) {
     });
   
     keyListener.on("d", () => {
-      console.log("d", localAvatar.getPos().x);
       localAvatar.moveX(4);
       sendData();
     });
@@ -151,7 +150,6 @@ function createAvatar(data, onSight) {
         x: localAvatar.getPos().x,
         y: localAvatar.getPos().y,
     }
-    console.log("sending data", data);
     socket.send({
       type: "input",
       data: data

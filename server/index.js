@@ -15,6 +15,7 @@ app.use(express.static("client"));
 const PORT = 1234;
 const HOST = "127.0.0.1";
 
+
 const userData = {
   users: {},
 };
@@ -73,12 +74,30 @@ setInterval(() => {
   wss.broadcast(userData);
 }, 100);
 
+function heartbeat() {
+  this.isAlive = true;
+}
+
+setInterval(function ping() {
+  wss.clients.forEach(function each(ws) {
+    if (ws.isAlive === false) {
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 1000);
 
 wss.on("connection", ws => {
+  ws.on('pong', heartbeat);
+  // We need this to avoid an ECONNRESET error on disconnect
+  ws.on('error', (e) => console.error('error', e));
+
   ws.on("message", data => {
     const message = JSON.parse(data);
     switch (message.type) {
       case "join":
+        ws.isAlive = true;
         const id = message.data.userID;
         const user = createUser(id);
         ws.userID = id;
@@ -99,6 +118,7 @@ wss.on("connection", ws => {
   });
 
   ws.on("close", () => {
+    console.log("closing", ws.userID);
     const data = JSON.stringify({
       type: "leave",
       time: Date.now(),

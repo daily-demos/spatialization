@@ -1,20 +1,26 @@
 import { lerp } from "../util/lerp.js";
 
 const baseAlpha = 0.2;
+const earshot = 150;
+const maxAlpha = 1;
 
 export class User extends PIXI.Sprite {
   audioTrack = null;
   videoTrack = null;
   screenTrack = null;
-  constructor(name, params, sight = 150, onSight = null) {
+  constructor(name, params, isLocal = false, onEnterEarshot = null) {
     super();
 
     // How close another user needs to be to be seen
     // by this user.
-    this.sight = sight;
-    this.onSight = onSight;
+    this.earshot = earshot;
+    this.onEnterEarshot = onEnterEarshot;
     this.setTexture = this.setTexture(createGradientTexture());
-    this.alpha = baseAlpha;
+    if (isLocal) {
+      this.alpha = maxAlpha;
+    } else {
+      this.alpha = baseAlpha;
+    }
     this.name = name;
     this.id = params.userID;
     this.x = params.x;
@@ -31,7 +37,6 @@ export class User extends PIXI.Sprite {
   }
 
   getId() {
-    console.log("getting id", this.id);
     return this.id;
   }
 
@@ -56,29 +61,41 @@ export class User extends PIXI.Sprite {
     this.y += y;
   }
 
-  checkSight(others) {
-    if (!this.onSight) {
-      return;
-    }
-
-    const distance = this.distanceTo(other);
+  checkProximity(others) {
     for (let other of others) {
-      if (this.canSee(other)) {
-        other.alpha = lerp(0.2, 1, distance);
-        this.onSight(other.id);
+      if (other.id === this.id) {
+        continue;
       }
+      const vicinity = this.earshot * 2;
+      const distance = this.distanceTo(other);
+
+      other.alpha = (this.earshot + vicinity - distance) / vicinity;
+
+      if (this.inEarshot(distance)) {
+        if (other.alpha !== 1) {
+          other.alpha = 1;
+        }
+        if (this.onEnterEarshot) {
+          this.onEnterEarshot(other.id);
+        }
+      }
+      
     }
   }
-
   
-
   distanceTo(other) {
-    return Math.hypot(other.x-this.x, other.y-this.y)
+    // We need to get distance from the center of the avatar
+    const thisX = this.x + this.width / 2;
+    const thisY = this.y + this.height / 2;
+
+    const otherX = other.x + other.width / 2;
+    const otherY = other.y + other.height / 2;
+
+    return Math.hypot(otherX-thisX, otherY-thisY);
   }
 
-  canSee(other) {
-    const distance = distanceTo(other);
-    return (distance < this.sight);
+  inEarshot(distance) {
+    return (distance < this.earshot);
   }
 
   

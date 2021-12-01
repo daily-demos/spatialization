@@ -37,15 +37,17 @@ function handleCameraError(room, event) {
       const p = event.participants.local;
       if (room.isGlobal) {
         showWorld();
-        initWorld(p.session_id, subToUserTracks);
+        initWorld(p.session_id, (sessionID) => {
+            subToUserTracks(room, sessionID);
+        });
       }
    // updateCallControls(callObject !== null);
   //  const p = event.participants.local;
   //  updateLocal(p);
   }
 
-  function subToUserTracks(sessionID) {
-    callObject.updateParticipant(sessionID, {
+  function subToUserTracks(room, sessionID) {
+    room.callObject.updateParticipant(sessionID, {
         setSubscribedTracks: { audio: true, video: true, screenVideo: false },
       }); 
   }
