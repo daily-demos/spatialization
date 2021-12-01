@@ -5,17 +5,15 @@ const earshot = 150;
 const maxAlpha = 1;
 
 export class User extends PIXI.Sprite {
-  audioTrack = null;
-  videoTrack = null;
-  screenTrack = null;
+  videoTag = null;
   constructor(name, params, isLocal = false, onEnterEarshot = null) {
     super();
 
-    // How close another user needs to be to be seen
-    // by this user.
+    // How close another user needs to be to be seen/heard
+    // by this user
     this.earshot = earshot;
     this.onEnterEarshot = onEnterEarshot;
-    this.setTexture = this.setTexture(createGradientTexture());
+    this.texture = createGradientTexture();
     if (isLocal) {
       this.alpha = maxAlpha;
     } else {
@@ -25,15 +23,48 @@ export class User extends PIXI.Sprite {
     this.id = params.userID;
     this.x = params.x;
     this.y = params.y;
-    this.height = 50;
-    this.width = 50;
+    this.height = 150;
+    this.width = 150;
+
+    // Set up video tag
+    const video = document.createElement("video");
+    video.autoplay = true;
+    video.classList.add("fit");
+    video.classList.add("invisible");
+    document.documentElement.appendChild(video);
+    if (isLocal) {
+      video.muted = true;
+    }
+    this.videoTag = video;
   }
 
-  updateTracks(audio = null, video = null, screen = null) {
-    if (!this.videoTrack && video) {
-      // Video was not on before, but now it is.
-
+  updateTracks(videoTrack = null, audioTrack = null) {
+    console.log("UPDATING tracks", this.id, videoTrack, audioTrack);
+    if (!audioTrack && !videoTrack) {
+      if (this.videoTag.srcObject != null) {
+        this.videoTag.srcObject = null;
+        this.texture = createGradientTexture();
+      }
+      return;
     }
+    const tracks = [];
+    let textureMask = null;
+    if (audioTrack) tracks.push(audioTrack);
+    if (videoTrack) {
+      tracks.push(videoTrack);
+      const settings = videoTrack.getSettings();
+      console.log("aspect ratio", settings);
+      textureMask = new PIXI.Rectangle(settings.height / 2, 0, settings.height, settings.height);
+    }
+    let stream = new MediaStream(tracks);
+    this.videoTag.srcObject = stream;
+    let texture = PIXI.Texture.from(this.videoTag);
+    //texture.frame  = new PIXI.Rectangle(0, 0, this.width, this.height);
+    if (textureMask) {
+      texture = new PIXI.Texture(texture, textureMask)
+    }
+    this.texture = texture;
+
   }
 
   getId() {

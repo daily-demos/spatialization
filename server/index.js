@@ -90,6 +90,7 @@ setInterval(function ping() {
 
 wss.on("connection", ws => {
   ws.on('pong', heartbeat);
+  
   // We need this to avoid an ECONNRESET error on disconnect
   ws.on('error', (e) => console.error('error', e));
 

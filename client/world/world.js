@@ -10,7 +10,8 @@ let localAvatar = null;
 let socket = null;
 
 const app = new PIXI.Application(800, 600, { 
-    backgroundColor: "0xFFFF00" 
+    backgroundColor: 0xFFFF00,
+    backgroundAlpha: 1,
 });
 
 // Create window frame
@@ -22,7 +23,7 @@ frame.position.set(0,0);
 app.stage.addChild(frame);
 
 // Add container that will hold our masked content
-let usersContainer = new PIXI.Container();
+let usersContainer = new PIXI.Container(0xFFFF00);
 // Offset by the window's frame width
 // And add the container to the window
 frame.addChild(usersContainer);
@@ -31,7 +32,7 @@ frame.addChild(usersContainer);
 document.getElementById("world").appendChild(app.view);
 
 
-export function initWorld(localUserID, onEnterEarshot = null) {
+export function initWorld(localUserID, onCreateUser = null, onEnterEarshot = null) {
     socket = new Socket();
     socket.connection.onopen = () => {
       joinUser(localUserID);
@@ -42,8 +43,10 @@ export function initWorld(localUserID, onEnterEarshot = null) {
       const payload = JSON.parse(signal.data);
       switch (payload.type) {
         case "init":
-            
           localAvatar = createAvatar(payload.data, onEnterEarshot, true);
+          if (onCreateUser) {
+              onCreateUser();
+          }
           break;
         case "update":
           packets.unshift(payload);
@@ -57,10 +60,11 @@ export function initWorld(localUserID, onEnterEarshot = null) {
     };
   }
 
-export function setUserTracks(id, video, audio, screen) {
+export function setUserTracks(id, video = null, audio = null, screen = null) {
     const avatar = getAvatar(id);
+    console.log("SETTING USER TRACKS", id, avatar);
     if (avatar) {
-
+        avatar.updateTracks(video, audio);
     }
 }
 

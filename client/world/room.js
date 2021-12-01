@@ -1,6 +1,7 @@
 import { showWorld } from "./util/nav.js";
-import { initWorld } from "./world.js";
+import { initWorld, setUserTracks } from "./world.js";
 
+const playableState = "playable";
 export class Room {
     constructor(url, userName, isGlobal) {
         this.url = url;
@@ -13,7 +14,9 @@ export class Room {
         .on("error", (e) => {handleError(this, e)})
         .on("participant-updated", (e) => {handleParticipantUpdated(this, e)})
         .on("participant-joined", (e) => {handleParticipantJoined(this, e)})
-        .on("participant-left", (e) => {handleParticipantLeft(this, e)});
+        .on("participant-left", (e) => {handleParticipantLeft(this, e)})
+        .on("track-started", (e) => {handleTrackStarted(this, e)})
+        .on("track-stopped", (e) => {handleTrackStopped(this, e)});
     }
     
     async join() {
@@ -37,19 +40,33 @@ function handleCameraError(room, event) {
       const p = event.participants.local;
       if (room.isGlobal) {
         showWorld();
-        initWorld(p.session_id, (sessionID) => {
+        initWorld(p.session_id,
+        () => {
+            const tracks = getParticipantTracks(p);
+            setUserTracks(p.session_id, tracks.video, tracks.audio);
+        },
+        (sessionID) => {
             subToUserTracks(room, sessionID);
         });
       }
-   // updateCallControls(callObject !== null);
-  //  const p = event.participants.local;
-  //  updateLocal(p);
   }
 
   function subToUserTracks(room, sessionID) {
     room.callObject.updateParticipant(sessionID, {
         setSubscribedTracks: { audio: true, video: true, screenVideo: false },
       }); 
+  }
+
+  function handleTrackStarted(room, event) {
+    const p = event.participant;
+    const tracks = getParticipantTracks(p);
+    setUserTracks(p.session_id, tracks.video, tracks.audio);
+    }
+
+  function handleTrackStopped(room, event) {
+    const p = event.participant;
+    const tracks = getParticipantTracks(p);
+    setUserTracks(p.session_id, tracks.video, tracks.audio);
   }
   
   function handleLeftMeeting() {
@@ -58,6 +75,7 @@ function handleCameraError(room, event) {
   
   function handleParticipantUpdated(room, event) {
     const up = event.participant;
+    console.log("participant updated", up);
     if (up.session_id === room.callObject.participants().local.session_id) {
    //   updateLocal(up);
       return;
@@ -70,7 +88,9 @@ function handleCameraError(room, event) {
   }
   
   function  handleParticipantJoined(room, event) {
-    const up = event.participant;
+    const p = event.participant;
+    const tracks = getParticipantTracks(p);
+    setUserTracks(p.session_id, tracks.video, tracks.audio);
   }
   
   function  getParticipantTracks(participant) {
