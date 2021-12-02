@@ -3,7 +3,7 @@ export default class Socket {
     this.connection = new WebSocket(`ws://${window.location.hostname}:1235`);
     this.connection.onerror = this.error;
   }
-  
+
   send(message) {
     this.connection.send(JSON.stringify(message));
   }

@@ -15,43 +15,40 @@ app.use(express.static("client"));
 const PORT = 1234;
 const HOST = "127.0.0.1";
 
-
 const userData = {
   users: {},
 };
 
-
 wss.broadcast = (data) => {
-  wss.clients.forEach(client => {
+  wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(data);
     }
   });
 };
 
-
 function getUserData(doFilter = true) {
   let toSend;
   if (doFilter) {
-  for (let key in userData.users) {
-    const user = userData.users[key];
-    if (!user.lastSent || user.lastUpdated > user.lastSent) {
-      user.lastSent = Date.now();
-      if (!toSend) {
-        toSend = {};
+    for (let key in userData.users) {
+      const user = userData.users[key];
+      if (!user.lastSent || user.lastUpdated > user.lastSent) {
+        user.lastSent = Date.now();
+        if (!toSend) {
+          toSend = {};
+        }
+        toSend[user.userID] = user;
       }
-      toSend[user.userID] = user;
-    } 
+    }
+    if (!toSend) {
+      return null;
+    }
   }
-  if (!toSend) {
-    return null;
-  }
-}
-toSend = userData.users;
+  toSend = userData.users;
   return JSON.stringify({
     type: "update",
     time: Date.now(),
-    data: Array.from(Object.values(toSend))
+    data: Array.from(Object.values(toSend)),
   });
 }
 
@@ -88,13 +85,13 @@ setInterval(function ping() {
   });
 }, 1000);
 
-wss.on("connection", ws => {
-  ws.on('pong', heartbeat);
-  
-  // We need this to avoid an ECONNRESET error on disconnect
-  ws.on('error', (e) => console.error('error', e));
+wss.on("connection", (ws) => {
+  ws.on("pong", heartbeat);
 
-  ws.on("message", data => {
+  // We need this to avoid an ECONNRESET error on disconnect
+  ws.on("error", (e) => console.error("error", e));
+
+  ws.on("message", (data) => {
     const message = JSON.parse(data);
     switch (message.type) {
       case "join":
@@ -103,11 +100,13 @@ wss.on("connection", ws => {
         const user = createUser(id);
         ws.userID = id;
         console.log("created user", id);
-        ws.send(JSON.stringify({
-          type: "init",
-          time: Date.now(),
-          data: user
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "init",
+            time: Date.now(),
+            data: user,
+          })
+        );
         console.log("sent user data:", user);
         ws.send(getUserData(false));
         break;
@@ -125,7 +124,7 @@ wss.on("connection", ws => {
       time: Date.now(),
       data: {
         userID: ws.userID,
-      }
+      },
     });
     wss.broadcast(data);
     delete userData.users[ws.userID];

@@ -1,7 +1,6 @@
-
 export default class KeyListener {
   constructor() {
-    this.pressedKeys  = {};
+    this.pressedKeys = {};
   }
 
   on(key, f) {
@@ -18,7 +17,7 @@ export default class KeyListener {
     };
     window.onkeyup = (e) => {
       this.pressedKeys[e.key] = false;
-    }
+    };
   }
 }
 

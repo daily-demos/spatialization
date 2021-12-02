@@ -16,6 +16,7 @@
   "license": "BSD-2-Clause",
   "dependencies": {
     "express": "^4.17.1",
+    "prettier": "^2.5.0",
     "ws": "^3.3.3"
   }
 }

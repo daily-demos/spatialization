@@ -1,4 +1,3 @@
-
 import { Room } from "./room.js";
 import { registerJoinFormListener } from "./util/nav.js";
 

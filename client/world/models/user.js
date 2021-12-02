@@ -54,17 +54,21 @@ export class User extends PIXI.Sprite {
       tracks.push(videoTrack);
       const settings = videoTrack.getSettings();
       console.log("aspect ratio", settings);
-      textureMask = new PIXI.Rectangle(settings.height / 2, 0, settings.height, settings.height);
+      textureMask = new PIXI.Rectangle(
+        settings.height / 2,
+        0,
+        settings.height,
+        settings.height
+      );
     }
     let stream = new MediaStream(tracks);
     this.videoTag.srcObject = stream;
     let texture = PIXI.Texture.from(this.videoTag);
     //texture.frame  = new PIXI.Rectangle(0, 0, this.width, this.height);
     if (textureMask) {
-      texture = new PIXI.Texture(texture, textureMask)
+      texture = new PIXI.Texture(texture, textureMask);
     }
     this.texture = texture;
-
   }
 
   getId() {
@@ -72,14 +76,14 @@ export class User extends PIXI.Sprite {
   }
 
   getPos() {
-    return {x: this.x, y: this.y}
+    return { x: this.x, y: this.y };
   }
 
   getSprite() {
     return this.sprite;
   }
 
-  moveTo (posX, posY) {
+  moveTo(posX, posY) {
     this.x = posX;
     this.y = posY;
   }
@@ -110,10 +114,9 @@ export class User extends PIXI.Sprite {
           this.onEnterEarshot(other.id);
         }
       }
-      
     }
   }
-  
+
   distanceTo(other) {
     // We need to get distance from the center of the avatar
     const thisX = this.x + this.width / 2;
@@ -122,43 +125,39 @@ export class User extends PIXI.Sprite {
     const otherX = other.x + other.width / 2;
     const otherY = other.y + other.height / 2;
 
-    return Math.hypot(otherX-thisX, otherY-thisY);
+    return Math.hypot(otherX - thisX, otherY - thisY);
   }
 
   inEarshot(distance) {
-    return (distance < this.earshot);
+    return distance < this.earshot;
   }
-
-  
 }
 
 // https://pixijs.io/examples/#/textures/gradient-basic.js
 function createGradientTexture() {
-    const quality = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = quality;
-    canvas.height = 1;
+  const quality = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = quality;
+  canvas.height = 1;
 
-    const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
 
-    // use canvas2d API to create gradient
-    const grd = ctx.createLinearGradient(0, 0, quality, 0);
-    
-    grd.addColorStop(0, generateColor());
-    grd.addColorStop(0.3, generateColor());
-    grd.addColorStop(0.7, generateColor());
-    grd.addColorStop(1, generateColor());
+  // use canvas2d API to create gradient
+  const grd = ctx.createLinearGradient(0, 0, quality, 0);
 
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, quality, 1);
+  grd.addColorStop(0, generateColor());
+  grd.addColorStop(0.3, generateColor());
+  grd.addColorStop(0.7, generateColor());
+  grd.addColorStop(1, generateColor());
 
-    return PIXI.Texture.from(canvas);
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, quality, 1);
+
+  return PIXI.Texture.from(canvas);
 }
 
 function generateColor() {
- return `#${Math.floor(Math.random() * 16777215)
+  return `#${Math.floor(Math.random() * 16777215)
     .toString(16)
     .padStart(6, "0")}`;
- 
 }
-
