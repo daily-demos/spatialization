@@ -91,15 +91,16 @@ function unsubFromUserTracks(room, sessionID) {
 }
 
 function handleTrackStarted(room, event) {
-  const p = event.participant;
+  /* const p = event.participant;
   const tracks = getParticipantTracks(p);
-  setUserTracks(p.session_id, tracks.video, tracks.audio);
+  setUserTracks(p.session_id, tracks.video, tracks.audio); */
 }
 
 function handleTrackStopped(room, event) {
-  const p = event.participant;
+  console.log("track stopped", event);
+  /*  const p = event.participant;
   const tracks = getParticipantTracks(p);
-  setUserTracks(p.session_id, tracks.video, tracks.audio);
+  setUserTracks(p.session_id, tracks.video, tracks.audio); */
 }
 
 function handleLeftMeeting() {
