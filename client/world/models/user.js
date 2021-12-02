@@ -34,7 +34,10 @@ export class User extends PIXI.Sprite {
     this.y = params.y;
     this.height = baseHeight;
     this.width = baseWidth;
+    this.createVideoTag(isLocal);
+  }
 
+  createVideoTag(isLocal) {
     // Set up video tag
     const video = document.createElement("video");
     video.autoplay = true;
@@ -46,6 +49,18 @@ export class User extends PIXI.Sprite {
     }
     this.videoTag = video;
   }
+
+  setVideoTexture(videoTrack) {
+    const settings = videoTrack.getSettings();
+    const textureMask = new PIXI.Rectangle(
+      settings.height / 2,
+      0,
+      settings.height,
+      settings.height
+    );
+    let texture = new PIXI.BaseTexture(this.videoTag);
+    this.texture = new PIXI.Texture(texture, textureMask);
+    }
 
   setDefaultTexture() {
     const texture = createGradientTexture();
@@ -61,23 +76,15 @@ export class User extends PIXI.Sprite {
       return;
     }
     const tracks = [];
-    let textureMask = null;
     if (audioTrack) tracks.push(audioTrack);
     if (videoTrack) {
       tracks.push(videoTrack);
-      const settings = videoTrack.getSettings();
-      textureMask = new PIXI.Rectangle(
-        settings.height / 2,
-        0,
-        settings.height,
-        settings.height
-      );
-      let texture = PIXI.Texture.from(this.videoTag);
-      texture = new PIXI.Texture(texture, textureMask);
-      this.texture = texture;
     }
     let stream = new MediaStream(tracks);
     this.videoTag.srcObject = stream;
+    if (videoTrack) {
+      this.setVideoTexture(videoTrack);
+    }
   }
 
   getId() {
@@ -95,9 +102,6 @@ export class User extends PIXI.Sprite {
   moveTo(posX, posY) {
     this.x = posX;
     this.y = posY;
-    if (this.y > 1000) {
-      console.log("odd y!", this.y);
-    }
   }
 
   moveX(x) {

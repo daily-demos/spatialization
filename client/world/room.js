@@ -107,16 +107,9 @@ function handleLeftMeeting() {
 }
 
 function handleParticipantUpdated(room, event) {
-  const up = event.participant;
-  if (up.session_id === room.callObject.participants().local.session_id) {
-    //   updateLocal(up);
-    return;
-  }
-  //  const tracks = getParticipantTracks(up);
-  //  addOrUpdateTile(up.session_id, up.user_name, tracks.video, tracks.audio);
-
-  //  let sv = up.tracks.screenVideo;
-  //  checkScreenShare(up.session_id, sv);
+  const p = event.participant;
+  const tracks = getParticipantTracks(p);
+  setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
 function handleParticipantJoined(room, event) {
