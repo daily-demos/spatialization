@@ -34,7 +34,8 @@ document.getElementById("world").appendChild(app.view);
 export function initWorld(
   localUserID,
   onCreateUser = null,
-  onEnterEarshot = null
+  onEnterEarshot = null,
+  onLeaveEarshot = null
 ) {
   socket = new Socket();
   socket.connection.onopen = () => {
@@ -46,7 +47,12 @@ export function initWorld(
     const payload = JSON.parse(signal.data);
     switch (payload.type) {
       case "init":
-        localAvatar = createAvatar(payload.data, onEnterEarshot, true);
+        localAvatar = createAvatar(
+          payload.data,
+          onEnterEarshot,
+          onLeaveEarshot,
+          true
+        );
         if (onCreateUser) {
           onCreateUser();
         }
@@ -65,15 +71,10 @@ export function initWorld(
 
 export function setUserTracks(id, video = null, audio = null, screen = null) {
   const avatar = getAvatar(id);
-  console.log("SETTING USER TRACKS", id, avatar);
   if (avatar) {
     avatar.updateTracks(video, audio);
     return;
   }
-  console.log(
-    "avatar not found to set tracks; is it still spawning?",
-    avatar.id
-  );
 }
 
 function joinUser(userID) {
@@ -85,20 +86,21 @@ function joinUser(userID) {
   });
 }
 
-function createAvatar(data, onEnterEarshot, isLocal = false) {
+function createAvatar(data, onEnterEarshot, onLeaveEarshot, isLocal = false) {
   const avatar = new User(
     data.userID,
     data,
     (isLocal = isLocal),
-    (onEnterEarshot = onEnterEarshot)
+    (onEnterEarshot = onEnterEarshot),
+    (onLeaveEarshot = onLeaveEarshot)
   );
   usersContainer.addChild(avatar);
   return avatar;
 }
 
-function draw(delta) {
+function draw(elapsedMS) {
   if (localAvatar) {
-    interpolate(delta);
+    interpolate(elapsedMS);
   }
 }
 
@@ -128,7 +130,7 @@ function update(delta) {
   });
 }
 
-function interpolate(delta) {
+function interpolate(elapsedMS) {
   if (packets.length === 0) return;
   // Get newest packet
   const packet = packets[0];
@@ -140,13 +142,25 @@ function interpolate(delta) {
     let avatar = getAvatar(userID);
     if (!avatar) {
       avatar = createAvatar(user);
+      avatar.lastMoveAt = Date.now();
     }
-    const lerpedX = lerp(avatar.x, newX, delta);
-    const lerpedY = lerp(avatar.y, newY, delta);
 
-    if (localAvatar.getId() != userID) {
-      // Find this user
-      avatar.moveTo(lerpedX, lerpedY);
+    const lastMoveAt = avatar.lastMoveAt;
+    const thisMoveAt = packet.time;
+    if (thisMoveAt > lastMoveAt) {
+      // Get time difference between this and last move
+      const diff = thisMoveAt - lastMoveAt;
+      const portion = Date.now() - elapsedMS - lastMoveAt;
+      const ratio = portion / diff;
+
+      const lerpedX = lerp(avatar.x, newX, ratio);
+      const lerpedY = lerp(avatar.y, newY, ratio);
+
+      if (localAvatar.getId() != userID) {
+        // Find this user
+        avatar.moveTo(lerpedX, lerpedY);
+        avatar.lastMoveAt = packet.time;
+      }
     }
   }
   packets.shift();
@@ -169,6 +183,6 @@ function sendData() {
 }
 
 app.ticker.add((deltaTime) => {
-  draw(deltaTime);
+  draw(app.ticker.elapsedMS);
   update(deltaTime);
 });

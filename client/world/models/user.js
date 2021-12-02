@@ -1,19 +1,28 @@
-import { lerp } from "../util/lerp.js";
-
 const baseAlpha = 0.2;
 const earshot = 150;
 const maxAlpha = 1;
+const baseWidth = 100;
+const baseHeight = 100;
 
 export class User extends PIXI.Sprite {
   videoTag = null;
-  constructor(name, params, isLocal = false, onEnterEarshot = null) {
+  isInEarshot = false;
+
+  constructor(
+    name,
+    params,
+    isLocal = false,
+    onEnterEarshot = null,
+    onLeaveEarshot = null
+  ) {
     super();
 
     // How close another user needs to be to be seen/heard
     // by this user
     this.earshot = earshot;
     this.onEnterEarshot = onEnterEarshot;
-    this.texture = createGradientTexture();
+    this.onLeaveEarshot = onLeaveEarshot;
+    this.setDefaultTexture();
     if (isLocal) {
       this.alpha = maxAlpha;
     } else {
@@ -23,8 +32,8 @@ export class User extends PIXI.Sprite {
     this.id = params.userID;
     this.x = params.x;
     this.y = params.y;
-    this.height = 150;
-    this.width = 150;
+    this.height = baseHeight;
+    this.width = baseWidth;
 
     // Set up video tag
     const video = document.createElement("video");
@@ -38,12 +47,16 @@ export class User extends PIXI.Sprite {
     this.videoTag = video;
   }
 
+  setDefaultTexture() {
+    const texture = createGradientTexture();
+    this.texture = new PIXI.Texture(texture);
+  }
+
   updateTracks(videoTrack = null, audioTrack = null) {
-    console.log("UPDATING tracks", this.id, videoTrack, audioTrack);
     if (!audioTrack && !videoTrack) {
       if (this.videoTag.srcObject != null) {
         this.videoTag.srcObject = null;
-        this.texture = createGradientTexture();
+        this.setDefaultTexture();
       }
       return;
     }
@@ -53,22 +66,18 @@ export class User extends PIXI.Sprite {
     if (videoTrack) {
       tracks.push(videoTrack);
       const settings = videoTrack.getSettings();
-      console.log("aspect ratio", settings);
       textureMask = new PIXI.Rectangle(
         settings.height / 2,
         0,
         settings.height,
         settings.height
       );
+      let texture = PIXI.Texture.from(this.videoTag);
+      texture = new PIXI.Texture(texture, textureMask);
+      this.texture = texture;
     }
     let stream = new MediaStream(tracks);
     this.videoTag.srcObject = stream;
-    let texture = PIXI.Texture.from(this.videoTag);
-    //texture.frame  = new PIXI.Rectangle(0, 0, this.width, this.height);
-    if (textureMask) {
-      texture = new PIXI.Texture(texture, textureMask);
-    }
-    this.texture = texture;
   }
 
   getId() {
@@ -86,6 +95,9 @@ export class User extends PIXI.Sprite {
   moveTo(posX, posY) {
     this.x = posX;
     this.y = posY;
+    if (this.y > 1000) {
+      console.log("odd y!", this.y);
+    }
   }
 
   moveX(x) {
@@ -107,11 +119,22 @@ export class User extends PIXI.Sprite {
       other.alpha = (this.earshot + vicinity - distance) / vicinity;
 
       if (this.inEarshot(distance)) {
-        if (other.alpha !== 1) {
-          other.alpha = 1;
+        // If we just entered earshot, trigger onEnterEarshot
+        if (!other.isInEarshot) {
+          other.isInEarshot = true;
+          console.log("entered earshot", distance);
+          if (this.onEnterEarshot) {
+            this.onEnterEarshot(other.id);
+          }
         }
-        if (this.onEnterEarshot) {
-          this.onEnterEarshot(other.id);
+        return;
+      }
+      // If we just left earshot, trigger onLeaveEarshot
+      if (other.isInEarshot) {
+        console.log("left earsrhot", distance);
+        other.isInEarshot = false;
+        if (this.onLeaveEarshot) {
+          this.onLeaveEarshot(other.id);
         }
       }
     }
@@ -119,13 +142,14 @@ export class User extends PIXI.Sprite {
 
   distanceTo(other) {
     // We need to get distance from the center of the avatar
-    const thisX = this.x + this.width / 2;
-    const thisY = this.y + this.height / 2;
+    const thisX = Math.round(this.x + baseWidth / 2);
+    const thisY = Math.round(this.y + baseHeight / 2);
 
-    const otherX = other.x + other.width / 2;
-    const otherY = other.y + other.height / 2;
-
-    return Math.hypot(otherX - thisX, otherY - thisY);
+    const otherX = Math.round(other.x + baseWidth / 2);
+    const otherY = Math.round(other.y + baseHeight / 2);
+    const dist = Math.hypot(otherX - thisX, otherY - thisY);
+    // Round to nearest multiple of 5
+    return Math.ceil(dist / 5) * 5;
   }
 
   inEarshot(distance) {

@@ -58,24 +58,35 @@ function handleError(room, event) {
 
 function handleJoinedMeeting(room, event) {
   const p = event.participants.local;
+
+  const onCreateUser = () => {
+    const tracks = getParticipantTracks(p);
+    setUserTracks(p.session_id, tracks.video, tracks.audio);
+  };
+
+  const onEnterEarshot = (sessionID) => {
+    subToUserTracks(room, sessionID);
+  };
+
+  const onLeaveEarshot = (sessionID) => {
+    unsubFromUserTracks(room, sessionID);
+  };
+
   if (room.isGlobal) {
     showWorld();
-    initWorld(
-      p.session_id,
-      () => {
-        const tracks = getParticipantTracks(p);
-        setUserTracks(p.session_id, tracks.video, tracks.audio);
-      },
-      (sessionID) => {
-        subToUserTracks(room, sessionID);
-      }
-    );
+    initWorld(p.session_id, onCreateUser, onEnterEarshot, onLeaveEarshot);
   }
 }
 
 function subToUserTracks(room, sessionID) {
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: true, video: true, screenVideo: false },
+  });
+}
+
+function unsubFromUserTracks(room, sessionID) {
+  room.callObject.updateParticipant(sessionID, {
+    setSubscribedTracks: { audio: false, video: false, screenVideo: false },
   });
 }
 
@@ -97,7 +108,6 @@ function handleLeftMeeting() {
 
 function handleParticipantUpdated(room, event) {
   const up = event.participant;
-  console.log("participant updated", up);
   if (up.session_id === room.callObject.participants().local.session_id) {
     //   updateLocal(up);
     return;
@@ -119,8 +129,8 @@ function getParticipantTracks(participant) {
   const vt = participant?.tracks.video;
   const at = participant?.tracks.audio;
 
-  const videoTrack = vt.state === playableState ? vt.persistentTrack : null;
-  const audioTrack = at.state === playableState ? at.persistentTrack : null;
+  const videoTrack = vt?.state === playableState ? vt.persistentTrack : null;
+  const audioTrack = at?.state === playableState ? at.persistentTrack : null;
   return {
     video: videoTrack,
     audio: audioTrack,
