@@ -55,8 +55,8 @@ function getUserData(doFilter = true) {
 function createUser(id) {
   const user = {
     userID: id,
-    x: 100,
-    y: 100,
+    x: rand(50, 450),
+    y: rand(50, 450),
     lastUpdated: Date.now(),
   };
   userData.users[user.userID] = user;
@@ -130,6 +130,10 @@ wss.on("connection", (ws) => {
     delete userData.users[ws.userID];
   });
 });
+
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
 
 app.listen(PORT);
 

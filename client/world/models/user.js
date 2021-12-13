@@ -120,44 +120,48 @@ export class User extends Collider {
 
   checkProximity(others) {
     for (let other of others) {
-      if (other.id === this.id) {
-        continue;
-      }
-      const vicinity = this.earshot * 2;
-      const distance = this.distanceTo(other);
+      this.proximityUpdate(other);
+    }
+  }
 
-      other.alpha = (this.earshot + vicinity - distance) / vicinity;
+  async proximityUpdate(other) {
+    if (other.id === this.id) {
+      return;
+    }
+    const vicinity = this.earshot * 2;
+    const distance = this.distanceTo(other);
 
-      // Do vicinity checks
-      if (this.inVicinity(distance)) {
-        // If we just entered earshot, trigger onEnterEarshot
-        if (!other.isInVicinity) {
-          other.isInVicinity = true;
-          console.log("entered vicinity", distance);
-          if (this.onEnterVicinity) {
-            this.onEnterVicinity(other.id);
-          }
-        }
-      } else if (other.isInVicinity) {
-        console.log("left earsrhot", distance);
-        other.isInVicinity = false;
-        if (this.onLeaveEarshot) {
-          this.onLeaveEarshot(other.id);
+    other.alpha = (this.earshot + vicinity - distance) / vicinity;
+
+    // Do vicinity checks
+    if (this.inVicinity(distance)) {
+      // If we just entered earshot, trigger onEnterEarshot
+      if (!other.isInVicinity) {
+        other.isInVicinity = true;
+        console.log("entered vicinity", distance);
+        if (this.onEnterVicinity) {
+          this.onEnterVicinity(other.id);
         }
       }
-
-      // Do earshot checks
-      if (this.inEarshot(distance)) {
-        if (!other.inEarshot) {
-          other.inEarshot = true;
-          if (other.videoTrack) {
-            other.setVideoTexture(other.videoTrack);
-          }
-        }
-      } else if (other.inEarshot) {
-        other.inEarshot = false;
-        other.setDefaultTexture();
+    } else if (other.isInVicinity) {
+      console.log("left earsrhot", distance);
+      other.isInVicinity = false;
+      if (this.onLeaveEarshot) {
+        this.onLeaveEarshot(other.id);
       }
+    }
+
+    // Do earshot checks
+    if (this.inEarshot(distance)) {
+      if (!other.inEarshot) {
+        other.inEarshot = true;
+        if (other.videoTrack) {
+          other.setVideoTexture(other.videoTrack);
+        }
+      }
+    } else if (other.inEarshot) {
+      other.inEarshot = false;
+      other.setDefaultTexture();
     }
   }
 
@@ -184,23 +188,19 @@ export class User extends Collider {
 
 // https://pixijs.io/examples/#/textures/gradient-basic.js
 function createGradientTexture() {
-  const quality = 256;
   const canvas = document.createElement("canvas");
-  canvas.width = quality;
+  canvas.width = baseSize;
   canvas.height = 1;
 
   const ctx = canvas.getContext("2d");
 
   // use canvas2d API to create gradient
-  const grd = ctx.createLinearGradient(0, 0, quality, 0);
-
-  grd.addColorStop(0, generateColor());
-  grd.addColorStop(0.3, generateColor());
-  grd.addColorStop(0.7, generateColor());
-  grd.addColorStop(1, generateColor());
+  const grd = ctx.createLinearGradient(150, 0, baseSize, 50);
+  grd.addColorStop(0, "#121a24");
+  grd.addColorStop(1, "#2b3f56");
 
   ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, quality, 1);
+  ctx.fillRect(0, 0, baseSize, 1);
 
   return PIXI.Texture.from(canvas);
 }
