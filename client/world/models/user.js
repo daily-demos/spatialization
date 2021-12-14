@@ -5,51 +5,64 @@ const earshot = 150;
 const maxAlpha = 1;
 const baseSize = 50;
 
+const TEXTURE_UNKNOWN = Symbol(0);
+const TEXTURE_DEFAULT = Symbol(1);
+const TEXTURE_VIDEO = Symbol(2);
+
 export class User extends Collider {
   videoTag = null;
+  audioTag = null;
   isInVicinity = false;
+  textureType = TEXTURE_UNKNOWN;
 
   constructor(
     name,
     params,
     isLocal = false,
-    onEnterEarshot = null,
-    onLeaveEarshot = null
+    onEnterVicinity = null,
+    onLeaveVicinity = null
   ) {
     super();
 
     // How close another user needs to be to be seen/heard
     // by this user
     this.earshot = earshot;
-    this.onEnterVicinity = onEnterEarshot;
-    this.onLeaveEarshot = onLeaveEarshot;
+    this.onEnterVicinity = onEnterVicinity;
+    this.onLeaveEarshot = onLeaveVicinity;
     this.isLocal = isLocal;
     this.setDefaultTexture();
-    if (isLocal) {
-      this.alpha = maxAlpha;
-    } else {
-      this.alpha = baseAlpha;
-    }
     this.name = name;
     this.id = params.userID;
     this.x = params.x;
     this.y = params.y;
     this.height = baseSize;
     this.width = baseSize;
-    this.createVideoTag(isLocal);
+    this.createVideoTag();
+    if (!isLocal) {
+      this.alpha = baseAlpha;
+      this.createAudioTag();
+    } else {
+      this.alpha = maxAlpha;
+    }
   }
 
-  createVideoTag(isLocal) {
+  createVideoTag() {
     // Set up video tag
     const video = document.createElement("video");
     video.autoplay = true;
     video.classList.add("fit");
     video.classList.add("invisible");
     document.documentElement.appendChild(video);
-    if (isLocal) {
-      video.muted = true;
-    }
     this.videoTag = video;
+  }
+
+  createAudioTag() {
+    // Set up audio tag
+    const audio = document.createElement("audio");
+    audio.autoplay = true;
+    audio.classList.add("invisible");
+    document.documentElement.appendChild(audio);
+    this.audioTag = audio;
   }
 
   setVideoTexture(videoTrack) {
@@ -62,35 +75,64 @@ export class User extends Collider {
     );
     let texture = new PIXI.BaseTexture(this.videoTag);
     this.texture = new PIXI.Texture(texture, textureMask);
+    this.textureType = TEXTURE_VIDEO;
   }
 
   setDefaultTexture() {
     const texture = createGradientTexture();
     this.texture = new PIXI.Texture(texture);
+    this.textureType = TEXTURE_DEFAULT;
   }
 
   // updateTracks sets the tracks, but does not
   // necessarily update the texture until we are in
   // earshot
   updateTracks(videoTrack = null, audioTrack = null) {
-    this.videoTrack = videoTrack;
-    this.audioTrack = audioTrack;
-    if (!audioTrack && !videoTrack) {
-      if (this.videoTag.srcObject != null) {
-        this.videoTag.srcObject = null;
-      }
+    this.streamVideo(videoTrack);
+    this.streamAudio(audioTrack);
+    if (this.isLocal) {
+      this.setVideoTexture(this.videoTrack);
+    }
+  }
+
+  streamVideo(newTrack) {
+    if (newTrack === null) {
+      this.videoTrack = newTrack;
+      this.videoTag.srcObject = null;
       return;
     }
-    const tracks = [];
-    if (audioTrack) tracks.push(audioTrack);
-    if (videoTrack) {
-      tracks.push(videoTrack);
+    if (newTrack.id === this.getVideoTrackID()) {
+      return;
     }
-    let stream = new MediaStream(tracks);
+    this.videoTrack = newTrack;
+    let stream = new MediaStream([newTrack]);
     this.videoTag.srcObject = stream;
-    if (this.isLocal) {
-      this.setVideoTexture(videoTrack);
+  }
+
+  streamAudio(newTrack) {
+    if (!this.audioTag) return;
+
+    if (newTrack === null) {
+      this.audioTag.srcObject = null;
+      return;
     }
+    if (newTrack.id === this.getAudioTrackID()) {
+      return;
+    }
+    let stream = new MediaStream([newTrack]);
+    this.audioTag.srcObject = stream;
+  }
+
+  getVideoTrackID() {
+    const tracks = this.videoTag?.srcObject?.getVideoTracks();
+    if (!tracks || tracks.length === 0) return -1;
+    return tracks[0].id;
+  }
+
+  getAudioTrackID() {
+    const tracks = this.audioTag?.srcObject?.getAudioTracks();
+    if (!tracks || tracks.length === 0) return -1;
+    return tracks[0].id;
   }
 
   getId() {
@@ -135,16 +177,16 @@ export class User extends Collider {
 
     // Do vicinity checks
     if (this.inVicinity(distance)) {
-      // If we just entered earshot, trigger onEnterEarshot
+      // If we just entered vicinity, trigger onEntericinity
       if (!other.isInVicinity) {
         other.isInVicinity = true;
-        console.log("entered vicinity", distance);
+        console.log("entered vicinity", distance, this.onEnterVicinity);
         if (this.onEnterVicinity) {
           this.onEnterVicinity(other.id);
         }
       }
     } else if (other.isInVicinity) {
-      console.log("left earsrhot", distance);
+      console.log("left vicinity", distance);
       other.isInVicinity = false;
       if (this.onLeaveEarshot) {
         this.onLeaveEarshot(other.id);
@@ -155,11 +197,13 @@ export class User extends Collider {
     if (this.inEarshot(distance)) {
       if (!other.inEarshot) {
         other.inEarshot = true;
-        if (other.videoTrack) {
-          other.setVideoTexture(other.videoTrack);
-        }
+        console.log("entered earshot", other.name, other.videoTrack)
+      }
+      if (other.videoTrack && !other.textureType != TEXTURE_VIDEO) {
+        other.setVideoTexture(other.videoTrack);
       }
     } else if (other.inEarshot) {
+      console.log("left earshot")
       other.inEarshot = false;
       other.setDefaultTexture();
     }

@@ -4,7 +4,6 @@
   "description": "Daily spatial video/audio demo",
   "main": "index.js",
   "scripts": {
-    "startdev": "nodemon ./server/index.js",
     "start": "node ./server/index.js"
   },
   "keywords": [

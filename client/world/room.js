@@ -64,17 +64,18 @@ function handleJoinedMeeting(room, event) {
     setUserTracks(p.session_id, tracks.video, tracks.audio);
   };
 
-  const onEnterEarshot = (sessionID) => {
+  const onEnterVicinity = (sessionID) => {
+    console.log("subscribig to tracks for session ID", sessionID, room)
     subToUserTracks(room, sessionID);
   };
 
-  const onLeaveEarshot = (sessionID) => {
+  const onLeaveVicinity = (sessionID) => {
     unsubFromUserTracks(room, sessionID);
   };
 
   if (room.isGlobal) {
     showWorld();
-    initWorld(p.session_id, onCreateUser, onEnterEarshot, onLeaveEarshot);
+    initWorld(p.session_id, onCreateUser, onEnterVicinity, onLeaveVicinity);
   }
 }
 

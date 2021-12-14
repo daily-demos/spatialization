@@ -45,8 +45,8 @@ document.getElementById("world").appendChild(app.view);
 export function initWorld(
   localUserID,
   onCreateUser = null,
-  onEnterEarshot = null,
-  onLeaveEarshot = null
+  onEnterVicinity = null,
+  onLeaveVicinity = null
 ) {
   socket = new Socket();
   socket.connection.onopen = () => {
@@ -60,8 +60,8 @@ export function initWorld(
       case "init":
         localAvatar = createAvatar(
           payload.data,
-          onEnterEarshot,
-          onLeaveEarshot,
+          onEnterVicinity,
+          onLeaveVicinity,
           true
         );
         // Center world container on local avatar
@@ -88,6 +88,7 @@ export function initWorld(
 }
 
 export function setUserTracks(id, video = null, audio = null, screen = null) {
+  console.log("setting user tracks: ", id, video, audio);
   const avatar = getAvatar(id);
   if (avatar) {
     avatar.updateTracks(video, audio);
@@ -104,13 +105,13 @@ function joinUser(userID) {
   });
 }
 
-function createAvatar(data, onEnterEarshot, onLeaveEarshot, isLocal = false) {
+function createAvatar(data, onEnterVicinity, onLeaveVicinity, isLocal = false) {
   const avatar = new User(
     data.userID,
     data,
     (isLocal = isLocal),
-    (onEnterEarshot = onEnterEarshot),
-    (onLeaveEarshot = onLeaveEarshot)
+    (onEnterVicinity = onEnterVicinity),
+    (onLeaveVicinity = onLeaveVicinity)
   );
   usersContainer.addChild(avatar);
   return avatar;
