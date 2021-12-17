@@ -1,36 +1,53 @@
 import { Collider } from "./collider.js";
 import * as PIXI from "pixi.js";
+import { DisplayObject } from "pixi.js";
 
 const baseAlpha = 0.2;
 const earshot = 150;
 const maxAlpha = 1;
 const baseSize = 50;
 
-const TEXTURE_UNKNOWN = Symbol(0);
-const TEXTURE_DEFAULT = Symbol(1);
-const TEXTURE_VIDEO = Symbol(2);
+enum TextureType {
+  Unknown = 1,
+  Default,
+  Video,
+}
 
 export class User extends Collider {
-  videoTag = null;
-  audioTag = null;
+  videoTag: HTMLVideoElement = null;
+  audioTag: HTMLAudioElement = null;
+
+  videoTrack: MediaStreamTrack;
+
   isInVicinity = false;
-  textureType = TEXTURE_UNKNOWN;
-  zone = 0;
+  textureType = TextureType.Unknown;
+  zoneID = 0;
+
+  earshotDistance: number;
+  onEnterVicinity: Function;
+  onLeaveEarshot: Function;
+  isLocal: boolean;
+
+  name: String;
+  id: String;
+
+  isInEarshot: boolean;
+  lastMoveAt: number;
 
   constructor(
-    name,
-    userID,
-    x,
-    y,
+    name: String,
+    userID: String,
+    x: number,
+    y: number,
     isLocal = false,
-    onEnterVicinity = null,
-    onLeaveVicinity = null
+    onEnterVicinity: Function = null,
+    onLeaveVicinity: Function = null
   ) {
     super();
 
     // How close another user needs to be to be seen/heard
     // by this user
-    this.earshot = earshot;
+    this.earshotDistance = earshot;
     this.onEnterVicinity = onEnterVicinity;
     this.onLeaveEarshot = onLeaveVicinity;
     this.isLocal = isLocal;
@@ -69,7 +86,7 @@ export class User extends Collider {
     this.audioTag = audio;
   }
 
-  setVideoTexture(videoTrack) {
+  setVideoTexture(videoTrack: MediaStreamTrack) {
     const settings = videoTrack.getSettings();
     const textureMask = new PIXI.Rectangle(
       settings.height / 2,
@@ -79,19 +96,22 @@ export class User extends Collider {
     );
     let texture = new PIXI.BaseTexture(this.videoTag);
     this.texture = new PIXI.Texture(texture, textureMask);
-    this.textureType = TEXTURE_VIDEO;
+    this.textureType = TextureType.Video;
   }
 
   setDefaultTexture() {
     const texture = createGradientTexture();
-    this.texture = new PIXI.Texture(texture);
-    this.textureType = TEXTURE_DEFAULT;
+    this.texture = texture;
+    this.textureType = TextureType.Default;
   }
 
   // updateTracks sets the tracks, but does not
   // necessarily update the texture until we are in
   // earshot
-  updateTracks(videoTrack = null, audioTrack = null) {
+  updateTracks(
+    videoTrack: MediaStreamTrack = null,
+    audioTrack: MediaStreamTrack = null
+  ) {
     this.streamVideo(videoTrack);
     this.streamAudio(audioTrack);
     if (this.isLocal) {
@@ -99,7 +119,7 @@ export class User extends Collider {
     }
   }
 
-  streamVideo(newTrack) {
+  streamVideo(newTrack: MediaStreamTrack) {
     if (newTrack === null) {
       this.videoTrack = newTrack;
       this.videoTag.srcObject = null;
@@ -113,7 +133,7 @@ export class User extends Collider {
     this.videoTag.srcObject = stream;
   }
 
-  streamAudio(newTrack) {
+  streamAudio(newTrack: MediaStreamTrack) {
     if (!this.audioTag) return;
 
     if (newTrack === null) {
@@ -128,13 +148,17 @@ export class User extends Collider {
   }
 
   getVideoTrackID() {
-    const tracks = this.videoTag?.srcObject?.getVideoTracks();
+    const src = <MediaStream>this.videoTag?.srcObject;
+    if (!src) return;
+    const tracks = src.getVideoTracks();
     if (!tracks || tracks.length === 0) return -1;
     return tracks[0].id;
   }
 
   getAudioTrackID() {
-    const tracks = this.audioTag?.srcObject?.getAudioTracks();
+    const src = <MediaStream>this.audioTag?.srcObject;
+    if (!src) return;
+    const tracks = src.getAudioTracks();
     if (!tracks || tracks.length === 0) return -1;
     return tracks[0].id;
   }
@@ -147,37 +171,34 @@ export class User extends Collider {
     return { x: this.x, y: this.y };
   }
 
-  getSprite() {
-    return this.sprite;
-  }
-
-  moveTo(posX, posY) {
+  moveTo(posX: number, posY: number) {
     this.x = posX;
     this.y = posY;
   }
 
-  moveX(x) {
+  moveX(x: number) {
     this.x += x;
   }
 
-  moveY(y) {
+  moveY(y: number) {
     this.y += y;
   }
 
-  checkProximity(others) {
+  checkProximity(others: Array<DisplayObject>) {
     for (let other of others) {
-      this.proximityUpdate(other);
+      const o = <User>other;
+      this.proximityUpdate(o);
     }
   }
 
-  async proximityUpdate(other) {
+  async proximityUpdate(other: User) {
     if (other.id === this.id) {
       return;
     }
-    const vicinity = this.earshot * 2;
+    const vicinity = this.earshotDistance * 2;
     const distance = this.distanceTo(other);
 
-    other.alpha = (this.earshot + vicinity - distance) / vicinity;
+    other.alpha = (this.earshotDistance + vicinity - distance) / vicinity;
 
     // Do vicinity checks
     if (this.inVicinity(distance)) {
@@ -199,21 +220,21 @@ export class User extends Collider {
 
     // Do earshot checks
     if (this.inEarshot(distance)) {
-      if (!other.inEarshot) {
-        other.inEarshot = true;
+      if (!other.isInEarshot) {
+        other.isInEarshot = true;
         console.log("entered earshot", other.name, other.videoTrack);
       }
-      if (other.videoTrack && !other.textureType != TEXTURE_VIDEO) {
+      if (other.videoTrack && other.textureType != TextureType.Video) {
         other.setVideoTexture(other.videoTrack);
       }
-    } else if (other.inEarshot) {
+    } else if (other.isInEarshot) {
       console.log("left earshot");
-      other.inEarshot = false;
+      other.isInEarshot = false;
       other.setDefaultTexture();
     }
   }
 
-  distanceTo(other) {
+  distanceTo(other: User) {
     // We need to get distance from the center of the avatar
     const thisX = Math.round(this.x + baseSize / 2);
     const thisY = Math.round(this.y + baseSize / 2);
@@ -225,17 +246,17 @@ export class User extends Collider {
     return Math.ceil(dist / 5) * 5;
   }
 
-  inEarshot(distance) {
-    return distance < this.earshot;
+  inEarshot(distance: number) {
+    return distance < this.earshotDistance;
   }
 
-  inVicinity(distance) {
-    return distance < this.earshot * 2;
+  inVicinity(distance: number) {
+    return distance < this.earshotDistance * 2;
   }
 }
 
 // https://pixijs.io/examples/#/textures/gradient-basic.js
-function createGradientTexture() {
+function createGradientTexture(): PIXI.Texture {
   const canvas = document.createElement("canvas");
   canvas.width = baseSize;
   canvas.height = 1;
@@ -251,10 +272,4 @@ function createGradientTexture() {
   ctx.fillRect(0, 0, baseSize, 1);
 
   return PIXI.Texture.from(canvas);
-}
-
-function generateColor() {
-  return `#${Math.floor(Math.random() * 16777215)
-    .toString(16)
-    .padStart(6, "0")}`;
 }

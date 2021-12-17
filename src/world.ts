@@ -1,29 +1,43 @@
 import * as PIXI from "pixi.js";
 
 import KeyListener from "./util/nav.js";
-import { User } from "./models/user.js";
+import { User } from "./models/user";
 import { lerp, rand } from "./util/lerp.js";
 import Floor from "./models/floor.js";
 
+class Packet {
+  time: number;
+  data: Array<{
+    userID: string;
+    x: number;
+    y: number;
+  }>;
+}
+
 export class World {
-  onEnterVicinity = null;
-  onLeaveVicinity = null;
-  onCreateUser = null;
-  onMove = null;
+  onEnterVicinity: Function = null;
+  onLeaveVicinity: Function = null;
+  onCreateUser: Function = null;
+  onMove: Function = null;
 
   keyListener = new KeyListener();
-  packets = [];
-  localAvatar = null;
+  packets: Array<Packet> = [];
+  localAvatar: User = null;
 
-  app = null;
-  worldContainer = null;
-  usersContainer = null;
+  app: PIXI.Application = null;
+  worldContainer: PIXI.Container = null;
+  usersContainer: PIXI.Container = null;
 
   constructor() {
     this.init();
   }
 
-  setUserTracks(id, video = null, audio = null, screen = null) {
+  setUserTracks(
+    id: string,
+    video: MediaStreamTrack = null,
+    audio: MediaStreamTrack = null,
+    screen: MediaStreamTrack = null
+  ) {
     console.log("setting user tracks: ", id, video, audio);
     const avatar = this.getAvatar(id);
     if (avatar) {
@@ -32,13 +46,13 @@ export class World {
     }
   }
 
-  updateParticipantZone(sessionID, zoneID) {
+  updateParticipantZone(sessionID: string, zoneID: number) {
     const avatar = this.getAvatar(sessionID);
-    avatar.zone = zoneID;
+    avatar.zoneID = zoneID;
   }
 
-  updateParticipantPos(sessionID, posX, posY) {
-    const avatar = this.getAvatar(sessionID);
+  updateParticipantPos(sessionID: string, posX: number, posY: number) {
+    let avatar = this.getAvatar(sessionID);
     if (!avatar) {
       avatar = this.createAvatar(sessionID, posX, posY);
     }
@@ -46,7 +60,7 @@ export class World {
     avatar.moveTo(posX, posY);
   }
 
-  initLocalAvatar(sessionID) {
+  initLocalAvatar(sessionID: string) {
     this.localAvatar = this.createAvatar(
       sessionID,
       rand(150, 450),
@@ -78,7 +92,7 @@ export class World {
     let frame = new PIXI.Graphics();
     frame.beginFill(0x666666);
     frame.lineStyle({ color: 0xffffff, width: 4, alignment: 0 });
-    frame.drawRect(0, 0, this.app.width, this.app.height);
+    frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
     frame.position.set(0, 0);
     this.app.stage.addChild(frame);
 
@@ -106,7 +120,7 @@ export class World {
     });
   }
 
-  createAvatar(userID, x, y, isLocal = false) {
+  createAvatar(userID: string, x: number, y: number, isLocal = false): User {
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
     if (isLocal) {
@@ -126,13 +140,13 @@ export class World {
     return avatar;
   }
 
-  draw(elapsedMS) {
+  draw(elapsedMS: number) {
     if (this.localAvatar) {
       this.interpolate(elapsedMS);
     }
   }
 
-  update(delta) {
+  update(delta: number) {
     if (this.localAvatar) {
       this.localAvatar.checkProximity(this.usersContainer.children);
     }
@@ -162,7 +176,7 @@ export class World {
     });
   }
 
-  interpolate(elapsedMS) {
+  interpolate(elapsedMS: number) {
     if (this.packets.length === 0) return;
     // Get newest packet
     const packet = this.packets[0];
@@ -173,7 +187,7 @@ export class World {
 
       let avatar = this.getAvatar(userID);
       if (!avatar) {
-        avatar = this.createAvatar(user);
+        avatar = this.createAvatar(userID, -5000, -5000);
         avatar.lastMoveAt = Date.now();
       }
 
@@ -190,16 +204,16 @@ export class World {
 
         if (this.localAvatar.getId() != userID) {
           // Find this user
-          this.avatar.moveTo(lerpedX, lerpedY);
-          this.avatar.lastMoveAt = packet.time;
+          avatar.moveTo(lerpedX, lerpedY);
+          avatar.lastMoveAt = packet.time;
         }
       }
     }
     this.packets.shift();
   }
 
-  getAvatar(id) {
-    return this.usersContainer.getChildByName(id);
+  getAvatar(id: string): User {
+    return <User>this.usersContainer.getChildByName(id);
   }
 
   sendData() {

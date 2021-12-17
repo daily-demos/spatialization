@@ -1,7 +1,7 @@
 import { default as DailyIframe } from "@daily-co/daily-js";
 
 import { showWorld } from "./util/nav.js";
-import { World } from "./world.js";
+import { World } from "./world.ts";
 
 const playableState = "playable";
 let world = new World();
