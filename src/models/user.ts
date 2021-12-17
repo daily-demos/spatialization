@@ -1,11 +1,15 @@
 import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
-import { DisplayObject } from "pixi.js";
+import { DisplayObject, TilingSprite } from "pixi.js";
 
 const baseAlpha = 0.2;
-const earshot = 150;
+const earshot = 300;
 const maxAlpha = 1;
 const baseSize = 50;
+const defaultSpeed = 3;
+
+let audioCtx: AudioContext;
+const posZ = 300;
 
 enum TextureType {
   Unknown = 1,
@@ -18,6 +22,11 @@ export class User extends Collider {
   audioTag: HTMLAudioElement = null;
 
   videoTrack: MediaStreamTrack;
+  audioTrack: MediaStreamTrack;
+
+  pannerNode: PannerNode;
+  stereoPannerNode: StereoPannerNode;
+  outputAudio: HTMLAudioElement;
 
   isInVicinity = false;
   textureType = TextureType.Unknown;
@@ -25,11 +34,13 @@ export class User extends Collider {
 
   earshotDistance: number;
   onEnterVicinity: Function;
-  onLeaveEarshot: Function;
+  onLeaveVicinity: Function;
   isLocal: boolean;
 
   name: string;
   id: string;
+
+  speed: number;
 
   isInEarshot: boolean;
   lastMoveAt: number;
@@ -45,11 +56,16 @@ export class User extends Collider {
   ) {
     super();
 
+    if (isLocal) {
+      audioCtx = new AudioContext();
+    }
+
+    this.speed = defaultSpeed;
     // How close another user needs to be to be seen/heard
     // by this user
     this.earshotDistance = earshot;
     this.onEnterVicinity = onEnterVicinity;
-    this.onLeaveEarshot = onLeaveVicinity;
+    this.onLeaveVicinity = onLeaveVicinity;
     this.isLocal = isLocal;
     this.setDefaultTexture();
     this.name = name;
@@ -64,6 +80,7 @@ export class User extends Collider {
       this.createAudioTag();
     } else {
       this.alpha = maxAlpha;
+      this.updateListener();
     }
   }
 
@@ -137,14 +154,16 @@ export class User extends Collider {
     if (!this.audioTag) return;
 
     if (newTrack === null) {
-      this.audioTag.srcObject = null;
+      this.audioTrack = null;
       return;
     }
     if (newTrack.id === this.getAudioTrackID()) {
       return;
     }
-    let stream = new MediaStream([newTrack]);
-    this.audioTag.srcObject = stream;
+    this.audioTrack = newTrack;
+    this.pannerNode = null;
+    // let stream = new MediaStream([newTrack]);
+    // this.audioTag.srcObject = stream;
   }
 
   getVideoTrackID() {
@@ -174,14 +193,103 @@ export class User extends Collider {
   moveTo(posX: number, posY: number) {
     this.x = posX;
     this.y = posY;
+    this.updateListener();
   }
 
   moveX(x: number) {
     this.x += x;
+    this.updateListener();
   }
 
   moveY(y: number) {
     this.y += y;
+    this.updateListener();
+  }
+
+  initListener() {
+    if (!this.isLocal) return;
+    const listener = audioCtx.listener;
+    listener.positionX.value = this.x;
+    listener.positionY.value = this.y;
+    listener.positionZ.value = posZ - 5;
+    listener.forwardX.value = 0;
+    listener.forwardY.value = 0;
+    listener.forwardZ.value = -1;
+    listener.upX.value = 0;
+    listener.upY.value = 1;
+    listener.upZ.value = 0;
+  }
+
+  updateListener() {
+    if (!this.isLocal) return;
+    const listener = audioCtx.listener;
+    listener.positionX.value = this.x;
+    listener.positionY.value = this.y;
+  }
+
+  updatePanner(pos: Pos, panValue: number) {
+    if (this.isLocal || !this.audioTrack) return;
+
+    const globalPos = this.toGlobal(new PIXI.Point(0, 0));
+
+    if (!this.pannerNode) {
+      let gainNode = audioCtx.createGain();
+      gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+
+      const stream = new MediaStream([this.audioTrack]);
+
+      this.pannerNode = new PannerNode(audioCtx, {
+        panningModel: "HRTF",
+        distanceModel: "linear",
+        positionX: pos.x,
+        positionY: pos.y,
+        positionZ: posZ,
+        orientationX: 0.0,
+        orientationY: 0.0,
+        orientationZ: -1.0,
+        refDistance: 1,
+        maxDistance: 1000,
+        rolloffFactor: 1,
+        coneInnerAngle: 60,
+        coneOuterAngle: 90,
+        coneOuterGain: 0.3,
+      });
+
+      this.stereoPannerNode = new StereoPannerNode(audioCtx);
+
+      // Get pan value
+      this.stereoPannerNode.pan.value = panValue;
+
+      // Apparently this is required due to a Chromium bug!
+      // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
+      // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
+      const mutedAudio = new Audio();
+      this.outputAudio = new Audio();
+
+      mutedAudio.muted = true;
+      mutedAudio.srcObject = stream;
+      mutedAudio.play();
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      const destination = audioCtx.createMediaStreamDestination();
+
+      source.connect(this.pannerNode);
+      this.pannerNode.connect(this.stereoPannerNode);
+      this.stereoPannerNode.connect(destination);
+      this.outputAudio.muted = false;
+      this.outputAudio.srcObject = destination.stream;
+      this.outputAudio.play();
+    } else {
+      const currentX = this.pannerNode.positionX.value;
+      const currentY = this.pannerNode.positionY.value;
+      if (currentX !== pos.x || currentY !== pos.y) {
+        this.pannerNode.positionX.value = pos.x;
+        this.pannerNode.positionY.value = pos.y;
+      }
+      if (this.stereoPannerNode.pan.value != panValue) {
+        this.stereoPannerNode.pan.value = panValue;
+      }
+    }
   }
 
   checkProximity(others: Array<DisplayObject>) {
@@ -195,10 +303,28 @@ export class User extends Collider {
     if (other.id === this.id) {
       return;
     }
-    const vicinity = this.earshotDistance * 2;
+
     const distance = this.distanceTo(other);
 
-    other.alpha = (this.earshotDistance + vicinity - distance) / vicinity;
+    const desiredPannerDistance = (distance * 1000) / this.earshotDistance;
+    const op = other.getPos();
+
+    const dx = op.x - this.x;
+    const dy = op.y - this.y;
+
+    const part = desiredPannerDistance / distance;
+    var pannerPos = {
+      x: Math.round(op.x + dx * part),
+      y: Math.round(op.y + dy * part),
+    };
+
+    // pan value (-1, 1)
+    // https://developer.mozilla.org/en-US/docs/Web/API/StereoPannerNode/pan
+    const panValue = (1 * dx) / this.earshotDistance;
+    other.updatePanner(pannerPos, panValue);
+
+    other.alpha =
+      (this.earshotDistance * 1.5 - distance) / this.earshotDistance;
 
     // Do vicinity checks
     if (this.inVicinity(distance)) {
@@ -211,10 +337,10 @@ export class User extends Collider {
         }
       }
     } else if (other.isInVicinity) {
-      console.log("left vicinity", distance);
+      console.log("left vicinity", distance, other.pannerNode);
       other.isInVicinity = false;
-      if (this.onLeaveEarshot) {
-        this.onLeaveEarshot(other.id);
+      if (this.onLeaveVicinity) {
+        this.onLeaveVicinity(other.id);
       }
     }
 
@@ -222,15 +348,17 @@ export class User extends Collider {
     if (this.inEarshot(distance)) {
       if (!other.isInEarshot) {
         other.isInEarshot = true;
+        if (other.outputAudio) other.outputAudio.muted = false;
         console.log("entered earshot", other.name, other.videoTrack);
       }
       if (other.videoTrack && other.textureType != TextureType.Video) {
         other.setVideoTexture(other.videoTrack);
       }
     } else if (other.isInEarshot) {
-      console.log("left earshot");
+      console.log("left earshot", other.pannerNode);
       other.isInEarshot = false;
       other.setDefaultTexture();
+      if (other.outputAudio) other.outputAudio.muted = true;
     }
   }
 

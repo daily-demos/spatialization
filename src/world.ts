@@ -144,32 +144,33 @@ export class World {
   }
 
   update(delta: number) {
-    if (this.localAvatar) {
-      this.localAvatar.checkProximity(this.usersContainer.children);
-    }
+    if (!this.localAvatar) return;
 
+    this.localAvatar.checkProximity(this.usersContainer.children);
+
+    const s = this.localAvatar.speed;
     this.keyListener.on("w", () => {
-      this.localAvatar.moveY(-4);
+      this.localAvatar.moveY(-s);
       this.sendData();
-      this.worldContainer.position.y += 4;
+      this.worldContainer.position.y += s;
     });
 
     this.keyListener.on("s", () => {
-      this.localAvatar.moveY(4);
+      this.localAvatar.moveY(s);
       this.sendData();
-      this.worldContainer.position.y -= 4;
+      this.worldContainer.position.y -= s;
     });
 
     this.keyListener.on("a", () => {
-      this.localAvatar.moveX(-4);
+      this.localAvatar.moveX(-s);
       this.sendData();
-      this.worldContainer.position.x += 4;
+      this.worldContainer.position.x += s;
     });
 
     this.keyListener.on("d", () => {
-      this.localAvatar.moveX(4);
+      this.localAvatar.moveX(s);
       this.sendData();
-      this.worldContainer.position.x -= 4;
+      this.worldContainer.position.x -= s;
     });
   }
 

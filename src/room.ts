@@ -104,6 +104,7 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
   };
 
   const onLeaveVicinity = (sessionID: string) => {
+    console.log("onLeaveVicinity", sessionID);
     unsubFromUserTracks(room, sessionID);
   };
 
