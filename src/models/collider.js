@@ -1,3 +1,5 @@
+import * as PIXI from "pixi.js";
+
 export class Collider extends PIXI.Sprite {
   constructor() {
     super();

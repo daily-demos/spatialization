@@ -1,4 +1,6 @@
 import { Collider } from "./collider";
+import * as PIXI from "pixi.js";
+import FloorImg from "../assets/floor2.jpg";
 
 export class Zone extends Collider {
   users = {};
@@ -10,7 +12,7 @@ export class Zone extends Collider {
     this.y = posY;
     this.width = width;
     this.height = height;
-    const texture = PIXI.Texture.from("./assets/floor2.jpg");
+    const texture = PIXI.Texture.from(FloorImg);
     const tilingSprite = new PIXI.TilingSprite(texture, width, height);
     this.floor = tilingSprite;
   }

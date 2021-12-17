@@ -1,4 +1,5 @@
 import { Collider } from "./collider.js";
+import * as PIXI from "pixi.js";
 
 const baseAlpha = 0.2;
 const earshot = 150;
@@ -183,7 +184,7 @@ export class User extends Collider {
       // If we just entered vicinity, trigger onEntericinity
       if (!other.isInVicinity) {
         other.isInVicinity = true;
-        console.log("entered vicinity", distance, this.onEnterVicinity);
+        console.log("entered vicinity", distance);
         if (this.onEnterVicinity) {
           this.onEnterVicinity(other.id);
         }

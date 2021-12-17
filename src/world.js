@@ -1,3 +1,5 @@
+import * as PIXI from "pixi.js";
+
 import KeyListener from "./util/nav.js";
 import { User } from "./models/user.js";
 import { lerp, rand } from "./util/lerp.js";

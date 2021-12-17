@@ -1,3 +1,5 @@
+import { default as DailyIframe } from "@daily-co/daily-js";
+
 import { showWorld } from "./util/nav.js";
 import { World } from "./world.js";
 
