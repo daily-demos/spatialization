@@ -1,4 +1,4 @@
-import { Collider } from "./collider.js";
+import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject } from "pixi.js";
 
@@ -28,15 +28,15 @@ export class User extends Collider {
   onLeaveEarshot: Function;
   isLocal: boolean;
 
-  name: String;
-  id: String;
+  name: string;
+  id: string;
 
   isInEarshot: boolean;
   lastMoveAt: number;
 
   constructor(
-    name: String,
-    userID: String,
+    name: string,
+    userID: string,
     x: number,
     y: number,
     isLocal = false,

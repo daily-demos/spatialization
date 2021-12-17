@@ -1,12 +1,37 @@
-import { default as DailyIframe } from "@daily-co/daily-js";
+import {
+  default as DailyIframe,
+  DailyCall,
+  DailyEventObjectAppMessage,
+  DailyEvent,
+  DailyEventObjectParticipant,
+  DailyParticipantsObject,
+  DailyParticipant,
+  DailyEventObjectTrack,
+  DailyEventObjectFatalError,
+  DailyEventObjectNoPayload,
+  DailyEventObjectCameraError,
+  DailyEventObjectParticipants,
+} from "@daily-co/daily-js";
 
-import { showWorld } from "./util/nav.js";
-import { World } from "./world.ts";
+import { showWorld } from "./util/nav";
+import { World } from "./world";
 
 const playableState = "playable";
 let world = new World();
+
+type BroadcastData = {
+  action: string;
+  zoneID: number;
+  pos: Pos;
+};
+
 export class Room {
-  constructor(url, userName, isGlobal) {
+  url: string;
+  userName: string;
+  isGlobal: boolean;
+  callObject: DailyCall;
+
+  constructor(url: string, userName: string, isGlobal = false) {
     this.url = url;
     this.userName = userName;
     this.isGlobal = isGlobal;
@@ -53,42 +78,42 @@ export class Room {
     }
   }
 
-  broadcast(data, recipientSessionID = "*") {
-    this.callObject.sendAppMessage(recipientSessionID, data);
+  broadcast(data: BroadcastData, recipientSessionID = "*") {
+    this.callObject.sendAppMessage(data, recipientSessionID);
   }
 }
 
-function handleCameraError(room, event) {
+function handleCameraError(room: Room, event: DailyEventObjectCameraError) {
   console.error(event);
 }
 
-function handleError(room, event) {
+function handleError(room: Room, event: DailyEventObjectFatalError) {
   console.error(event);
 }
 
-function handleJoinedMeeting(room, event) {
-  const p = event.participants.local;
+function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
+  const p = event.participants["local"];
 
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);
     world.setUserTracks(p.session_id, tracks.video, tracks.audio);
   };
 
-  const onEnterVicinity = (sessionID) => {
+  const onEnterVicinity = (sessionID: string) => {
     subToUserTracks(room, sessionID);
   };
 
-  const onLeaveVicinity = (sessionID) => {
+  const onLeaveVicinity = (sessionID: string) => {
     unsubFromUserTracks(room, sessionID);
   };
 
-  const onMove = (zoneID, pos) => {
+  const onMove = (zoneID: number, pos: Pos, recipient: string = "*") => {
     const data = {
       action: "posChange",
       zoneID: zoneID,
       pos: pos,
     };
-    room.broadcast("*", data);
+    room.broadcast(data, recipient);
   };
 
   if (room.isGlobal) {
@@ -101,73 +126,75 @@ function handleJoinedMeeting(room, event) {
   }
 }
 
-function subToUserTracks(room, sessionID) {
+function subToUserTracks(room: Room, sessionID: string) {
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: true, video: true, screenVideo: false },
   });
 }
 
-function unsubFromUserTracks(room, sessionID) {
+function unsubFromUserTracks(room: Room, sessionID: string) {
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: false, video: false, screenVideo: false },
   });
 }
 
-function handleTrackStarted(room, event) {
+function handleTrackStarted(room: Room, event: DailyEventObjectTrack) {
   /* const p = event.participant;
   const tracks = getParticipantTracks(p);
   setUserTracks(p.session_id, tracks.video, tracks.audio); */
 }
 
-function handleTrackStopped(room, event) {
-  console.log("track stopped", event);
+function handleTrackStopped(room: Room, event: DailyEventObjectTrack) {
   /*  const p = event.participant;
   const tracks = getParticipantTracks(p);
   setUserTracks(p.session_id, tracks.video, tracks.audio); */
 }
 
-function handleAppMessage(room, event) {
+function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
   const data = event.data;
   const msgType = data.action;
-  console.log("msgType", msgType, event);
   switch (msgType) {
     case "zoneChange":
-      world.updateParticipantZone(event.fromID, data.zoneID);
+      world.updateParticipantZone(event.fromId, data.zoneID);
       break;
     case "posChange":
-      world.updateParticipantPos(event.fromID, data.pos.x, data.pos.y);
+      world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
       break;
   }
 }
 
-function handleLeftMeeting() {
+function handleLeftMeeting(room: Room, event: DailyEventObjectNoPayload) {
   //removeAllTiles();
 }
 
-function handleParticipantUpdated(room, event) {
+function handleParticipantUpdated(
+  room: Room,
+  event: DailyEventObjectParticipant
+) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
   world.setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
-function handleParticipantJoined(room, event) {
-  const p = event.participant;
-  const tracks = getParticipantTracks(p);
-  world.setUserTracks(p.session_id, tracks.video, tracks.audio);
+function handleParticipantJoined(
+  room: Room,
+  event: DailyEventObjectParticipant
+) {
+  world.sendDataToParticipant(event.participant.session_id);
 }
 
-function getParticipantTracks(participant) {
+function getParticipantTracks(participant: DailyParticipant) {
   const vt = participant?.tracks.video;
   const at = participant?.tracks.audio;
 
-  const videoTrack = vt?.state === playableState ? vt.persistentTrack : null;
-  const audioTrack = at?.state === playableState ? at.persistentTrack : null;
+  const videoTrack = vt?.state === playableState ? vt.track : null;
+  const audioTrack = at?.state === playableState ? at.track : null;
   return {
     video: videoTrack,
     audio: audioTrack,
   };
 }
 
-function handleParticipantLeft(room, event) {
+function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
   const up = event.participant;
 }

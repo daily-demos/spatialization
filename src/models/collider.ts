@@ -5,7 +5,7 @@ export class Collider extends PIXI.Sprite {
     super();
   }
 
-  hits(other) {
+  hits(other: Collider) {
     const tb = this.getBounds();
     const ob = other.getBounds();
 

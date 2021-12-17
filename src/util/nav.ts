@@ -1,9 +1,7 @@
 export default class KeyListener {
-  constructor() {
-    this.pressedKeys = {};
-  }
+  pressedKeys: { [key: string]: boolean } = {};
 
-  on(key, f) {
+  on(key: string, f: Function) {
     if (this.pressedKeys[key]) {
       f();
     } else {
@@ -24,11 +22,11 @@ export default class KeyListener {
 const joinForm = document.getElementById("enterCall");
 const nav = document.getElementById("nav");
 
-export function registerJoinFormListener(f) {
+export function registerJoinFormListener(f: Function) {
   joinForm.addEventListener("submit", (event) => {
     event.preventDefault();
     joinForm.style.display = "none";
-    const nameEle = document.getElementById("userName");
+    const nameEle = <HTMLInputElement>document.getElementById("userName");
     f(nameEle.value);
   });
 }

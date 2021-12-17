@@ -1,10 +1,15 @@
 import * as PIXI from "pixi.js";
 
-import { Collider } from "./collider.js";
+import { Collider } from "./collider";
+import { Spot } from "./spot";
 
 export class Desk extends Collider {
   isPresenter = false;
-  constructor(id, spots) {
+  id: number;
+  name: number;
+  spots: Array<Spot>;
+
+  constructor(id: number, spots: Array<Spot>) {
     super();
 
     this.id = id;
@@ -17,7 +22,7 @@ export class Desk extends Collider {
 
   createTexture() {
     const canvas = document.createElement("canvas");
-    canvas.width = quality;
+    canvas.width = 250;
     canvas.height = 1;
 
     const ctx = canvas.getContext("2d");

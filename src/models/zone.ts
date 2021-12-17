@@ -1,12 +1,13 @@
 import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import FloorImg from "../assets/floor2.jpg";
+import { User } from "./user";
 
 export class Zone extends Collider {
-  users = {};
-  floor = null;
+  users: { [key: string]: User } = {};
+  floor: PIXI.TilingSprite = null;
 
-  constructor(posX, posY, width, height) {
+  constructor(posX: number, posY: number, width: number, height: number) {
     super();
     this.x = posX;
     this.y = posY;
@@ -17,10 +18,10 @@ export class Zone extends Collider {
     this.floor = tilingSprite;
   }
 
-  addUser(user) {
-    this.users[user.userID] = user;
+  addUser(user: User) {
+    this.users[user.id] = user;
   }
-  removeUser(userID) {
+  removeUser(userID: string) {
     delete this.users[userID];
   }
 }

@@ -1,9 +1,9 @@
 import * as PIXI from "pixi.js";
 
-import KeyListener from "./util/nav.js";
+import KeyListener from "./util/nav";
 import { User } from "./models/user";
-import { lerp, rand } from "./util/lerp.js";
-import Floor from "./models/floor.js";
+import { lerp, rand } from "./util/lerp";
+import Floor from "./models/floor";
 
 class Packet {
   time: number;
@@ -38,7 +38,6 @@ export class World {
     audio: MediaStreamTrack = null,
     screen: MediaStreamTrack = null
   ) {
-    console.log("setting user tracks: ", id, video, audio);
     const avatar = this.getAvatar(id);
     if (avatar) {
       avatar.updateTracks(video, audio);
@@ -56,7 +55,6 @@ export class World {
     if (!avatar) {
       avatar = this.createAvatar(sessionID, posX, posY);
     }
-    console.log("updating participant pos", avatar, posX, posY);
     avatar.moveTo(posX, posY);
   }
 
@@ -76,8 +74,7 @@ export class World {
     if (this.onCreateUser) {
       this.onCreateUser();
     }
-    const pos = this.localAvatar.getPos();
-    this.onMove(this.localAvatar.zoneID, pos.x, pos.y);
+    this.sendData();
     this.keyListener.listenKeys();
   }
 
@@ -219,5 +216,10 @@ export class World {
   sendData() {
     const la = this.localAvatar;
     this.onMove(la.zoneID, la.getPos());
+  }
+
+  sendDataToParticipant(sessionID: string) {
+    const la = this.localAvatar;
+    this.onMove(la.zoneID, la.getPos(), sessionID);
   }
 }
