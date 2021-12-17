@@ -4,7 +4,7 @@
   "description": "Daily spatial video/audio demo",
   "main": "index.js",
   "scripts": {
-    "start": "node ./server/index.js"
+    "start": "http-server"
   },
   "keywords": [
     "webrtc",
@@ -15,6 +15,7 @@
   "license": "BSD-2-Clause",
   "dependencies": {
     "express": "^4.17.1",
+    "http-server": "^14.0.0",
     "prettier": "^2.5.0",
     "ws": "^3.3.3"
   }

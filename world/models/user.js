@@ -14,10 +14,13 @@ export class User extends Collider {
   audioTag = null;
   isInVicinity = false;
   textureType = TEXTURE_UNKNOWN;
+  zone = 0;
 
   constructor(
     name,
-    params,
+    userID,
+    x,
+    y,
     isLocal = false,
     onEnterVicinity = null,
     onLeaveVicinity = null
@@ -32,9 +35,9 @@ export class User extends Collider {
     this.isLocal = isLocal;
     this.setDefaultTexture();
     this.name = name;
-    this.id = params.userID;
-    this.x = params.x;
-    this.y = params.y;
+    this.id = userID;
+    this.x = x;
+    this.y = y;
     this.height = baseSize;
     this.width = baseSize;
     this.createVideoTag();
@@ -197,13 +200,13 @@ export class User extends Collider {
     if (this.inEarshot(distance)) {
       if (!other.inEarshot) {
         other.inEarshot = true;
-        console.log("entered earshot", other.name, other.videoTrack)
+        console.log("entered earshot", other.name, other.videoTrack);
       }
       if (other.videoTrack && !other.textureType != TEXTURE_VIDEO) {
         other.setVideoTexture(other.videoTrack);
       }
     } else if (other.inEarshot) {
-      console.log("left earshot")
+      console.log("left earshot");
       other.inEarshot = false;
       other.setDefaultTexture();
     }

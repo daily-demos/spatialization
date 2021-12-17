@@ -1,7 +1,8 @@
 import { showWorld } from "./util/nav.js";
-import { initWorld, setUserTracks } from "./world.js";
+import { World } from "./world.js";
 
 const playableState = "playable";
+let world = new World();
 export class Room {
   constructor(url, userName, isGlobal) {
     this.url = url;
@@ -36,6 +37,9 @@ export class Room {
       })
       .on("track-stopped", (e) => {
         handleTrackStopped(this, e);
+      })
+      .on("app-message", (e) => {
+        handleAppMessage(this, e);
       });
   }
 
@@ -45,6 +49,10 @@ export class Room {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  broadcast(data, recipientSessionID = "*") {
+    this.callObject.sendAppMessage(recipientSessionID, data);
   }
 }
 
@@ -61,11 +69,10 @@ function handleJoinedMeeting(room, event) {
 
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);
-    setUserTracks(p.session_id, tracks.video, tracks.audio);
+    world.setUserTracks(p.session_id, tracks.video, tracks.audio);
   };
 
   const onEnterVicinity = (sessionID) => {
-    console.log("subscribig to tracks for session ID", sessionID, room)
     subToUserTracks(room, sessionID);
   };
 
@@ -73,9 +80,22 @@ function handleJoinedMeeting(room, event) {
     unsubFromUserTracks(room, sessionID);
   };
 
+  const onMove = (zoneID, pos) => {
+    const data = {
+      action: "posChange",
+      zoneID: zoneID,
+      pos: pos,
+    };
+    room.broadcast("*", data);
+  };
+
   if (room.isGlobal) {
     showWorld();
-    initWorld(p.session_id, onCreateUser, onEnterVicinity, onLeaveVicinity);
+    world.onEnterVicinity = onEnterVicinity;
+    world.onLeaveVicinity = onLeaveVicinity;
+    world.onCreateUser = onCreateUser;
+    world.onMove = onMove;
+    world.initLocalAvatar(event.participants.local.session_id);
   }
 }
 
@@ -104,6 +124,20 @@ function handleTrackStopped(room, event) {
   setUserTracks(p.session_id, tracks.video, tracks.audio); */
 }
 
+function handleAppMessage(room, event) {
+  const data = event.data;
+  const msgType = data.action;
+  console.log("msgType", msgType, event);
+  switch (msgType) {
+    case "zoneChange":
+      world.updateParticipantZone(event.fromID, data.zoneID);
+      break;
+    case "posChange":
+      world.updateParticipantPos(event.fromID, data.pos.x, data.pos.y);
+      break;
+  }
+}
+
 function handleLeftMeeting() {
   //removeAllTiles();
 }
@@ -111,13 +145,13 @@ function handleLeftMeeting() {
 function handleParticipantUpdated(room, event) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
-  setUserTracks(p.session_id, tracks.video, tracks.audio);
+  world.setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
 function handleParticipantJoined(room, event) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
-  setUserTracks(p.session_id, tracks.video, tracks.audio);
+  world.setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
 function getParticipantTracks(participant) {
