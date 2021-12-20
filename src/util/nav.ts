@@ -27,7 +27,8 @@ export function registerJoinFormListener(f: Function) {
     event.preventDefault();
     joinForm.style.display = "none";
     const nameEle = <HTMLInputElement>document.getElementById("userName");
-    f(nameEle.value);
+    const urlEle = <HTMLInputElement>document.getElementById("roomURL");
+    f(nameEle.value, urlEle.value);
   });
 }
 

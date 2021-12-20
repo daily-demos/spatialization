@@ -5,7 +5,7 @@ registerJoinFormListener(initCall);
 
 let room;
 
-export function initCall(name: string) {
-  room = new Room("https://liza.staging.daily.co/world", name, true);
+export function initCall(name: string, url: string) {
+  room = new Room(url, name, true);
   room.join();
 }
