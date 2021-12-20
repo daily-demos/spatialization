@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js";
 
 import KeyListener from "./util/nav";
 import { User } from "./models/user";
-import { lerp, rand } from "./util/lerp";
+import { lerp, rand } from "./util/math";
 import Floor from "./models/floor";
 
 class Packet {
@@ -118,6 +118,7 @@ export class World {
   }
 
   createAvatar(userID: string, x: number, y: number, isLocal = false): User {
+    console.log("creating avatar", userID);
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
     if (isLocal) {
@@ -135,6 +136,13 @@ export class World {
     );
     this.usersContainer.addChild(avatar);
     return avatar;
+  }
+
+  removeAvatar(userId: string) {
+    const avatar = this.getAvatar(userId);
+    console.log("removing avatar", avatar);
+    if (!avatar) return;
+    this.usersContainer.removeChild(avatar);
   }
 
   draw(elapsedMS: number) {

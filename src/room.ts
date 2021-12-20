@@ -30,6 +30,7 @@ export class Room {
   userName: string;
   isGlobal: boolean;
   callObject: DailyCall;
+  pendingAcks: { [key: string]: ReturnType<typeof setInterval> } = {};
 
   constructor(url: string, userName: string, isGlobal = false) {
     this.url = url;
@@ -104,7 +105,6 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
   };
 
   const onLeaveVicinity = (sessionID: string) => {
-    console.log("onLeaveVicinity", sessionID);
     unsubFromUserTracks(room, sessionID);
   };
 
@@ -128,12 +128,15 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
 }
 
 function subToUserTracks(room: Room, sessionID: string) {
+  console.log("subscribing", sessionID);
+
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: true, video: true, screenVideo: false },
   });
 }
 
 function unsubFromUserTracks(room: Room, sessionID: string) {
+  console.log("unsubscribing", sessionID);
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: false, video: false, screenVideo: false },
   });
@@ -159,14 +162,19 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
       world.updateParticipantZone(event.fromId, data.zoneID);
       break;
     case "posChange":
+      const pendingAck = room.pendingAcks[event.fromId];
+      if (pendingAck) {
+        console.log("clearing interval", pendingAck);
+        clearInterval(pendingAck);
+        delete room.pendingAcks[event.fromId];
+        world.sendDataToParticipant(event.fromId);
+      }
       world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
       break;
   }
 }
 
-function handleLeftMeeting(room: Room, event: DailyEventObjectNoPayload) {
-  //removeAllTiles();
-}
+function handleLeftMeeting(room: Room, event: DailyEventObjectNoPayload) {}
 
 function handleParticipantUpdated(
   room: Room,
@@ -174,6 +182,13 @@ function handleParticipantUpdated(
 ) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
+  // if (tracks.video) {
+  //   if (!tracks.video.getSettings().height) {
+  //     unsubFromUserTracks(room, p.session_id);
+  //     subToUserTracks(room, p.session_id);
+  //   }
+
+  // }
   world.setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
@@ -181,7 +196,12 @@ function handleParticipantJoined(
   room: Room,
   event: DailyEventObjectParticipant
 ) {
-  world.sendDataToParticipant(event.participant.session_id);
+  const sID = event.participant.session_id;
+  world.sendDataToParticipant(sID);
+  room.pendingAcks[sID] = setInterval(() => {
+    console.log("sending to sID", sID);
+    world.sendDataToParticipant(sID);
+  }, 1000);
 }
 
 function getParticipantTracks(participant: DailyParticipant) {
@@ -197,5 +217,7 @@ function getParticipantTracks(participant: DailyParticipant) {
 }
 
 function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
+  console.log("participant left");
   const up = event.participant;
+  world.removeAvatar(up.session_id);
 }

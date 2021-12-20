@@ -103,20 +103,32 @@ export class User extends Collider {
     this.audioTag = audio;
   }
 
-  setVideoTexture(videoTrack: MediaStreamTrack) {
+  setVideoTexture() {
+    console.log("setting video texture", this.id);
+    const videoTrack = this.getVideoTrack();
+    if (!videoTrack) return;
     const settings = videoTrack.getSettings();
+    if (!settings.height) {
+      console.log("settings height undefined", this.id, settings);
+      return;
+    }
+
+    let texture = new PIXI.BaseTexture(this.videoTag);
+
     const textureMask = new PIXI.Rectangle(
       settings.height / 2,
       0,
       settings.height,
       settings.height
     );
-    let texture = new PIXI.BaseTexture(this.videoTag);
+
     this.texture = new PIXI.Texture(texture, textureMask);
+
     this.textureType = TextureType.Video;
   }
 
   setDefaultTexture() {
+    console.log("setting default texture");
     const texture = createGradientTexture();
     this.texture = texture;
     this.textureType = TextureType.Default;
@@ -131,29 +143,34 @@ export class User extends Collider {
   ) {
     this.streamVideo(videoTrack);
     this.streamAudio(audioTrack);
-    if (this.isLocal) {
-      this.setVideoTexture(this.videoTrack);
-    }
   }
 
   streamVideo(newTrack: MediaStreamTrack) {
-    if (newTrack === null) {
-      this.videoTrack = newTrack;
+    console.log("streamVideo", this.id, newTrack);
+    if (!newTrack) {
+      if (this.textureType === TextureType.Video) {
+        this.setDefaultTexture();
+      }
       this.videoTag.srcObject = null;
       return;
     }
     if (newTrack.id === this.getVideoTrackID()) {
+      console.log("IDs are identical", this.id);
       return;
     }
-    this.videoTrack = newTrack;
+
     let stream = new MediaStream([newTrack]);
     this.videoTag.srcObject = stream;
+
+    if (this.isLocal) {
+      this.setVideoTexture();
+    }
   }
 
   streamAudio(newTrack: MediaStreamTrack) {
     if (!this.audioTag) return;
 
-    if (newTrack === null) {
+    if (!newTrack) {
       this.audioTrack = null;
       return;
     }
@@ -166,12 +183,18 @@ export class User extends Collider {
     // this.audioTag.srcObject = stream;
   }
 
-  getVideoTrackID() {
+  getVideoTrackID(): string {
+    const track = this.getVideoTrack();
+    if (!track) return "-1";
+    return track.id;
+  }
+
+  getVideoTrack(): MediaStreamTrack {
     const src = <MediaStream>this.videoTag?.srcObject;
-    if (!src) return;
+    if (!src) return null;
     const tracks = src.getVideoTracks();
-    if (!tracks || tracks.length === 0) return -1;
-    return tracks[0].id;
+    if (!tracks || tracks.length === 0) return null;
+    return tracks[0];
   }
 
   getAudioTrackID() {
@@ -349,10 +372,11 @@ export class User extends Collider {
       if (!other.isInEarshot) {
         other.isInEarshot = true;
         if (other.outputAudio) other.outputAudio.muted = false;
-        console.log("entered earshot", other.name, other.videoTrack);
+        console.log("entered earshot", other.name);
       }
-      if (other.videoTrack && other.textureType != TextureType.Video) {
-        other.setVideoTexture(other.videoTrack);
+      const otherTrack = other.getVideoTrack();
+      if (otherTrack != null && other.textureType != TextureType.Video) {
+        other.setVideoTexture();
       }
     } else if (other.isInEarshot) {
       console.log("left earshot", other.pannerNode);
