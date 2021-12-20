@@ -35,6 +35,8 @@ export function registerJoinFormListener(f: Function) {
 export function showWorld() {
   const worldDiv = document.getElementById("world");
   const entryDiv = document.getElementById("entry");
+  const controlsDiv = document.getElementById("controls");
   worldDiv.style.display = "block";
   entryDiv.style.display = "none";
+  controlsDiv.style.display = "block";
 }

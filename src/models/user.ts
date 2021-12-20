@@ -107,9 +107,9 @@ export class User extends Collider {
     console.log("setting video texture", this.id);
     const videoTrack = this.getVideoTrack();
     if (!videoTrack) return;
+
     const settings = videoTrack.getSettings();
     if (!settings.height) {
-      console.log("settings height undefined", this.id, settings);
       return;
     }
 

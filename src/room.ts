@@ -38,6 +38,9 @@ export class Room {
     this.isGlobal = isGlobal;
     this.callObject = DailyIframe.createCallObject({
       subscribeToTracksAutomatically: false,
+      dailyConfig: {
+        experimentalChromeVideoMuteLightOff: true,
+      },
     })
       .on("camera-error", (e) => {
         handleCameraError(this, e);
@@ -69,6 +72,20 @@ export class Room {
       .on("app-message", (e) => {
         handleAppMessage(this, e);
       });
+
+    const camBtn = document.getElementById("toggleCam");
+    camBtn.onclick = () => {
+      const current = this.callObject.participants().local.video;
+      console.log("toggling cam", current);
+      this.callObject.setLocalVideo(!current);
+    };
+
+    const micBtn = document.getElementById("toggleMic");
+    micBtn.onclick = () => {
+      const current = this.callObject.participants().local.audio;
+      console.log("toggling mic", current);
+      this.callObject.setLocalAudio(!current);
+    };
   }
 
   async join() {
@@ -182,13 +199,7 @@ function handleParticipantUpdated(
 ) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
-  // if (tracks.video) {
-  //   if (!tracks.video.getSettings().height) {
-  //     unsubFromUserTracks(room, p.session_id);
-  //     subToUserTracks(room, p.session_id);
-  //   }
-
-  // }
+  console.log("participant updated:", p.session_id, tracks);
   world.setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
@@ -205,11 +216,16 @@ function handleParticipantJoined(
 }
 
 function getParticipantTracks(participant: DailyParticipant) {
-  const vt = participant?.tracks.video;
-  const at = participant?.tracks.audio;
+  console.log("tracks", participant?.tracks);
+  const vt = <{ [key: string]: any }>participant?.tracks.video;
+  const pvt = vt["persistentTrack"];
 
-  const videoTrack = vt?.state === playableState ? vt.track : null;
-  const audioTrack = at?.state === playableState ? at.track : null;
+  console.log("persistentTrack", pvt);
+  const at = <{ [key: string]: any }>participant?.tracks.audio;
+  const pat = at["persistentTrack"];
+
+  const videoTrack = vt?.state === playableState ? pvt : null;
+  const audioTrack = at?.state === playableState ? pvt : null;
   return {
     video: videoTrack,
     audio: audioTrack,

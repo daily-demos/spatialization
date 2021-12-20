@@ -7,6 +7,10 @@ body {
   display: none;
 }
 
+#controls {
+  display: none;
+}
+
 .invisible {
   display: none;
 }
