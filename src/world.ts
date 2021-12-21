@@ -4,6 +4,8 @@ import KeyListener from "./util/nav";
 import { User } from "./models/user";
 import { lerp, rand } from "./util/math";
 import Floor from "./models/floor";
+import { BroadcastSpot } from "./models/broadcast";
+import { Room } from "./room";
 
 class Packet {
   time: number;
@@ -15,10 +17,12 @@ class Packet {
 }
 
 export class World {
-  onEnterVicinity: Function = null;
-  onLeaveVicinity: Function = null;
-  onCreateUser: Function = null;
-  onMove: Function = null;
+  onEnterVicinity: (sessionID: string) => void = null;
+  onLeaveVicinity: (sessionID: string) => void = null;
+  onCreateUser: () => void = null;
+  onMove: (zoneID: number, pos: Pos, recipient?: string) => void = null;
+  onEnterBroadcast: (sessionID: string) => void = null;
+  onLeaveBroadcast: (sessioID: string) => void = null;
 
   keyListener = new KeyListener();
   packets: Array<Packet> = [];
@@ -27,6 +31,7 @@ export class World {
   app: PIXI.Application = null;
   worldContainer: PIXI.Container = null;
   usersContainer: PIXI.Container = null;
+  furnitureContainer: PIXI.Container = null;
 
   constructor() {
     this.init();
@@ -56,6 +61,7 @@ export class World {
       avatar = this.createAvatar(sessionID, posX, posY);
     }
     avatar.moveTo(posX, posY);
+    avatar.checkFurniture(this.furnitureContainer.children);
   }
 
   initLocalAvatar(sessionID: string) {
@@ -102,11 +108,8 @@ export class World {
     this.worldContainer.addChild(floor);
     frame.addChild(this.worldContainer);
 
-    // Add container that will hold our masked content
+    // Add container that will hold our users
     this.usersContainer = new PIXI.Container();
-
-    // Offset by the window's frame width
-    // And add the container to the window
     this.worldContainer.addChild(this.usersContainer);
 
     document.getElementById("world").appendChild(this.app.view);
@@ -117,6 +120,24 @@ export class World {
     });
   }
 
+  start() {
+    // Container that will hold our room "furniture" elements,
+    // like broadcast spots
+    this.furnitureContainer = new PIXI.Container();
+
+    // Create a single broadcast spot
+    const spot = new BroadcastSpot(
+      0,
+      50,
+      50,
+      this.onEnterBroadcast,
+      this.onLeaveBroadcast
+    );
+    this.furnitureContainer.addChild(spot);
+
+    // Add furniture container to the world
+    this.worldContainer.addChild(this.furnitureContainer);
+  }
   createAvatar(userID: string, x: number, y: number, isLocal = false): User {
     console.log("creating avatar", userID);
     let onEnterVicinity = null;
@@ -154,7 +175,7 @@ export class World {
   update(delta: number) {
     if (!this.localAvatar) return;
 
-    this.localAvatar.checkProximity(this.usersContainer.children);
+    this.localAvatar.checkUserProximity(this.usersContainer.children);
 
     const s = this.localAvatar.speed;
     this.keyListener.on("w", () => {

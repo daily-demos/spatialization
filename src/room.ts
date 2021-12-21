@@ -13,7 +13,7 @@ import {
   DailyEventObjectParticipants,
 } from "@daily-co/daily-js";
 
-import { showWorld } from "./util/nav";
+import { showBroadcast, showWorld, stopBroadcast } from "./util/nav";
 import { World } from "./world";
 
 const playableState = "playable";
@@ -134,13 +134,30 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     room.broadcast(data, recipient);
   };
 
+  // When a user enters a broadcast spot
+  const onEnterBroadcast = (sessionID: string) => {
+    subToUserTracks(room, sessionID);
+    const p = room.callObject.participants()[sessionID];
+    const tracks = getParticipantTracks(p);
+    showBroadcast(tracks.video, tracks.audio);
+  };
+
+  // When a user leaves a broadcast spot
+  const onLeaveBroadcast = (sessionID: string) => {
+    //   unsubFromUserTracks(room, sessionID);
+    stopBroadcast();
+  };
+
   if (room.isGlobal) {
     showWorld();
     world.onEnterVicinity = onEnterVicinity;
     world.onLeaveVicinity = onLeaveVicinity;
     world.onCreateUser = onCreateUser;
     world.onMove = onMove;
+    world.onEnterBroadcast = onEnterBroadcast;
+    world.onLeaveBroadcast = onLeaveBroadcast;
     world.initLocalAvatar(event.participants.local.session_id);
+    world.start();
   }
 }
 
@@ -225,7 +242,7 @@ function getParticipantTracks(participant: DailyParticipant) {
   const pat = at["persistentTrack"];
 
   const videoTrack = vt?.state === playableState ? pvt : null;
-  const audioTrack = at?.state === playableState ? pvt : null;
+  const audioTrack = at?.state === playableState ? pat : null;
   return {
     video: videoTrack,
     audio: audioTrack,

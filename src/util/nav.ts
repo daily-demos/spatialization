@@ -36,7 +36,26 @@ export function showWorld() {
   const worldDiv = document.getElementById("world");
   const entryDiv = document.getElementById("entry");
   const controlsDiv = document.getElementById("controls");
-  worldDiv.style.display = "block";
+  worldDiv.style.display = "inline-block";
   entryDiv.style.display = "none";
   controlsDiv.style.display = "block";
+}
+
+export function showBroadcast(
+  videoTrack?: MediaStreamTrack,
+  audioTrack?: MediaStreamTrack
+) {
+  console.log("showing broadcast");
+  const tracks: Array<MediaStreamTrack> = [];
+  if (videoTrack) tracks.push(videoTrack);
+  if (audioTrack) tracks.push(audioTrack);
+  if (tracks.length > 0) {
+    const vid = <HTMLVideoElement>document.getElementById("broadcastVideo");
+    vid.srcObject = new MediaStream(tracks);
+  }
+}
+
+export function stopBroadcast() {
+  const vid = <HTMLVideoElement>document.getElementById("broadcastVideo");
+  vid.srcObject = null;
 }

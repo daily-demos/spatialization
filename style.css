@@ -11,6 +11,15 @@ body {
   display: none;
 }
 
+#broadcast {
+  display: inline-block;
+  width: 250px;
+  height: 140px;
+}
+
+#broadcastVideo {
+}
+
 .invisible {
   display: none;
 }
