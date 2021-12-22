@@ -229,7 +229,7 @@ export class World {
         const lerpedX = lerp(avatar.x, newX, ratio);
         const lerpedY = lerp(avatar.y, newY, ratio);
 
-        if (this.localAvatar.getId() != userID) {
+        if (this.localAvatar.id != userID) {
           // Find this user
           avatar.moveTo(lerpedX, lerpedY);
           avatar.lastMoveAt = packet.time;

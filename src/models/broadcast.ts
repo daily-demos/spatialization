@@ -7,7 +7,7 @@ const spotSize = 50;
 
 export class BroadcastSpot extends Collider {
   id: number;
-  name: number;
+  name: string;
   occupantID?: string;
   onEnterBroadcast: (sessionID: string) => void;
   onLeaveBroadcast: (sessionID: string) => void;
@@ -22,7 +22,7 @@ export class BroadcastSpot extends Collider {
     super();
 
     this.id = id;
-    this.name = id;
+    this.name = id.toString();
     this.x = x;
     this.y = y;
     this.width = spotSize;

@@ -1,6 +1,6 @@
 import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
-import { DisplayObject, TilingSprite } from "pixi.js";
+import { DisplayObject } from "pixi.js";
 import { BroadcastSpot } from "./broadcast";
 
 const baseAlpha = 0.2;
@@ -87,7 +87,7 @@ export class User extends Collider {
     }
   }
 
-  createVideoTag() {
+  private createVideoTag() {
     // Set up video tag
     const video = document.createElement("video");
     video.autoplay = true;
@@ -97,7 +97,7 @@ export class User extends Collider {
     this.videoTag = video;
   }
 
-  createAudioTag() {
+  private createAudioTag() {
     // Set up audio tag
     const audio = document.createElement("audio");
     audio.autoplay = true;
@@ -106,7 +106,7 @@ export class User extends Collider {
     this.audioTag = audio;
   }
 
-  setVideoTexture() {
+  private setVideoTexture() {
     console.log("setting video texture", this.id);
     const videoTrack = this.getVideoTrack();
     if (!videoTrack) return;
@@ -130,7 +130,7 @@ export class User extends Collider {
     this.textureType = TextureType.Video;
   }
 
-  setDefaultTexture() {
+  private setDefaultTexture() {
     console.log("setting default texture");
     const texture = createGradientTexture();
     this.texture = texture;
@@ -148,7 +148,7 @@ export class User extends Collider {
     this.streamAudio(audioTrack);
   }
 
-  streamVideo(newTrack: MediaStreamTrack) {
+  private streamVideo(newTrack: MediaStreamTrack) {
     console.log("streamVideo", this.id, newTrack);
     if (!newTrack) {
       if (this.textureType === TextureType.Video) {
@@ -169,7 +169,7 @@ export class User extends Collider {
     }
   }
 
-  streamAudio(newTrack: MediaStreamTrack) {
+  private streamAudio(newTrack: MediaStreamTrack) {
     if (!this.audioTag) return;
 
     if (!newTrack) {
@@ -185,13 +185,13 @@ export class User extends Collider {
     // this.audioTag.srcObject = stream;
   }
 
-  getVideoTrackID(): string {
+  private getVideoTrackID(): string {
     const track = this.getVideoTrack();
     if (!track) return "-1";
     return track.id;
   }
 
-  getVideoTrack(): MediaStreamTrack {
+  private getVideoTrack(): MediaStreamTrack {
     const src = <MediaStream>this.videoTag?.srcObject;
     if (!src) return null;
     const tracks = src.getVideoTracks();
@@ -199,16 +199,12 @@ export class User extends Collider {
     return tracks[0];
   }
 
-  getAudioTrackID() {
+  private getAudioTrackID() {
     const src = <MediaStream>this.audioTag?.srcObject;
     if (!src) return;
     const tracks = src.getAudioTracks();
     if (!tracks || tracks.length === 0) return -1;
     return tracks[0].id;
-  }
-
-  getId() {
-    return this.id;
   }
 
   getPos() {
@@ -231,7 +227,7 @@ export class User extends Collider {
     this.updateListener();
   }
 
-  initListener() {
+  private initListener() {
     if (!this.isLocal) return;
     const listener = audioCtx.listener;
     listener.positionX.value = this.x;
@@ -245,14 +241,14 @@ export class User extends Collider {
     listener.upZ.value = 0;
   }
 
-  updateListener() {
+  private updateListener() {
     if (!this.isLocal) return;
     const listener = audioCtx.listener;
     listener.positionX.value = this.x;
     listener.positionY.value = this.y;
   }
 
-  updatePanner(pos: Pos, panValue: number) {
+  private updatePanner(pos: Pos, panValue: number) {
     if (this.isLocal || !this.audioTrack) return;
 
     if (!this.pannerNode) {
@@ -342,7 +338,7 @@ export class User extends Collider {
     }
   }
 
-  async proximityUpdate(other: User) {
+  private async proximityUpdate(other: User) {
     if (other.id === this.id) {
       return;
     }
@@ -406,7 +402,7 @@ export class User extends Collider {
     }
   }
 
-  distanceTo(other: User) {
+  private distanceTo(other: User) {
     // We need to get distance from the center of the avatar
     const thisX = Math.round(this.x + baseSize / 2);
     const thisY = Math.round(this.y + baseSize / 2);
@@ -418,11 +414,11 @@ export class User extends Collider {
     return Math.ceil(dist / 5) * 5;
   }
 
-  inEarshot(distance: number) {
+  private inEarshot(distance: number) {
     return distance < this.earshotDistance;
   }
 
-  inVicinity(distance: number) {
+  private inVicinity(distance: number) {
     return distance < this.earshotDistance * 2;
   }
 }

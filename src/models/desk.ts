@@ -6,14 +6,14 @@ import { Spot } from "./spot";
 export class Desk extends Collider {
   isPresenter = false;
   id: number;
-  name: number;
+  name: string;
   spots: Array<Spot>;
 
   constructor(id: number, spots: Array<Spot>) {
     super();
 
     this.id = id;
-    this.name = id;
+    this.name = id.toString();
     this.spots = spots;
     this.createTexture();
   }
