@@ -2,6 +2,11 @@ import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject } from "pixi.js";
 import { BroadcastSpot } from "./broadcast";
+import {
+  AudioContext,
+  PannerNode,
+  StereoPannerNode,
+} from "standardized-audio-context";
 
 const baseAlpha = 0.2;
 const earshot = 300;
@@ -24,8 +29,8 @@ export class User extends Collider {
   videoTrack: MediaStreamTrack;
   audioTrack: MediaStreamTrack;
 
-  pannerNode: PannerNode;
-  stereoPannerNode: StereoPannerNode;
+  pannerNode: PannerNode<AudioContext>;
+  stereoPannerNode: StereoPannerNode<AudioContext>;
   outputAudio: HTMLAudioElement;
 
   isInVicinity = false;

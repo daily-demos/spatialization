@@ -5,20 +5,11 @@ import { User } from "./models/user";
 import { lerp, rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastSpot } from "./models/broadcast";
-import { Room } from "./room";
-
-class Packet {
-  time: number;
-  data: Array<{
-    userID: string;
-    x: number;
-    y: number;
-  }>;
-}
+import { AudioContext, IAudioContext } from "standardized-audio-context";
 
 declare global {
   interface Window {
-    audioContext: AudioContext;
+    audioContext: IAudioContext;
   }
 }
 
@@ -31,7 +22,6 @@ export class World {
   onLeaveBroadcast: (sessioID: string) => void = null;
 
   keyListener = new KeyListener();
-  packets: Array<Packet> = [];
   localAvatar: User = null;
 
   app: PIXI.Application = null;
@@ -179,11 +169,7 @@ export class World {
     this.usersContainer.removeChild(avatar);
   }
 
-  private draw(elapsedMS: number) {
-    if (this.localAvatar) {
-      this.interpolate(elapsedMS);
-    }
-  }
+  private draw(elapsedMS: number) {}
 
   private update(delta: number) {
     if (!this.localAvatar) return;
@@ -214,42 +200,6 @@ export class World {
       this.sendData();
       this.worldContainer.position.x -= s;
     });
-  }
-
-  interpolate(elapsedMS: number) {
-    if (this.packets.length === 0) return;
-    // Get newest packet
-    const packet = this.packets[0];
-    for (let user of packet.data) {
-      const userID = user.userID;
-      const newX = user.x;
-      const newY = user.y;
-
-      let avatar = this.getAvatar(userID);
-      if (!avatar) {
-        avatar = this.createAvatar(userID, -5000, -5000);
-        avatar.lastMoveAt = Date.now();
-      }
-
-      const lastMoveAt = avatar.lastMoveAt;
-      const thisMoveAt = packet.time;
-      if (thisMoveAt > lastMoveAt) {
-        // Get time difference between this and last move
-        const diff = thisMoveAt - lastMoveAt;
-        const portion = Date.now() - elapsedMS - lastMoveAt;
-        const ratio = portion / diff;
-
-        const lerpedX = lerp(avatar.x, newX, ratio);
-        const lerpedY = lerp(avatar.y, newY, ratio);
-
-        if (this.localAvatar.id != userID) {
-          // Find this user
-          avatar.moveTo(lerpedX, lerpedY);
-          avatar.lastMoveAt = packet.time;
-        }
-      }
-    }
-    this.packets.shift();
   }
 
   private getAvatar(id: string): User {
