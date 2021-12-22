@@ -16,6 +16,12 @@ class Packet {
   }>;
 }
 
+declare global {
+  interface Window {
+    audioContext: AudioContext;
+  }
+}
+
 export class World {
   onEnterVicinity: (sessionID: string) => void = null;
   onLeaveVicinity: (sessionID: string) => void = null;
@@ -82,9 +88,10 @@ export class World {
     }
     this.sendData();
     this.keyListener.listenKeys();
+    this.initAudioContext();
   }
 
-  init() {
+  private init() {
     this.app = new PIXI.Application({
       width: 500,
       height: 500,
@@ -138,7 +145,13 @@ export class World {
     // Add furniture container to the world
     this.worldContainer.addChild(this.furnitureContainer);
   }
-  createAvatar(userID: string, x: number, y: number, isLocal = false): User {
+
+  private createAvatar(
+    userID: string,
+    x: number,
+    y: number,
+    isLocal = false
+  ): User {
     console.log("creating avatar", userID);
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
@@ -166,13 +179,13 @@ export class World {
     this.usersContainer.removeChild(avatar);
   }
 
-  draw(elapsedMS: number) {
+  private draw(elapsedMS: number) {
     if (this.localAvatar) {
       this.interpolate(elapsedMS);
     }
   }
 
-  update(delta: number) {
+  private update(delta: number) {
     if (!this.localAvatar) return;
 
     this.localAvatar.checkUserProximity(this.usersContainer.children);
@@ -239,11 +252,11 @@ export class World {
     this.packets.shift();
   }
 
-  getAvatar(id: string): User {
+  private getAvatar(id: string): User {
     return <User>this.usersContainer.getChildByName(id);
   }
 
-  sendData() {
+  private sendData() {
     const la = this.localAvatar;
     this.onMove(la.zoneID, la.getPos());
   }
@@ -251,5 +264,17 @@ export class World {
   sendDataToParticipant(sessionID: string) {
     const la = this.localAvatar;
     this.onMove(la.zoneID, la.getPos(), sessionID);
+  }
+
+  private initAudioContext() {
+    window.audioContext = new AudioContext();
+    const listener = window.audioContext.listener;
+    listener.positionZ.value = 300 - 5;
+    listener.forwardX.value = 0;
+    listener.forwardY.value = 0;
+    listener.forwardZ.value = -1;
+    listener.upX.value = 0;
+    listener.upY.value = 1;
+    listener.upZ.value = 0;
   }
 }

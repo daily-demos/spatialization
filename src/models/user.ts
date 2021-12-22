@@ -9,7 +9,6 @@ const maxAlpha = 1;
 const baseSize = 50;
 const defaultSpeed = 3;
 
-let audioCtx: AudioContext;
 const posZ = 300;
 
 enum TextureType {
@@ -59,10 +58,6 @@ export class User extends Collider {
   ) {
     super();
 
-    if (isLocal) {
-      audioCtx = new AudioContext();
-    }
-
     this.speed = defaultSpeed;
     // How close another user needs to be to be seen/heard
     // by this user
@@ -83,7 +78,6 @@ export class User extends Collider {
       this.createAudioTag();
     } else {
       this.alpha = maxAlpha;
-      this.initListener();
     }
   }
 
@@ -227,23 +221,9 @@ export class User extends Collider {
     this.updateListener();
   }
 
-  private initListener() {
-    if (!this.isLocal) return;
-    const listener = audioCtx.listener;
-    listener.positionX.value = this.x;
-    listener.positionY.value = this.y;
-    listener.positionZ.value = posZ - 5;
-    listener.forwardX.value = 0;
-    listener.forwardY.value = 0;
-    listener.forwardZ.value = -1;
-    listener.upX.value = 0;
-    listener.upY.value = 1;
-    listener.upZ.value = 0;
-  }
-
   private updateListener() {
     if (!this.isLocal) return;
-    const listener = audioCtx.listener;
+    const listener = window.audioContext.listener;
     listener.positionX.value = this.x;
     listener.positionY.value = this.y;
   }
@@ -252,12 +232,12 @@ export class User extends Collider {
     if (this.isLocal || !this.audioTrack) return;
 
     if (!this.pannerNode) {
-      let gainNode = audioCtx.createGain();
-      gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+      let gainNode = window.audioContext.createGain();
+      gainNode.gain.setValueAtTime(1, window.audioContext.currentTime);
 
       const stream = new MediaStream([this.audioTrack]);
 
-      this.pannerNode = new PannerNode(audioCtx, {
+      this.pannerNode = new PannerNode(window.audioContext, {
         panningModel: "HRTF",
         distanceModel: "linear",
         positionX: pos.x,
@@ -274,7 +254,7 @@ export class User extends Collider {
         coneOuterGain: 0.3,
       });
 
-      this.stereoPannerNode = new StereoPannerNode(audioCtx);
+      this.stereoPannerNode = new StereoPannerNode(window.audioContext);
 
       // Get pan value
       this.stereoPannerNode.pan.value = panValue;
@@ -291,8 +271,8 @@ export class User extends Collider {
 
       console.log("getting audio track", stream.getAudioTracks());
 
-      const source = audioCtx.createMediaStreamSource(stream);
-      const destination = audioCtx.createMediaStreamDestination();
+      const source = window.audioContext.createMediaStreamSource(stream);
+      const destination = window.audioContext.createMediaStreamDestination();
 
       source.connect(this.pannerNode);
       this.pannerNode.connect(this.stereoPannerNode);

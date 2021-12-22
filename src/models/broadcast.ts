@@ -46,12 +46,6 @@ export class BroadcastSpot extends Collider {
   }
 
   tryInteract(other: User) {
-    console.log(
-      "tryInteract running!",
-      other.id,
-      this.hits(other),
-      this.occupantID
-    );
     if (this.hits(other) && !this.occupantID) {
       this.occupantID = other.id;
       other.isBroadcasting = true;
