@@ -6,13 +6,13 @@ const spotSize = 50;
 
 export class Spot extends Collider {
   id: number;
-  name: number;
+  name: string;
 
   constructor(id: number, x: number, y: number) {
     super();
 
     this.id = id;
-    this.name = id;
+    this.name = id.toString();
     this.x = x;
     this.y = y;
     this.width = spotSize;

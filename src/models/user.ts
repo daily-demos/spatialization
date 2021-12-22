@@ -83,7 +83,7 @@ export class User extends Collider {
       this.createAudioTag();
     } else {
       this.alpha = maxAlpha;
-      this.updateListener();
+      this.initListener();
     }
   }
 
