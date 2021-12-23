@@ -1,11 +1,12 @@
 import * as PIXI from "pixi.js";
 
-import KeyListener from "./util/nav";
+import KeyListener, { removeZonemate } from "./util/nav";
 import { User } from "./models/user";
 import { lerp, rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastSpot } from "./models/broadcast";
 import { AudioContext, IAudioContext } from "standardized-audio-context";
+import { Desk } from "./models/desk";
 
 declare global {
   interface Window {
@@ -20,6 +21,7 @@ export class World {
   onMove: (zoneID: number, pos: Pos, recipient?: string) => void = null;
   onEnterBroadcast: (sessionID: string) => void = null;
   onLeaveBroadcast: (sessioID: string) => void = null;
+  onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null;
 
   keyListener = new KeyListener();
   localAvatar: User = null;
@@ -42,13 +44,20 @@ export class World {
     const avatar = this.getAvatar(id);
     if (avatar) {
       avatar.updateTracks(video, audio);
-      return;
     }
   }
 
   updateParticipantZone(sessionID: string, zoneID: number) {
     const avatar = this.getAvatar(sessionID);
+    // const oldZone = avatar.zoneID;
     avatar.zoneID = zoneID;
+    if (zoneID === 0) return;
+    if (avatar.zoneID === this.localAvatar.zoneID) {
+      // Send data back to make sure the newly joined participant knows
+      // we are in the same zone
+      this.sendDataToParticipant(sessionID);
+      return;
+    }
   }
 
   updateParticipantPos(sessionID: string, posX: number, posY: number) {
@@ -86,7 +95,7 @@ export class World {
       width: 500,
       height: 500,
       backgroundColor: 0x1099bb,
-      resolution: window.devicePixelRatio || 1,
+      resolution: 1,
     });
     // Create window frame
     let frame = new PIXI.Graphics();
@@ -107,6 +116,7 @@ export class World {
 
     // Add container that will hold our users
     this.usersContainer = new PIXI.Container();
+    this.usersContainer.zIndex = 100;
     this.worldContainer.addChild(this.usersContainer);
 
     document.getElementById("world").appendChild(this.app.view);
@@ -121,16 +131,25 @@ export class World {
     // Container that will hold our room "furniture" elements,
     // like broadcast spots
     this.furnitureContainer = new PIXI.Container();
-
+    this.furnitureContainer.zIndex = 90;
     // Create a single broadcast spot
     const spot = new BroadcastSpot(
       0,
-      50,
+      0,
       50,
       this.onEnterBroadcast,
       this.onLeaveBroadcast
     );
+    spot.x = this.worldContainer.width / 2 - spot.width / 2;
     this.furnitureContainer.addChild(spot);
+
+    const desk1 = new Desk(1, 4, 0, 250);
+    desk1.x = this.worldContainer.width / 2 - desk1.width - spot.width;
+    this.furnitureContainer.addChild(desk1);
+
+    const desk2 = new Desk(2, 4, 0, 250);
+    desk2.x = this.worldContainer.width / 2 + spot.width;
+    this.furnitureContainer.addChild(desk2);
 
     // Add furniture container to the world
     this.worldContainer.addChild(this.furnitureContainer);
@@ -142,7 +161,6 @@ export class World {
     y: number,
     isLocal = false
   ): User {
-    console.log("creating avatar", userID);
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
     if (isLocal) {
@@ -156,7 +174,8 @@ export class World {
       y,
       (isLocal = isLocal),
       (onEnterVicinity = onEnterVicinity),
-      (onLeaveVicinity = onLeaveVicinity)
+      (onLeaveVicinity = onLeaveVicinity),
+      this.onJoinZone
     );
     this.usersContainer.addChild(avatar);
     return avatar;
@@ -164,7 +183,6 @@ export class World {
 
   removeAvatar(userId: string) {
     const avatar = this.getAvatar(userId);
-    console.log("removing avatar", avatar);
     if (!avatar) return;
     this.usersContainer.removeChild(avatar);
   }
@@ -175,6 +193,7 @@ export class World {
     if (!this.localAvatar) return;
 
     this.localAvatar.checkUserProximity(this.usersContainer.children);
+    this.localAvatar.checkFurniture(this.furnitureContainer.children);
 
     const s = this.localAvatar.speed;
     this.keyListener.on("w", () => {

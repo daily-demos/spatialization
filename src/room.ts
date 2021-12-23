@@ -76,14 +76,12 @@ export class Room {
     const camBtn = document.getElementById("toggleCam");
     camBtn.onclick = () => {
       const current = this.callObject.participants().local.video;
-      console.log("toggling cam", current);
       this.callObject.setLocalVideo(!current);
     };
 
     const micBtn = document.getElementById("toggleMic");
     micBtn.onclick = () => {
       const current = this.callObject.participants().local.audio;
-      console.log("toggling mic", current);
       this.callObject.setLocalAudio(!current);
     };
   }
@@ -148,6 +146,15 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     stopBroadcast();
   };
 
+  const onJoinZone = (sessionID: string, zoneID: number, pos: Pos) => {
+    const data = {
+      action: "zoneChange",
+      zoneID: zoneID,
+      pos: pos,
+    };
+    room.broadcast(data, "*");
+  };
+
   if (room.isGlobal) {
     showWorld();
     world.onEnterVicinity = onEnterVicinity;
@@ -156,21 +163,19 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     world.onMove = onMove;
     world.onEnterBroadcast = onEnterBroadcast;
     world.onLeaveBroadcast = onLeaveBroadcast;
+    world.onJoinZone = onJoinZone;
     world.initLocalAvatar(event.participants.local.session_id);
     world.start();
   }
 }
 
 function subToUserTracks(room: Room, sessionID: string) {
-  console.log("subscribing", sessionID);
-
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: true, video: true, screenVideo: false },
   });
 }
 
 function unsubFromUserTracks(room: Room, sessionID: string) {
-  console.log("unsubscribing", sessionID);
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: false, video: false, screenVideo: false },
   });
@@ -193,12 +198,12 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
   const msgType = data.action;
   switch (msgType) {
     case "zoneChange":
+      console.log("zonechange event recieved:", event.fromId);
       world.updateParticipantZone(event.fromId, data.zoneID);
       break;
     case "posChange":
       const pendingAck = room.pendingAcks[event.fromId];
       if (pendingAck) {
-        console.log("clearing interval", pendingAck);
         clearInterval(pendingAck);
         delete room.pendingAcks[event.fromId];
         world.sendDataToParticipant(event.fromId);
@@ -216,7 +221,6 @@ function handleParticipantUpdated(
 ) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
-  console.log("participant updated:", p.session_id, tracks);
   world.setUserTracks(p.session_id, tracks.video, tracks.audio);
 }
 
@@ -227,22 +231,16 @@ function handleParticipantJoined(
   const sID = event.participant.session_id;
   world.sendDataToParticipant(sID);
   room.pendingAcks[sID] = setInterval(() => {
-    console.log("sending to sID", sID);
     world.sendDataToParticipant(sID);
   }, 1000);
 }
 
 function getParticipantTracks(participant: DailyParticipant) {
-  console.log("tracks", participant?.tracks);
-  const vt = <{ [key: string]: any }>participant?.tracks.video;
-  const pvt = vt["persistentTrack"];
+  const vt = <{ [key: string]: any }>participant?.tracks?.video;
+  const at = <{ [key: string]: any }>participant?.tracks?.audio;
 
-  console.log("persistentTrack", pvt);
-  const at = <{ [key: string]: any }>participant?.tracks.audio;
-  const pat = at["persistentTrack"];
-
-  const videoTrack = vt?.state === playableState ? pvt : null;
-  const audioTrack = at?.state === playableState ? pat : null;
+  const videoTrack = vt?.state === playableState ? vt["persistentTrack"] : null;
+  const audioTrack = at?.state === playableState ? at["persistentTrack"] : null;
   return {
     video: videoTrack,
     audio: audioTrack,
@@ -250,7 +248,6 @@ function getParticipantTracks(participant: DailyParticipant) {
 }
 
 function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
-  console.log("participant left");
   const up = event.participant;
   world.removeAvatar(up.session_id);
 }

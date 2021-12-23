@@ -2,11 +2,9 @@ import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject } from "pixi.js";
 import { BroadcastSpot } from "./broadcast";
-import {
-  AudioContext,
-  PannerNode,
-  StereoPannerNode,
-} from "standardized-audio-context";
+import { Desk } from "./desk";
+import { UserMedia } from "./userMedia";
+import { removeZonemate, showZonemate } from "../util/nav";
 
 const baseAlpha = 0.2;
 const earshot = 300;
@@ -23,16 +21,6 @@ enum TextureType {
 }
 
 export class User extends Collider {
-  videoTag: HTMLVideoElement = null;
-  audioTag: HTMLAudioElement = null;
-
-  videoTrack: MediaStreamTrack;
-  audioTrack: MediaStreamTrack;
-
-  pannerNode: PannerNode<AudioContext>;
-  stereoPannerNode: StereoPannerNode<AudioContext>;
-  outputAudio: HTMLAudioElement;
-
   isInVicinity = false;
   textureType = TextureType.Unknown;
   zoneID = 0;
@@ -42,6 +30,8 @@ export class User extends Collider {
   earshotDistance: number;
   onEnterVicinity: Function;
   onLeaveVicinity: Function;
+  onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void;
+
   isLocal: boolean;
 
   name: string;
@@ -52,6 +42,8 @@ export class User extends Collider {
   isInEarshot: boolean;
   lastMoveAt: number;
 
+  media: UserMedia;
+
   constructor(
     name: string,
     userID: string,
@@ -59,9 +51,11 @@ export class User extends Collider {
     y: number,
     isLocal = false,
     onEnterVicinity: Function = null,
-    onLeaveVicinity: Function = null
+    onLeaveVicinity: Function = null,
+    onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null
   ) {
     super();
+    this.media = new UserMedia(userID, isLocal);
 
     this.speed = defaultSpeed;
     // How close another user needs to be to be seen/heard
@@ -69,6 +63,7 @@ export class User extends Collider {
     this.earshotDistance = earshot;
     this.onEnterVicinity = onEnterVicinity;
     this.onLeaveVicinity = onLeaveVicinity;
+    this.onJoinZone = onJoinZone;
     this.isLocal = isLocal;
     this.setDefaultTexture();
     this.name = name;
@@ -77,37 +72,15 @@ export class User extends Collider {
     this.y = y;
     this.height = baseSize;
     this.width = baseSize;
-    this.createVideoTag();
     if (!isLocal) {
       this.alpha = baseAlpha;
-      this.createAudioTag();
     } else {
       this.alpha = maxAlpha;
     }
   }
 
-  private createVideoTag() {
-    // Set up video tag
-    const video = document.createElement("video");
-    video.autoplay = true;
-    video.classList.add("fit");
-    video.classList.add("invisible");
-    document.documentElement.appendChild(video);
-    this.videoTag = video;
-  }
-
-  private createAudioTag() {
-    // Set up audio tag
-    const audio = document.createElement("audio");
-    audio.autoplay = true;
-    audio.classList.add("invisible");
-    document.documentElement.appendChild(audio);
-    this.audioTag = audio;
-  }
-
   private setVideoTexture() {
-    console.log("setting video texture", this.id);
-    const videoTrack = this.getVideoTrack();
+    const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
     const settings = videoTrack.getSettings();
@@ -115,7 +88,7 @@ export class User extends Collider {
       return;
     }
 
-    let texture = new PIXI.BaseTexture(this.videoTag);
+    let texture = new PIXI.BaseTexture(this.media.videoTag);
 
     const textureMask = new PIXI.Rectangle(
       settings.height / 2,
@@ -144,24 +117,20 @@ export class User extends Collider {
     audioTrack: MediaStreamTrack = null
   ) {
     this.streamVideo(videoTrack);
-    this.streamAudio(audioTrack);
+    if (!this.isLocal) {
+      this.streamAudio(audioTrack);
+    }
   }
 
   private streamVideo(newTrack: MediaStreamTrack) {
-    console.log("streamVideo", this.id, newTrack);
     if (!newTrack) {
       if (this.textureType === TextureType.Video) {
         this.setDefaultTexture();
       }
-      this.videoTag.srcObject = null;
-      return;
-    }
-    if (newTrack.id === this.getVideoTrackID()) {
       return;
     }
 
-    let stream = new MediaStream([newTrack]);
-    this.videoTag.srcObject = stream;
+    this.media.updateVideoSource(newTrack);
 
     if (this.isLocal) {
       this.setVideoTexture();
@@ -169,45 +138,18 @@ export class User extends Collider {
   }
 
   private streamAudio(newTrack: MediaStreamTrack) {
-    if (!this.audioTag) return;
-
-    if (!newTrack) {
-      this.audioTrack = null;
-      return;
-    }
-    if (newTrack.id === this.getAudioTrackID()) {
-      return;
-    }
-    this.audioTrack = newTrack;
-    this.pannerNode = null;
-    // let stream = new MediaStream([newTrack]);
-    // this.audioTag.srcObject = stream;
-  }
-
-  private getVideoTrackID(): string {
-    const track = this.getVideoTrack();
-    if (!track) return "-1";
-    return track.id;
-  }
-
-  private getVideoTrack(): MediaStreamTrack {
-    const src = <MediaStream>this.videoTag?.srcObject;
-    if (!src) return null;
-    const tracks = src.getVideoTracks();
-    if (!tracks || tracks.length === 0) return null;
-    return tracks[0];
-  }
-
-  private getAudioTrackID() {
-    const src = <MediaStream>this.audioTag?.srcObject;
-    if (!src) return;
-    const tracks = src.getAudioTracks();
-    if (!tracks || tracks.length === 0) return -1;
-    return tracks[0].id;
+    this.media.updateAudioSource(newTrack);
   }
 
   getPos() {
     return { x: this.x, y: this.y };
+  }
+
+  updateZone(zoneID: number) {
+    const oldZoneID = this.zoneID;
+    if (zoneID === oldZoneID) return;
+    this.zoneID = zoneID;
+    this.onJoinZone(this.id, this.zoneID, this.getPos());
   }
 
   moveTo(posX: number, posY: number) {
@@ -233,93 +175,58 @@ export class User extends Collider {
     listener.positionY.value = this.y;
   }
 
-  private updatePanner(pos: Pos, panValue: number) {
-    if (this.isLocal || !this.audioTrack) return;
-
-    if (!this.pannerNode) {
-      let gainNode = window.audioContext.createGain();
-      gainNode.gain.setValueAtTime(1, window.audioContext.currentTime);
-
-      const stream = new MediaStream([this.audioTrack]);
-
-      this.pannerNode = new PannerNode(window.audioContext, {
-        panningModel: "HRTF",
-        distanceModel: "linear",
-        positionX: pos.x,
-        positionY: pos.y,
-        positionZ: posZ,
-        orientationX: 0.0,
-        orientationY: 0.0,
-        orientationZ: -1.0,
-        refDistance: 1,
-        maxDistance: 1000,
-        rolloffFactor: 1,
-        coneInnerAngle: 60,
-        coneOuterAngle: 90,
-        coneOuterGain: 0.3,
-      });
-
-      this.stereoPannerNode = new StereoPannerNode(window.audioContext);
-
-      // Get pan value
-      this.stereoPannerNode.pan.value = panValue;
-
-      // Apparently this is required due to a Chromium bug!
-      // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
-      // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
-      const mutedAudio = new Audio();
-      this.outputAudio = new Audio();
-
-      mutedAudio.muted = true;
-      mutedAudio.srcObject = stream;
-      mutedAudio.play();
-
-      console.log("getting audio track", stream.getAudioTracks());
-
-      const source = window.audioContext.createMediaStreamSource(stream);
-      const destination = window.audioContext.createMediaStreamDestination();
-
-      source.connect(this.pannerNode);
-      this.pannerNode.connect(this.stereoPannerNode);
-      this.stereoPannerNode.connect(destination);
-      this.outputAudio.muted = false;
-      this.outputAudio.srcObject = destination.stream;
-      this.outputAudio.play();
-    } else {
-      const currentX = this.pannerNode.positionX.value;
-      const currentY = this.pannerNode.positionY.value;
-      if (currentX !== pos.x || currentY !== pos.y) {
-        this.pannerNode.positionX.value = pos.x;
-        this.pannerNode.positionY.value = pos.y;
-      }
-      if (this.stereoPannerNode.pan.value != panValue) {
-        this.stereoPannerNode.pan.value = panValue;
-      }
-    }
-  }
-
   checkUserProximity(others: Array<DisplayObject>) {
     for (let other of others) {
       const o = <User>other;
-      if (this.outputAudio) {
-        if (this.isBroadcasting) {
-          if (!this.outputAudio.muted) {
-            this.outputAudio.muted = true;
-          }
-          return;
-        }
-        if (this.outputAudio.muted) {
-          this.outputAudio.muted = false;
-        }
+      if (o.id === this.id) continue;
+
+      if (o.isBroadcasting) {
+        o.media.muteAudio();
+        return;
       }
+      if (o.zoneID > 0 && o.zoneID === this.zoneID) {
+        if (!o.media.streamToZone) {
+          if (!o.isInVicinity) {
+            o.isInVicinity = true;
+            this.onEnterVicinity(o.id);
+          }
+          o.media.streamToZone = true;
+          o.media.showOrUpdateZonemate();
+        }
+      } else if (o.zoneID !== this.zoneID) {
+        if (o.isInVicinity) {
+          o.isInVicinity = false;
+          this.onLeaveVicinity(o.id);
+          o.setDefaultTexture();
+        }
+        if (o.media.streamToZone) {
+          console.log("removing zonemate");
+          o.media.streamToZone = false;
+          removeZonemate(o.id);
+        }
+
+        // Mute the other user's default audio either way
+        o.media.muteAudio();
+        return;
+      }
+
       this.proximityUpdate(o);
     }
   }
 
   checkFurniture(others: Array<DisplayObject>) {
     for (let other of others) {
-      const o = <BroadcastSpot>other;
-      if (o) o.tryInteract(this);
+      if (!this.isLocal) {
+        if (other instanceof BroadcastSpot) {
+          const o = <BroadcastSpot>other;
+          if (o) o.tryInteract(this);
+        }
+      } else {
+        if (other instanceof Desk) {
+          const o = <Desk>other;
+          if (o) o.tryInteract(this);
+        }
+      }
     }
   }
 
@@ -338,13 +245,11 @@ export class User extends Collider {
       // If we just entered vicinity, trigger onEntericinity
       if (!other.isInVicinity) {
         other.isInVicinity = true;
-        console.log("entered vicinity", distance);
         if (this.onEnterVicinity) {
           this.onEnterVicinity(other.id);
         }
       }
     } else if (other.isInVicinity) {
-      console.log("left vicinity", distance, other.pannerNode);
       other.isInVicinity = false;
       if (this.onLeaveVicinity) {
         this.onLeaveVicinity(other.id);
@@ -352,6 +257,8 @@ export class User extends Collider {
     }
 
     // Do earshot checks
+
+    // User is in earshot
     if (this.inEarshot(distance)) {
       const desiredPannerDistance = (distance * 1000) / this.earshotDistance;
       const op = other.getPos();
@@ -368,22 +275,24 @@ export class User extends Collider {
       // pan value (-1, 1)
       // https://developer.mozilla.org/en-US/docs/Web/API/StereoPannerNode/pan
       const panValue = (1 * dx) / this.earshotDistance;
-      other.updatePanner(pannerPos, panValue);
+      other.media.updatePanner(pannerPos, panValue);
 
       if (!other.isInEarshot) {
         other.isInEarshot = true;
-        if (other.outputAudio) other.outputAudio.muted = false;
-        console.log("entered earshot", other.name);
+        other.media.unmuteAudio();
       }
-      const otherTrack = other.getVideoTrack();
+      const otherTrack = other.media.getVideoTrack();
       if (otherTrack != null && other.textureType != TextureType.Video) {
         other.setVideoTexture();
       }
-    } else if (other.isInEarshot) {
-      console.log("left earshot", other.pannerNode);
+      return;
+    }
+
+    // User is not currently in earshot, but was before
+    if (other.isInEarshot) {
       other.isInEarshot = false;
       other.setDefaultTexture();
-      if (other.outputAudio) other.outputAudio.muted = true;
+      other.media.muteAudio();
     }
   }
 

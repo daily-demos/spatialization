@@ -13,7 +13,7 @@ describe("User listener and panner tests", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
     const user = new User("test", "test", 100, 100, true);
-    
+
     // This should update the listener
     user.moveTo(150, 150);
     const l = window.audioContext.listener;

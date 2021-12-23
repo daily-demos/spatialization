@@ -29,7 +29,6 @@ export class BroadcastSpot extends Collider {
     this.height = spotSize;
     this.onEnterBroadcast = onEnterBroadcast;
     this.onLeaveBroadcast = onLeaveBroadcast;
-    console.log("onEnterBroadcast", this.onEnterBroadcast);
     this.createTexture();
   }
 
