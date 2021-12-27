@@ -3,16 +3,14 @@ import * as PIXI from "pixi.js";
 import { DisplayObject } from "pixi.js";
 import { BroadcastSpot } from "./broadcast";
 import { Desk } from "./desk";
-import { UserMedia } from "./userMedia";
+import { maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
 
 const baseAlpha = 0.2;
 const earshot = 300;
 const maxAlpha = 1;
 const baseSize = 50;
-const defaultSpeed = 3;
-
-const posZ = 300;
+const defaultSpeed = 4;
 
 enum TextureType {
   Unknown = 1,
@@ -21,7 +19,6 @@ enum TextureType {
 }
 
 export class User extends Collider {
-  isInVicinity = false;
   textureType = TextureType.Unknown;
   zoneID = 0;
 
@@ -39,7 +36,8 @@ export class User extends Collider {
 
   speed: number;
 
-  isInEarshot: boolean;
+  isInVicinity = false;
+  isInEarshot = false;
   lastMoveAt: number;
 
   media: UserMedia;
@@ -103,7 +101,6 @@ export class User extends Collider {
   }
 
   private setDefaultTexture() {
-    console.log("setting default texture");
     const texture = createGradientTexture();
     this.texture = texture;
     this.textureType = TextureType.Default;
@@ -149,7 +146,7 @@ export class User extends Collider {
     const oldZoneID = this.zoneID;
     if (zoneID === oldZoneID) return;
     this.zoneID = zoneID;
-    this.onJoinZone(this.id, this.zoneID, this.getPos());
+    if (this.onJoinZone) this.onJoinZone(this.id, this.zoneID, this.getPos());
   }
 
   moveTo(posX: number, posY: number) {
@@ -175,74 +172,108 @@ export class User extends Collider {
     listener.positionY.value = this.y;
   }
 
-  checkUserProximity(others: Array<DisplayObject>) {
+  async checkUserProximity(others: Array<DisplayObject>) {
     for (let other of others) {
       const o = <User>other;
+      // If this is the local user, skip
       if (o.id === this.id) continue;
 
+      // If the other user is broadcasting, mute their default tile audio
+      // We don't want two audio sources for the same user.
       if (o.isBroadcasting) {
         o.media.muteAudio();
         return;
       }
+
+      // If the users are in the same zone that is not the default zone,
+      // enter vicinity and display them as zonemates in focused-mode.
       if (o.zoneID > 0 && o.zoneID === this.zoneID) {
         if (!o.media.streamToZone) {
           if (!o.isInVicinity) {
             o.isInVicinity = true;
-            this.onEnterVicinity(o.id);
+            if (this.onEnterVicinity) this.onEnterVicinity(o.id);
           }
           o.media.streamToZone = true;
           o.media.showOrUpdateZonemate();
         }
-      } else if (o.zoneID !== this.zoneID) {
-        if (o.isInVicinity) {
-          o.isInVicinity = false;
-          this.onLeaveVicinity(o.id);
-          o.setDefaultTexture();
-        }
-        if (o.media.streamToZone) {
-          console.log("removing zonemate");
-          o.media.streamToZone = false;
-          removeZonemate(o.id);
-        }
-
-        // Mute the other user's default audio either way
+        // Mute the other user's default audio, since we'll
+        // be streaming via a zone.
         o.media.muteAudio();
         return;
       }
 
+      if (o.zoneID !== this.zoneID) {
+        // If the other user is not in a default zone but the zone does
+        // NOT match local user...
+
+        // Leave vicinity if they are in vicinity
+        if (o.isInVicinity) {
+          o.isInVicinity = false;
+          if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
+          o.setDefaultTexture();
+        }
+        if (o.isInEarshot) o.isInEarshot = false;
+
+        // Stop streaming to a zone if they are currently doing so,
+        // Since the users are not in the same zone.
+        if (o.media.streamToZone) {
+          o.media.streamToZone = false;
+          removeZonemate(o.id);
+        }
+
+        console.log("muting audio!");
+        // Mute the other user's default audio
+        o.media.muteAudio();
+        return;
+      }
+
+      // If we got this far, both users are in the default zone.
+      // Perform normal proximity update
       this.proximityUpdate(o);
     }
   }
 
+  // "Furniture" can be any non-user colliders in the world.
+  // Eg: desks or broadcast spots
   checkFurniture(others: Array<DisplayObject>) {
     for (let other of others) {
+      // Only non-local users can interact with broadcast
+      // spots.
       if (!this.isLocal) {
         if (other instanceof BroadcastSpot) {
           const o = <BroadcastSpot>other;
           if (o) o.tryInteract(this);
         }
-      } else {
-        if (other instanceof Desk) {
-          const o = <Desk>other;
-          if (o) o.tryInteract(this);
-        }
+        continue;
+      }
+      // Only local users can interact with desks
+      if (other instanceof Desk) {
+        const o = <Desk>other;
+        if (o) o.tryInteract(this);
       }
     }
   }
 
   private async proximityUpdate(other: User) {
+    // Check that we aren't updating proximity against ourselves
     if (other.id === this.id) {
       return;
     }
 
     const distance = this.distanceTo(other);
 
+    // Calculate the target alpha of the other user based on their
+    // distance from the user running this update.
     other.alpha =
       (this.earshotDistance * 1.5 - distance) / this.earshotDistance;
 
-    // Do vicinity checks
+    // Do vicinity checks. This is where track subscription and unsubscription
+    // will happen. We do it when the user is in vicinity rather than earshot
+    // to prepare the tracks in advance, creating a more seamless transition when
+    // the user needs the tracks.
+
     if (this.inVicinity(distance)) {
-      // If we just entered vicinity, trigger onEntericinity
+      // If we just entered vicinity, trigger onEnterVicinity
       if (!other.isInVicinity) {
         other.isInVicinity = true;
         if (this.onEnterVicinity) {
@@ -250,6 +281,7 @@ export class User extends Collider {
         }
       }
     } else if (other.isInVicinity) {
+      // If we just left vicinity, trigger onLeaveVicinity
       other.isInVicinity = false;
       if (this.onLeaveVicinity) {
         this.onLeaveVicinity(other.id);
@@ -260,22 +292,8 @@ export class User extends Collider {
 
     // User is in earshot
     if (this.inEarshot(distance)) {
-      const desiredPannerDistance = (distance * 1000) / this.earshotDistance;
-      const op = other.getPos();
-
-      const dx = op.x - this.x;
-      const dy = op.y - this.y;
-
-      const part = desiredPannerDistance / distance;
-      var pannerPos = {
-        x: Math.round(op.x + dx * part),
-        y: Math.round(op.y + dy * part),
-      };
-
-      // pan value (-1, 1)
-      // https://developer.mozilla.org/en-US/docs/Web/API/StereoPannerNode/pan
-      const panValue = (1 * dx) / this.earshotDistance;
-      other.media.updatePanner(pannerPos, panValue);
+      const pm = this.getPannerMod(distance, other.getPos());
+      other.media.updatePanner(pm.pos, pm.pan);
 
       if (!other.isInEarshot) {
         other.isInEarshot = true;
@@ -296,6 +314,31 @@ export class User extends Collider {
     }
   }
 
+  private getPannerMod(
+    distance: number,
+    otherPos: Pos
+  ): { pos: Pos; pan: number } {
+    // earshotDistance = maxPannerDistance
+    // distance = desiredPannerdistance
+    const desiredPannerDistance =
+      (distance * maxPannerDistance) / this.earshotDistance;
+
+    const dx = otherPos.x - this.x;
+    const dy = otherPos.y - this.y;
+
+    const part = desiredPannerDistance / distance;
+
+    const panValue = (1 * dx) / this.earshotDistance;
+
+    return {
+      pos: {
+        x: Math.round(otherPos.x + dx * part),
+        y: Math.round(otherPos.y + dy * part),
+      },
+      pan: panValue,
+    };
+  }
+
   private distanceTo(other: User) {
     // We need to get distance from the center of the avatar
     const thisX = Math.round(this.x + baseSize / 2);
@@ -304,8 +347,7 @@ export class User extends Collider {
     const otherX = Math.round(other.x + baseSize / 2);
     const otherY = Math.round(other.y + baseSize / 2);
     const dist = Math.hypot(otherX - thisX, otherY - thisY);
-    // Round to nearest multiple of 5
-    return Math.ceil(dist / 5) * 5;
+    return Math.round(dist);
   }
 
   private inEarshot(distance: number) {

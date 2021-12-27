@@ -20,7 +20,6 @@ export default class KeyListener {
 }
 
 const joinForm = document.getElementById("enterCall");
-const nav = document.getElementById("nav");
 
 export function registerJoinFormListener(f: Function) {
   joinForm.addEventListener("submit", (event) => {
@@ -110,7 +109,6 @@ function createZonemate(sessionID: string): HTMLDivElement {
 
 export function removeZonemate(sessionID: string) {
   const ele = document.getElementById(getZonemateTagID(sessionID));
-  console.log("removing zonemate", getZonemateTagID(sessionID), ele);
   if (ele) ele.remove();
 }
 

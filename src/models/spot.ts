@@ -11,7 +11,7 @@ export class Spot extends Collider {
   occupantID: string;
 
   constructor(id: number, x: number, y: number, width: number, height: number) {
-    super();
+    super(false);
 
     this.id = id;
     this.name = id.toString();
@@ -30,6 +30,11 @@ export class Spot extends Collider {
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#00FFFF";
     ctx.fillRect(0, 0, this.width, this.height);
+
+    ctx.font = "30px Arial";
+    ctx.fillStyle = "red";
+    ctx.textAlign = "center";
+    ctx.fillText("Sit", canvas.width / 2, canvas.height / 2);
 
     this.texture = PIXI.Texture.from(canvas);
   }

@@ -11,15 +11,20 @@ body {
   display: none;
 }
 
-#broadcast {
+#focus {
   display: inline-block;
   width: 250px;
+}
+
+#broadcast {
+  display: block;
+  width: 100%;
   height: 140px;
 }
 
 #zonemates {
-  display: inline-block;
-  width: 250px;
+  display: block;
+  width: 100%;
 }
 
 #zonemates .zonemateVid {

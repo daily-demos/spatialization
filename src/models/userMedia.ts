@@ -5,6 +5,8 @@ import {
 } from "standardized-audio-context";
 import { showZonemate } from "../util/nav";
 
+export const maxPannerDistance = 1000;
+
 export class UserMedia {
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;
@@ -114,7 +116,7 @@ export class UserMedia {
         orientationY: 0.0,
         orientationZ: -1.0,
         refDistance: 1,
-        maxDistance: 1000,
+        maxDistance: maxPannerDistance,
         rolloffFactor: 1,
         coneInnerAngle: 60,
         coneOuterAngle: 90,

@@ -41,6 +41,11 @@ export class BroadcastSpot extends Collider {
     ctx.fillStyle = "#00FFFF";
     ctx.fillRect(0, 0, this.width, this.height);
 
+    ctx.font = "10px Arial";
+    ctx.fillStyle = "red";
+    ctx.textAlign = "center";
+    ctx.fillText("Broadcast", canvas.width / 2, canvas.height / 2);
+
     this.texture = PIXI.Texture.from(canvas);
   }
 
@@ -48,13 +53,13 @@ export class BroadcastSpot extends Collider {
     if (this.hits(other) && !this.occupantID) {
       this.occupantID = other.id;
       other.isBroadcasting = true;
-      this.onEnterBroadcast(other.id);
+      if (this.onEnterBroadcast) this.onEnterBroadcast(other.id);
       return;
     }
     if (other.id === this.occupantID && !this.hits(other)) {
       this.occupantID = null;
       other.isBroadcasting = false;
-      this.onLeaveBroadcast(other.id);
+      if (this.onLeaveBroadcast) this.onLeaveBroadcast(other.id);
     }
   }
 }

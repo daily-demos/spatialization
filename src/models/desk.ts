@@ -15,7 +15,7 @@ export class Desk extends Collider {
   spots: Array<Spot> = [];
 
   constructor(id: number, numSpots: number, posX: number, posY: number) {
-    super();
+    super(true);
 
     if (this.id === 0) {
       throw new Error("ID 0 is a reserved default zone ID");
@@ -65,14 +65,16 @@ export class Desk extends Collider {
     this.texture = PIXI.Texture.from(canvas);
   }
 
-  tryInteract(user: User) {
+  async tryInteract(user: User) {
     for (let spot of this.spots) {
       if (!spot.occupantID && spot.hits(user)) {
+        console.log("entering spot", spot.occupantID);
         spot.occupantID = user.id;
         user.updateZone(this.id);
         break;
       }
       if (spot.occupantID === user.id && !spot.hits(user)) {
+        console.log("leaving spot");
         spot.occupantID = null;
         // Global zone id is 0
         user.updateZone(0);

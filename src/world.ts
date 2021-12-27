@@ -7,12 +7,15 @@ import Floor from "./models/floor";
 import { BroadcastSpot } from "./models/broadcast";
 import { AudioContext, IAudioContext } from "standardized-audio-context";
 import { Desk } from "./models/desk";
+import { Collider } from "./models/collider";
 
 declare global {
   interface Window {
     audioContext: IAudioContext;
   }
 }
+
+const defaultWorldSize = 1000;
 
 export class World {
   onEnterVicinity: (sessionID: string) => void = null;
@@ -97,6 +100,7 @@ export class World {
       backgroundColor: 0x1099bb,
       resolution: 1,
     });
+    this.app.ticker.maxFPS = 30;
     // Create window frame
     let frame = new PIXI.Graphics();
     frame.beginFill(0x666666);
@@ -106,8 +110,9 @@ export class World {
     this.app.stage.addChild(frame);
 
     this.worldContainer = new PIXI.Container();
-    this.worldContainer.width = 1000;
-    this.worldContainer.height = 1000;
+    this.worldContainer.width = defaultWorldSize;
+    this.worldContainer.height = defaultWorldSize;
+    this.worldContainer.sortableChildren = true;
 
     const floor = new Floor();
 
@@ -116,6 +121,8 @@ export class World {
 
     // Add container that will hold our users
     this.usersContainer = new PIXI.Container();
+    this.usersContainer.width = this.worldContainer.width;
+    this.usersContainer.height = this.worldContainer.height;
     this.usersContainer.zIndex = 100;
     this.worldContainer.addChild(this.usersContainer);
 
@@ -132,6 +139,8 @@ export class World {
     // like broadcast spots
     this.furnitureContainer = new PIXI.Container();
     this.furnitureContainer.zIndex = 90;
+    this.furnitureContainer.width = this.worldContainer.width;
+    this.furnitureContainer.height = this.worldContainer.height;
     // Create a single broadcast spot
     const spot = new BroadcastSpot(
       0,
@@ -140,15 +149,15 @@ export class World {
       this.onEnterBroadcast,
       this.onLeaveBroadcast
     );
-    spot.x = this.worldContainer.width / 2 - spot.width / 2;
+    spot.x = defaultWorldSize / 2 - spot.width / 2;
     this.furnitureContainer.addChild(spot);
 
     const desk1 = new Desk(1, 4, 0, 250);
-    desk1.x = this.worldContainer.width / 2 - desk1.width - spot.width;
+    desk1.x = defaultWorldSize / 2 - desk1.width - spot.width;
     this.furnitureContainer.addChild(desk1);
 
     const desk2 = new Desk(2, 4, 0, 250);
-    desk2.x = this.worldContainer.width / 2 + spot.width;
+    desk2.x = defaultWorldSize / 2 + spot.width;
     this.furnitureContainer.addChild(desk2);
 
     // Add furniture container to the world
@@ -195,37 +204,52 @@ export class World {
     this.localAvatar.checkUserProximity(this.usersContainer.children);
     this.localAvatar.checkFurniture(this.furnitureContainer.children);
 
-    const s = this.localAvatar.speed;
+    const s = delta * this.localAvatar.speed;
+
+    let newX = this.localAvatar.x;
+    let newY = this.localAvatar.y;
+
     this.keyListener.on("w", () => {
-      this.localAvatar.moveY(-s);
-      this.sendData();
-      this.worldContainer.position.y += s;
+      newY -= s;
     });
 
     this.keyListener.on("s", () => {
-      this.localAvatar.moveY(s);
-      this.sendData();
-      this.worldContainer.position.y -= s;
+      newY += s;
     });
 
     this.keyListener.on("a", () => {
-      this.localAvatar.moveX(-s);
-      this.sendData();
-      this.worldContainer.position.x += s;
+      newX -= s;
     });
 
     this.keyListener.on("d", () => {
-      this.localAvatar.moveX(s);
-      this.sendData();
-      this.worldContainer.position.x -= s;
+      newX += s;
     });
+
+    for (let o of this.furnitureContainer.children) {
+      if (o instanceof Collider) {
+        const c = <Collider>o;
+        if (c.physics && c.willHit(this.localAvatar, { x: newX, y: newY })) {
+          return;
+        }
+      }
+    }
+
+    this.localAvatar.moveTo(newX, newY);
+
+    // Center world container on local avatar
+    this.worldContainer.position.x =
+      500 / 2 - this.localAvatar.getPos().x - this.localAvatar.width / 2;
+    this.worldContainer.position.y =
+      500 / 2 - this.localAvatar.getPos().y - this.localAvatar.height / 2;
+
+    this.sendData();
   }
 
   private getAvatar(id: string): User {
     return <User>this.usersContainer.getChildByName(id);
   }
 
-  private sendData() {
+  private async sendData() {
     const la = this.localAvatar;
     this.onMove(la.zoneID, la.getPos());
   }
