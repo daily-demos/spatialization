@@ -178,18 +178,30 @@ export class User extends Collider {
       // If this is the local user, skip
       if (o.id === this.id) continue;
 
+      console.log("checking user proximity:", o.zoneID, this.zoneID);
+
       // If the other user is broadcasting, mute their default tile audio
       // We don't want two audio sources for the same user.
       if (o.isBroadcasting) {
+        console.log("user is broadcasting");
         o.media.muteAudio();
+        return;
+      }
+
+      // Both users are in the default zone
+      if (this.zoneID === 0 && o.zoneID === 0) {
+        this.proximityUpdate(o);
         return;
       }
 
       // If the users are in the same zone that is not the default zone,
       // enter vicinity and display them as zonemates in focused-mode.
       if (o.zoneID > 0 && o.zoneID === this.zoneID) {
+        console.log("users are in the same zone!");
         if (!o.media.streamToZone) {
           if (!o.isInVicinity) {
+            console.log("entering vicinity");
+            o.alpha = 1;
             o.isInVicinity = true;
             if (this.onEnterVicinity) this.onEnterVicinity(o.id);
           }
@@ -208,6 +220,7 @@ export class User extends Collider {
 
         // Leave vicinity if they are in vicinity
         if (o.isInVicinity) {
+          console.log("leaving vicinity");
           o.isInVicinity = false;
           if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
           o.setDefaultTexture();
@@ -221,15 +234,10 @@ export class User extends Collider {
           removeZonemate(o.id);
         }
 
-        console.log("muting audio!");
         // Mute the other user's default audio
         o.media.muteAudio();
         return;
       }
-
-      // If we got this far, both users are in the default zone.
-      // Perform normal proximity update
-      this.proximityUpdate(o);
     }
   }
 
@@ -260,7 +268,7 @@ export class User extends Collider {
       return;
     }
 
-    const distance = this.distanceTo(other);
+    const distance = this.distanceTo(other.getPos());
 
     // Calculate the target alpha of the other user based on their
     // distance from the user running this update.
@@ -339,7 +347,7 @@ export class User extends Collider {
     };
   }
 
-  private distanceTo(other: User) {
+  protected distanceTo(other: Pos) {
     // We need to get distance from the center of the avatar
     const thisX = Math.round(this.x + baseSize / 2);
     const thisY = Math.round(this.y + baseSize / 2);

@@ -8,6 +8,7 @@ import { BroadcastSpot } from "./models/broadcast";
 import { AudioContext, IAudioContext } from "standardized-audio-context";
 import { Desk } from "./models/desk";
 import { Collider } from "./models/collider";
+import { Robot, RobotRole } from "./models/robot";
 
 declare global {
   interface Window {
@@ -26,13 +27,15 @@ export class World {
   onLeaveBroadcast: (sessioID: string) => void = null;
   onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null;
 
-  keyListener = new KeyListener();
-  localAvatar: User = null;
+  private keyListener = new KeyListener();
+  private localAvatar: User = null;
 
-  app: PIXI.Application = null;
-  worldContainer: PIXI.Container = null;
-  usersContainer: PIXI.Container = null;
-  furnitureContainer: PIXI.Container = null;
+  private app: PIXI.Application = null;
+  private worldContainer: PIXI.Container = null;
+  private usersContainer: PIXI.Container = null;
+  private furnitureContainer: PIXI.Container = null;
+
+  private robots: Array<Robot> = [];
 
   constructor() {
     this.init();
@@ -164,6 +167,51 @@ export class World {
     this.worldContainer.addChild(this.furnitureContainer);
   }
 
+  createRobot(userID: string) {
+    console.log("Creating Robot", userID);
+
+    // Check if there is aleady a desk robot
+    let role = RobotRole.Desk;
+    let deskSpotPos: Pos;
+    for (let robot of this.robots) {
+      if (robot.role === RobotRole.Desk) {
+        // Desk robot already exist - revert to world
+        role = RobotRole.World;
+        break;
+      }
+    }
+
+    if (role === RobotRole.Desk) {
+      // Find a desk position
+      for (let item of this.furnitureContainer.children) {
+        if (item instanceof Desk) {
+          console.log("found a desk!");
+          const desk = <Desk>item;
+          const spot = desk.spots[0];
+          deskSpotPos = { x: desk.x + spot.x, y: desk.y + spot.y };
+          break;
+        }
+      }
+      if (!deskSpotPos) {
+        role = RobotRole.World;
+      }
+    }
+
+    const robot = new Robot(
+      userID,
+      userID,
+      defaultWorldSize,
+      defaultWorldSize,
+      role
+    );
+    if (role === RobotRole.Desk) {
+      console.log("deskspot pos", deskSpotPos);
+      robot.deskPos = deskSpotPos;
+    }
+    this.robots.push(robot);
+    this.usersContainer.addChild(robot);
+  }
+
   private createAvatar(
     userID: string,
     x: number,
@@ -194,12 +242,25 @@ export class World {
     const avatar = this.getAvatar(userId);
     if (!avatar) return;
     this.usersContainer.removeChild(avatar);
+    for (let i = 0; i < this.robots.length; i++) {
+      const robot = this.robots[i];
+      if (robot.id === userId) {
+        this.robots.splice(i, 1);
+        i--;
+      }
+    }
   }
 
   private draw(elapsedMS: number) {}
 
   private update(delta: number) {
     if (!this.localAvatar) return;
+
+    // Update all robots
+    for (let robot of this.robots) {
+      robot.update();
+      robot.checkFurniture(this.furnitureContainer.children);
+    }
 
     this.localAvatar.checkUserProximity(this.usersContainer.children);
     this.localAvatar.checkFurniture(this.furnitureContainer.children);

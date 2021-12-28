@@ -17,6 +17,7 @@ import { showBroadcast, showWorld, stopBroadcast } from "./util/nav";
 import { World } from "./world";
 
 const playableState = "playable";
+
 let world = new World();
 
 type BroadcastData = {
@@ -229,10 +230,22 @@ function handleParticipantJoined(
   event: DailyEventObjectParticipant
 ) {
   const sID = event.participant.session_id;
+
+  if (isRobot(event.participant.user_name)) {
+    world.createRobot(sID);
+    return;
+  }
+
   world.sendDataToParticipant(sID);
   room.pendingAcks[sID] = setInterval(() => {
     world.sendDataToParticipant(sID);
   }, 1000);
+}
+
+function isRobot(userName: string): Boolean {
+  return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+    userName
+  );
 }
 
 function getParticipantTracks(participant: DailyParticipant) {
