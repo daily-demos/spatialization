@@ -15,7 +15,7 @@ export class Robot extends User {
   targetPos: Pos;
   maxCoords: Pos;
   role: RobotRole;
-  deskPos: Pos;
+  persistentPos: Pos;
   reachedTargetAt: number;
 
   constructor(
@@ -56,18 +56,16 @@ export class Robot extends User {
       };
       return;
     }
-    if (this.role === RobotRole.Desk) {
-      if (this.distanceTo(this.deskPos) <= 5) {
-        this.targetPos = {
-          x: this.x,
-          y: this.targetPos.y - this.width * 3,
-        };
-        return;
-      }
-      this.targetPos = this.deskPos;
+
+    if (this.distanceTo(this.persistentPos) <= 5) {
+      this.targetPos = {
+        x: this.x,
+        y: this.targetPos.y - this.width * 3,
+      };
       return;
     }
-    throw new Error(`Unexpected role: ${this.role}`);
+    this.targetPos = this.persistentPos;
+    return;
   }
 
   private stepToTarget() {

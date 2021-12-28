@@ -178,20 +178,18 @@ export class User extends Collider {
       // If this is the local user, skip
       if (o.id === this.id) continue;
 
-      console.log("checking user proximity:", o.zoneID, this.zoneID);
-
       // If the other user is broadcasting, mute their default tile audio
       // We don't want two audio sources for the same user.
       if (o.isBroadcasting) {
-        console.log("user is broadcasting");
+        o.alpha = 1;
         o.media.muteAudio();
-        return;
+        continue;
       }
 
       // Both users are in the default zone
       if (this.zoneID === 0 && o.zoneID === 0) {
         this.proximityUpdate(o);
-        return;
+        continue;
       }
 
       // If the users are in the same zone that is not the default zone,
@@ -211,7 +209,7 @@ export class User extends Collider {
         // Mute the other user's default audio, since we'll
         // be streaming via a zone.
         o.media.muteAudio();
-        return;
+        continue;
       }
 
       if (o.zoneID !== this.zoneID) {
@@ -236,7 +234,7 @@ export class User extends Collider {
 
         // Mute the other user's default audio
         o.media.muteAudio();
-        return;
+        continue;
       }
     }
   }
@@ -305,6 +303,7 @@ export class User extends Collider {
 
       if (!other.isInEarshot) {
         other.isInEarshot = true;
+        console.log("unmuting audio");
         other.media.unmuteAudio();
       }
       const otherTrack = other.media.getVideoTrack();

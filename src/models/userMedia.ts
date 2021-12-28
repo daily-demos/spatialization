@@ -64,10 +64,10 @@ export class UserMedia {
   updateAudioSource(newTrack: MediaStreamTrack) {
     if (!this.audioTag) return;
     if (!newTrack) {
-      this.audioTag.style.opacity = "0";
+      this.muteAudio();
       return;
     }
-    this.audioTag.style.opacity = "1";
+    this.unmuteAudio();
 
     if (newTrack.id === this.audioTrack?.id) {
       return;

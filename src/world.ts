@@ -172,29 +172,50 @@ export class World {
 
     // Check if there is aleady a desk robot
     let role = RobotRole.Desk;
-    let deskSpotPos: Pos;
+    let foundDesk = false;
+    let foundBroadcast = false;
+    let persistentPos: Pos;
     for (let robot of this.robots) {
       if (robot.role === RobotRole.Desk) {
         // Desk robot already exist - revert to world
-        role = RobotRole.World;
-        break;
+        foundDesk = true;
+        continue;
+      }
+      if (robot.role === RobotRole.Broadcast) {
+        foundBroadcast = true;
+        continue;
       }
     }
 
-    if (role === RobotRole.Desk) {
+    if (!foundDesk) {
+      role = RobotRole.Desk;
       // Find a desk position
       for (let item of this.furnitureContainer.children) {
         if (item instanceof Desk) {
           console.log("found a desk!");
           const desk = <Desk>item;
           const spot = desk.spots[0];
-          deskSpotPos = { x: desk.x + spot.x, y: desk.y + spot.y };
+          persistentPos = { x: desk.x + spot.x, y: desk.y + spot.y };
           break;
         }
       }
-      if (!deskSpotPos) {
-        role = RobotRole.World;
+    }
+
+    if (!foundBroadcast) {
+      role = RobotRole.Broadcast;
+      // Find a broadcast position
+      for (let item of this.furnitureContainer.children) {
+        if (item instanceof BroadcastSpot) {
+          console.log("found a broadcast spot!");
+          const spot = <BroadcastSpot>item;
+          persistentPos = { x: spot.x, y: spot.y };
+          break;
+        }
       }
+    }
+
+    if (!persistentPos) {
+      role = RobotRole.World;
     }
 
     const robot = new Robot(
@@ -204,9 +225,8 @@ export class World {
       defaultWorldSize,
       role
     );
-    if (role === RobotRole.Desk) {
-      console.log("deskspot pos", deskSpotPos);
-      robot.deskPos = deskSpotPos;
+    if (persistentPos) {
+      robot.persistentPos = persistentPos;
     }
     this.robots.push(robot);
     this.usersContainer.addChild(robot);
