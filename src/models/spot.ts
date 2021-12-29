@@ -1,10 +1,8 @@
 import * as PIXI from "pixi.js";
 
 import { Collider } from "./collider";
-import { User } from "./user";
 
-//const spotSize = 50;
-
+// Spot is any location a user can interact with.
 export class Spot extends Collider {
   id: number;
   name: string;

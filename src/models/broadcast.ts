@@ -5,6 +5,9 @@ import { User } from "./user";
 
 const spotSize = 50;
 
+// BroadcastSpot is a location from which any user
+// can broadcast to all other users in the world regardless
+// of proximity or zone.
 export class BroadcastSpot extends Collider {
   id: number;
   name: string;

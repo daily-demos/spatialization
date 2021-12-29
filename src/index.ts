@@ -3,9 +3,12 @@ import { registerJoinFormListener } from "./util/nav";
 
 registerJoinFormListener(initCall);
 
-let room;
+let globalRoom;
 
 export function initCall(name: string, url: string) {
-  room = new Room(url, name, true);
-  room.join();
+  // We will do this in rooms, in case we want to implement
+  // breakout rooms later. Each room will have its own call
+  // object. There is one "global" room.
+  globalRoom = new Room(url, name, true);
+  globalRoom.join();
 }

@@ -1,5 +1,6 @@
 import { DisplayObject } from "pixi.js";
 import { rand } from "../util/math";
+import { Pos } from "../worldTypes";
 import { BroadcastSpot } from "./broadcast";
 import { Desk } from "./desk";
 import { User } from "./user";
@@ -25,7 +26,7 @@ export class Robot extends User {
     maxY: number,
     role: RobotRole = RobotRole.World
   ) {
-    super(name, userID, 0, 0);
+    super(userID, 0, 0);
     this.targetPos = { x: 0, y: 0 };
     this.maxCoords = { x: maxX, y: maxY };
     this.role = role;
@@ -81,11 +82,10 @@ export class Robot extends User {
   }
 
   // "Furniture" can be any non-user colliders in the world.
-  // Eg: desks or broadcast spots
+  // Eg: desks or broadcast spots. This overrides the user
+  // furniture check.
   checkFurniture(others: Array<DisplayObject>) {
     for (let other of others) {
-      // Only non-local users can interact with broadcast
-      // spots.
       if (other instanceof BroadcastSpot) {
         const o = <BroadcastSpot>other;
         if (o) o.tryInteract(this);

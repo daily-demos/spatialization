@@ -8,6 +8,8 @@ const spotSize = 50;
 const spotBuffer = 10;
 const deskDepth = 50;
 
+// Desk is a location that holds spots, through which a user can
+// join other users in an isolated zone.
 export class Desk extends Collider {
   isPresenter = false;
   id: number;

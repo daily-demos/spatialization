@@ -9,6 +9,7 @@ import { AudioContext, IAudioContext } from "standardized-audio-context";
 import { Desk } from "./models/desk";
 import { Collider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
+import { Pos, Size } from "./worldTypes";
 
 declare global {
   interface Window {
@@ -53,8 +54,11 @@ export class World {
     }
   }
 
-  updateParticipantZone(sessionID: string, zoneID: number) {
-    const avatar = this.getAvatar(sessionID);
+  updateParticipantZone(sessionID: string, zoneID: number, pos: Pos) {
+    let avatar = this.getAvatar(sessionID);
+    if (!avatar) {
+      avatar = this.createAvatar(sessionID, pos.x, pos.y);
+    }
     // const oldZone = avatar.zoneID;
     avatar.zoneID = zoneID;
     if (zoneID === 0) return;
@@ -66,22 +70,35 @@ export class World {
     }
   }
 
+  initRemoteParticpant(sessionID: string, userName: string) {
+    // Avatar may have been created as part of an out of order
+    // update. If it already exists, just update the name
+    let avatar = this.getAvatar(sessionID);
+    if (!avatar) {
+      avatar = this.createAvatar(sessionID, -10000, -1000);
+    }
+    avatar.setUserName(userName);
+  }
+
   updateParticipantPos(sessionID: string, posX: number, posY: number) {
     let avatar = this.getAvatar(sessionID);
     if (!avatar) {
       avatar = this.createAvatar(sessionID, posX, posY);
     }
-    avatar.moveTo(posX, posY);
+    avatar.moveTo({ x: posX, y: posY });
     avatar.checkFurniture(this.furnitureContainer.children);
   }
 
   initLocalAvatar(sessionID: string) {
-    this.localAvatar = this.createAvatar(
-      sessionID,
-      rand(150, 450),
-      rand(150, 450),
-      true
-    );
+    const p = {
+      x: rand(150, 450),
+      y: rand(150, 450),
+    };
+    const avatar = this.createAvatar(sessionID, p.x, p.y, true);
+
+    const finalPos = this.getFinalLocalPos(avatar.getSize(), p);
+    avatar.moveTo(finalPos);
+    this.localAvatar = avatar;
 
     // Center world container on local avatar
     this.worldContainer.position.x =
@@ -94,6 +111,20 @@ export class World {
     this.sendData();
     this.keyListener.listenKeys();
     this.initAudioContext();
+  }
+
+  private getFinalLocalPos(size: Size, proposedPos: Pos): Pos {
+    for (let item of this.furnitureContainer.children) {
+      const collider = <Collider>item;
+      if (collider.willHit(size, proposedPos, true)) {
+        proposedPos = {
+          x: rand(50, 450),
+          y: rand(50, 450),
+        };
+        return this.getFinalLocalPos(size, proposedPos);
+      }
+    }
+    return proposedPos;
   }
 
   private init() {
@@ -192,7 +223,6 @@ export class World {
       // Find a desk position
       for (let item of this.furnitureContainer.children) {
         if (item instanceof Desk) {
-          console.log("found a desk!");
           const desk = <Desk>item;
           const spot = desk.spots[0];
           persistentPos = { x: desk.x + spot.x, y: desk.y + spot.y };
@@ -206,7 +236,6 @@ export class World {
       // Find a broadcast position
       for (let item of this.furnitureContainer.children) {
         if (item instanceof BroadcastSpot) {
-          console.log("found a broadcast spot!");
           const spot = <BroadcastSpot>item;
           persistentPos = { x: spot.x, y: spot.y };
           break;
@@ -245,7 +274,6 @@ export class World {
       onLeaveVicinity = this.onLeaveVicinity;
     }
     const avatar = new User(
-      userID,
       userID,
       x,
       y,
@@ -309,13 +337,16 @@ export class World {
     for (let o of this.furnitureContainer.children) {
       if (o instanceof Collider) {
         const c = <Collider>o;
-        if (c.physics && c.willHit(this.localAvatar, { x: newX, y: newY })) {
+        if (
+          c.physics &&
+          c.willHit(this.localAvatar.getSize(), { x: newX, y: newY }, false)
+        ) {
           return;
         }
       }
     }
 
-    this.localAvatar.moveTo(newX, newY);
+    this.localAvatar.moveTo({ x: newX, y: newY });
 
     // Center world container on local avatar
     this.worldContainer.position.x =

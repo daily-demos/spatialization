@@ -4,9 +4,12 @@ import {
   AudioContext,
 } from "standardized-audio-context";
 import { showZonemate } from "../util/nav";
+import { Pos } from "../worldTypes";
 
 export const maxPannerDistance = 1000;
 
+// UserMedia holds all audio and video related tags,
+// streams, and panners for a user.
 export class UserMedia {
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;

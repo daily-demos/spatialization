@@ -5,6 +5,7 @@ import { BroadcastSpot } from "./broadcast";
 import { Desk } from "./desk";
 import { maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
+import { Pos, Size } from "../worldTypes";
 
 const baseAlpha = 0.2;
 const earshot = 300;
@@ -18,6 +19,7 @@ enum TextureType {
   Video,
 }
 
+// User is a participant in the world (and the call)
 export class User extends Collider {
   textureType = TextureType.Unknown;
   zoneID = 0;
@@ -31,7 +33,7 @@ export class User extends Collider {
 
   isLocal: boolean;
 
-  name: string;
+  userName: string;
   id: string;
 
   speed: number;
@@ -43,8 +45,7 @@ export class User extends Collider {
   media: UserMedia;
 
   constructor(
-    name: string,
-    userID: string,
+    id: string,
     x: number,
     y: number,
     isLocal = false,
@@ -53,7 +54,7 @@ export class User extends Collider {
     onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null
   ) {
     super();
-    this.media = new UserMedia(userID, isLocal);
+    this.media = new UserMedia(id, isLocal);
 
     this.speed = defaultSpeed;
     // How close another user needs to be to be seen/heard
@@ -64,8 +65,11 @@ export class User extends Collider {
     this.onJoinZone = onJoinZone;
     this.isLocal = isLocal;
     this.setDefaultTexture();
-    this.name = name;
-    this.id = userID;
+    this.id = id;
+    // This field is on the Pixi base class. It is
+    // differen from the userName and MUST match
+    // the unique ID.
+    this.name = id;
     this.x = x;
     this.y = y;
     this.height = baseSize;
@@ -75,6 +79,10 @@ export class User extends Collider {
     } else {
       this.alpha = maxAlpha;
     }
+  }
+
+  setUserName(name: string) {
+    this.userName = name;
   }
 
   private setVideoTexture() {
@@ -138,8 +146,12 @@ export class User extends Collider {
     this.media.updateAudioSource(newTrack);
   }
 
-  getPos() {
+  getPos(): Pos {
     return { x: this.x, y: this.y };
+  }
+
+  getSize(): Size {
+    return { width: this.width, height: this.height };
   }
 
   updateZone(zoneID: number) {
@@ -149,9 +161,9 @@ export class User extends Collider {
     if (this.onJoinZone) this.onJoinZone(this.id, this.zoneID, this.getPos());
   }
 
-  moveTo(posX: number, posY: number) {
-    this.x = posX;
-    this.y = posY;
+  moveTo(pos: Pos) {
+    this.x = pos.x;
+    this.y = pos.y;
     this.updateListener();
   }
 
@@ -303,7 +315,6 @@ export class User extends Collider {
 
       if (!other.isInEarshot) {
         other.isInEarshot = true;
-        console.log("unmuting audio");
         other.media.unmuteAudio();
       }
       const otherTrack = other.media.getVideoTrack();

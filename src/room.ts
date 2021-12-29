@@ -20,6 +20,7 @@ import {
   stopBroadcast,
 } from "./util/nav";
 import { World } from "./world";
+import { Pos } from "./worldTypes";
 
 const playableState = "playable";
 
@@ -179,8 +180,8 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     world.onEnterBroadcast = onEnterBroadcast;
     world.onLeaveBroadcast = onLeaveBroadcast;
     world.onJoinZone = onJoinZone;
-    world.initLocalAvatar(event.participants.local.session_id);
     world.start();
+    world.initLocalAvatar(event.participants.local.session_id);
   }
 }
 
@@ -213,8 +214,10 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
   const msgType = data.action;
   switch (msgType) {
     case "zoneChange":
-      console.log("zonechange event recieved:", event.fromId);
-      world.updateParticipantZone(event.fromId, data.zoneID);
+      world.updateParticipantZone(event.fromId, data.zoneID, {
+        x: data.pos.x,
+        y: data.pos.y,
+      });
       break;
     case "posChange":
       const pendingAck = room.pendingAcks[event.fromId];
@@ -249,7 +252,7 @@ function handleParticipantJoined(
     world.createRobot(sID);
     return;
   }
-
+  world.initRemoteParticpant(sID, event.participant.user_name);
   world.sendDataToParticipant(sID);
   room.pendingAcks[sID] = setInterval(() => {
     world.sendDataToParticipant(sID);
