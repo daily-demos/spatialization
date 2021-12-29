@@ -55,13 +55,13 @@ export class BroadcastSpot extends Collider {
   tryInteract(other: User) {
     if (this.hits(other) && !this.occupantID) {
       this.occupantID = other.id;
-      other.isBroadcasting = true;
+      other.media.enterBroadcast();
       if (this.onEnterBroadcast) this.onEnterBroadcast(other.id);
       return;
     }
     if (other.id === this.occupantID && !this.hits(other)) {
       this.occupantID = null;
-      other.isBroadcasting = false;
+      other.media.leaveBroadcast();
       if (this.onLeaveBroadcast) this.onLeaveBroadcast(other.id);
     }
   }

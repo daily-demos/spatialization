@@ -10,6 +10,7 @@ import { Desk } from "./models/desk";
 import { Collider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
 import { Pos, Size } from "./worldTypes";
+import { Textures } from "./textures";
 
 declare global {
   interface Window {
@@ -24,8 +25,6 @@ export class World {
   onLeaveVicinity: (sessionID: string) => void = null;
   onCreateUser: () => void = null;
   onMove: (zoneID: number, pos: Pos, recipient?: string) => void = null;
-  onEnterBroadcast: (sessionID: string) => void = null;
-  onLeaveBroadcast: (sessioID: string) => void = null;
   onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null;
 
   private keyListener = new KeyListener();
@@ -60,9 +59,10 @@ export class World {
       avatar = this.createAvatar(sessionID, pos.x, pos.y);
     }
     // const oldZone = avatar.zoneID;
-    avatar.zoneID = zoneID;
+    console.log("updateParticipantZone", sessionID, zoneID);
+    avatar.updateZone(zoneID);
     if (zoneID === 0) return;
-    if (avatar.zoneID === this.localAvatar.zoneID) {
+    if (avatar.isZonemate(this.localAvatar)) {
       // Send data back to make sure the newly joined participant knows
       // we are in the same zone
       this.sendDataToParticipant(sessionID);
@@ -117,6 +117,7 @@ export class World {
     for (let item of this.furnitureContainer.children) {
       const collider = <Collider>item;
       if (collider.willHit(size, proposedPos, true)) {
+        console.log("regenerating", proposedPos);
         proposedPos = {
           x: rand(50, 450),
           y: rand(50, 450),
@@ -131,13 +132,13 @@ export class World {
     this.app = new PIXI.Application({
       width: 500,
       height: 500,
-      backgroundColor: 0x1099bb,
+      backgroundColor: 0xeefae0,
       resolution: 1,
     });
     this.app.ticker.maxFPS = 30;
     // Create window frame
     let frame = new PIXI.Graphics();
-    frame.beginFill(0x666666);
+    frame.beginFill(0xe6eaef);
     frame.lineStyle({ color: 0xffffff, width: 4, alignment: 0 });
     frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
     frame.position.set(0, 0);
@@ -148,9 +149,9 @@ export class World {
     this.worldContainer.height = defaultWorldSize;
     this.worldContainer.sortableChildren = true;
 
-    const floor = new Floor();
+    /*const floor = new Floor();
 
-    this.worldContainer.addChild(floor);
+    this.worldContainer.addChild(floor); */
     frame.addChild(this.worldContainer);
 
     // Add container that will hold our users
@@ -161,7 +162,6 @@ export class World {
     this.worldContainer.addChild(this.usersContainer);
 
     document.getElementById("world").appendChild(this.app.view);
-
     this.app.ticker.add((deltaTime) => {
       this.draw(this.app.ticker.elapsedMS);
       this.update(deltaTime);
@@ -180,8 +180,8 @@ export class World {
       0,
       0,
       50,
-      this.onEnterBroadcast,
-      this.onLeaveBroadcast
+      this.onEnterVicinity,
+      this.onLeaveVicinity
     );
     spot.x = defaultWorldSize / 2 - spot.width / 2;
     this.furnitureContainer.addChild(spot);
@@ -303,6 +303,9 @@ export class World {
 
   private update(delta: number) {
     if (!this.localAvatar) return;
+    // Process texture queue
+    const textures = Textures.get();
+    textures.processQueue(this.app.renderer);
 
     // Update all robots
     for (let robot of this.robots) {
@@ -363,12 +366,12 @@ export class World {
 
   private async sendData() {
     const la = this.localAvatar;
-    this.onMove(la.zoneID, la.getPos());
+    this.onMove(la.getZone(), la.getPos());
   }
 
   sendDataToParticipant(sessionID: string) {
     const la = this.localAvatar;
-    this.onMove(la.zoneID, la.getPos(), sessionID);
+    this.onMove(la.getZone(), la.getPos(), sessionID);
   }
 
   destroy() {

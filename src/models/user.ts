@@ -6,13 +6,15 @@ import { Desk } from "./desk";
 import { maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
 import { Pos, Size } from "../worldTypes";
+import { Textures } from "../textures";
+import { sign } from "@pixi/utils";
 
 const baseAlpha = 0.2;
 const earshot = 300;
 const maxAlpha = 1;
 const baseSize = 50;
 const defaultSpeed = 4;
-
+const gradientTextureName = "user-gradient";
 enum TextureType {
   Unknown = 1,
   Default,
@@ -22,9 +24,8 @@ enum TextureType {
 // User is a participant in the world (and the call)
 export class User extends Collider {
   textureType = TextureType.Unknown;
-  zoneID = 0;
 
-  isBroadcasting: boolean;
+  private zoneID = 0;
 
   earshotDistance: number;
   onEnterVicinity: Function;
@@ -64,7 +65,6 @@ export class User extends Collider {
     this.onLeaveVicinity = onLeaveVicinity;
     this.onJoinZone = onJoinZone;
     this.isLocal = isLocal;
-    this.setDefaultTexture();
     this.id = id;
     // This field is on the Pixi base class. It is
     // differen from the userName and MUST match
@@ -79,6 +79,8 @@ export class User extends Collider {
     } else {
       this.alpha = maxAlpha;
     }
+
+    this.setDefaultTexture();
   }
 
   setUserName(name: string) {
@@ -86,6 +88,7 @@ export class User extends Collider {
   }
 
   private setVideoTexture() {
+    console.log("setting video texture", this.id);
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
@@ -94,6 +97,7 @@ export class User extends Collider {
       return;
     }
 
+    this.getBounds(true);
     let texture = new PIXI.BaseTexture(this.media.videoTag);
 
     const textureMask = new PIXI.Rectangle(
@@ -104,13 +108,28 @@ export class User extends Collider {
     );
 
     this.texture = new PIXI.Texture(texture, textureMask);
+    this.texture.updateUvs();
+    this.width = baseSize;
+    this.height = baseSize;
+
+    /* const b2 = this.getBounds(true);
+
+    console.log("b2", b2); */
 
     this.textureType = TextureType.Video;
   }
 
   private setDefaultTexture() {
-    const texture = createGradientTexture();
+    const t = Textures.get();
+    let texture = t.library[gradientTextureName];
+    if (!texture) {
+      texture = generateGradientTexture();
+      t.addTexture(gradientTextureName, texture);
+    }
+    this.getBounds(true);
+
     this.texture = texture;
+    //this.getBounds(true);
     this.textureType = TextureType.Default;
   }
 
@@ -128,14 +147,13 @@ export class User extends Collider {
   }
 
   private streamVideo(newTrack: MediaStreamTrack) {
-    if (!newTrack) {
+    this.media.updateVideoSource(newTrack);
+    if (this.media.cameraDisabled) {
       if (this.textureType === TextureType.Video) {
         this.setDefaultTexture();
       }
       return;
     }
-
-    this.media.updateVideoSource(newTrack);
 
     if (this.isLocal) {
       this.setVideoTexture();
@@ -155,10 +173,21 @@ export class User extends Collider {
   }
 
   updateZone(zoneID: number) {
+    console.log("updatingZone", this.zoneID, zoneID, this.id);
     const oldZoneID = this.zoneID;
     if (zoneID === oldZoneID) return;
     this.zoneID = zoneID;
-    if (this.onJoinZone) this.onJoinZone(this.id, this.zoneID, this.getPos());
+    if (this.isLocal) {
+      if (this.onJoinZone) this.onJoinZone(this.id, this.zoneID, this.getPos());
+    }
+  }
+
+  getZone(): number {
+    return this.zoneID;
+  }
+
+  isZonemate(other: User) {
+    return this.zoneID === other.zoneID;
   }
 
   moveTo(pos: Pos) {
@@ -192,7 +221,7 @@ export class User extends Collider {
 
       // If the other user is broadcasting, mute their default tile audio
       // We don't want two audio sources for the same user.
-      if (o.isBroadcasting) {
+      if (o.media.isBroadcasting) {
         o.alpha = 1;
         o.media.muteAudio();
         continue;
@@ -207,7 +236,6 @@ export class User extends Collider {
       // If the users are in the same zone that is not the default zone,
       // enter vicinity and display them as zonemates in focused-mode.
       if (o.zoneID > 0 && o.zoneID === this.zoneID) {
-        console.log("users are in the same zone!");
         if (!o.media.streamToZone) {
           if (!o.isInVicinity) {
             console.log("entering vicinity");
@@ -215,8 +243,8 @@ export class User extends Collider {
             o.isInVicinity = true;
             if (this.onEnterVicinity) this.onEnterVicinity(o.id);
           }
+          if (o.isInEarshot) o.isInEarshot = false;
           o.media.streamToZone = true;
-          o.media.showOrUpdateZonemate();
         }
         // Mute the other user's default audio, since we'll
         // be streaming via a zone.
@@ -240,6 +268,7 @@ export class User extends Collider {
         // Stop streaming to a zone if they are currently doing so,
         // Since the users are not in the same zone.
         if (o.media.streamToZone) {
+          console.log("REmovng zonemate!");
           o.media.streamToZone = false;
           removeZonemate(o.id);
         }
@@ -317,8 +346,10 @@ export class User extends Collider {
         other.isInEarshot = true;
         other.media.unmuteAudio();
       }
-      const otherTrack = other.media.getVideoTrack();
-      if (otherTrack != null && other.textureType != TextureType.Video) {
+      if (
+        !other.media.cameraDisabled &&
+        other.textureType != TextureType.Video
+      ) {
         other.setVideoTexture();
       }
       return;
@@ -377,21 +408,20 @@ export class User extends Collider {
   }
 }
 
-// https://pixijs.io/examples/#/textures/gradient-basic.js
-function createGradientTexture(): PIXI.Texture {
+function generateGradientTexture(): PIXI.Texture {
   const canvas = document.createElement("canvas");
   canvas.width = baseSize;
-  canvas.height = 1;
+  canvas.height = baseSize;
 
   const ctx = canvas.getContext("2d");
 
   // use canvas2d API to create gradient
-  const grd = ctx.createLinearGradient(150, 0, baseSize, 50);
+  const grd = ctx.createLinearGradient(0, 0, baseSize, baseSize);
   grd.addColorStop(0, "#121a24");
   grd.addColorStop(1, "#2b3f56");
 
   ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, baseSize, 1);
+  ctx.fillRect(0, 0, baseSize, baseSize);
 
   return PIXI.Texture.from(canvas);
 }

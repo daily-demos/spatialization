@@ -3,7 +3,7 @@ import {
   StereoPannerNode,
   AudioContext,
 } from "standardized-audio-context";
-import { showZonemate } from "../util/nav";
+import { showBroadcast, showZonemate, stopBroadcast } from "../util/nav";
 import { Pos } from "../worldTypes";
 
 export const maxPannerDistance = 1000;
@@ -17,10 +17,14 @@ export class UserMedia {
   videoTag: HTMLVideoElement;
   audioTag: HTMLAudioElement;
 
+  cameraDisabled: boolean;
+  tileDisabled: boolean;
+
   pannerNode: PannerNode<AudioContext>;
   stereoPannerNode: StereoPannerNode<AudioContext>;
 
   streamToZone: boolean;
+  isBroadcasting: boolean;
   id: string;
 
   constructor(id: string, isLocal: boolean) {
@@ -52,15 +56,31 @@ export class UserMedia {
 
   updateVideoSource(newTrack: MediaStreamTrack) {
     if (!newTrack) {
+      this.cameraDisabled = true;
       this.videoTag.style.opacity = "0";
+      if (this.streamToZone) {
+        console.log("showing or updating zonemate while disabled");
+        this.showOrUpdateZonemate();
+        return;
+      }
+      if (this.isBroadcasting) {
+        this.showOrUpdateBroadcast();
+      }
       return;
     }
+    this.cameraDisabled = false;
     this.videoTag.style.opacity = "1";
-    if (newTrack.id === this.videoTrack?.id) return;
-    this.videoTrack = newTrack;
-    this.videoTag.srcObject = new MediaStream([newTrack]);
+    if (newTrack.id !== this.videoTrack?.id) {
+      this.videoTrack = newTrack;
+      this.videoTag.srcObject = new MediaStream([newTrack]);
+    }
+
     if (this.streamToZone) {
       this.showOrUpdateZonemate();
+      return;
+    }
+    if (this.isBroadcasting) {
+      this.showOrUpdateBroadcast();
     }
   }
 
@@ -98,6 +118,14 @@ export class UserMedia {
 
   getAudioTrack(): MediaStreamTrack {
     return this.audioTrack;
+  }
+  enterBroadcast() {
+    this.isBroadcasting = true;
+  }
+
+  leaveBroadcast() {
+    this.isBroadcasting = false;
+    stopBroadcast();
   }
 
   updatePanner(pos: Pos, panValue: number) {
@@ -164,9 +192,31 @@ export class UserMedia {
 
   showOrUpdateZonemate() {
     let videoTrack = null;
-    if (this.videoTag.style.opacity === "1") {
+    if (this.videoTrack && !this.cameraDisabled) {
+      console.log("got track and stuff");
       videoTrack = this.videoTrack;
     }
+    console.log(
+      "showing zonemate.",
+      videoTrack,
+      this.cameraDisabled,
+      this.videoTrack
+    );
     showZonemate(this.id, videoTrack, this.audioTrack);
+  }
+
+  showOrUpdateBroadcast() {
+    let videoTrack = null;
+    if (this.videoTrack && !this.cameraDisabled) {
+      console.log("got track and stuff");
+      videoTrack = this.videoTrack;
+    }
+    console.log(
+      "showing zonemate.",
+      videoTrack,
+      this.cameraDisabled,
+      this.videoTrack
+    );
+    showBroadcast(videoTrack, this.audioTrack);
   }
 }

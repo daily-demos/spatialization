@@ -11,8 +11,8 @@ export class Collider extends PIXI.Sprite {
   }
 
   hits(other: Collider): boolean {
-    const tb = this.getBounds();
-    const ob = other.getBounds();
+    const tb = this.getBounds(true);
+    const ob = other.getBounds(true);
 
     return this.doesCollide(
       { x: tb.x, y: tb.y },
@@ -28,7 +28,7 @@ export class Collider extends PIXI.Sprite {
     let ts: Size;
 
     if (withChildren) {
-      const thisBounds = this.getBounds();
+      const thisBounds = this.getBounds(true);
       tp = {
         x: thisBounds.x,
         y: thisBounds.y,

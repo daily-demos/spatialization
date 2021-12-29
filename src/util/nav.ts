@@ -78,7 +78,7 @@ export function showZonemate(
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack
 ) {
-  console.log("showing zonemate", videoTrack, audioTrack);
+  // console.log("showing zonemate", videoTrack, audioTrack);
 
   let zonemate = <HTMLDivElement>(
     document.getElementById(getZonemateTagID(sessionID))

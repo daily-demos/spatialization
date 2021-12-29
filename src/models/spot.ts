@@ -1,6 +1,9 @@
 import * as PIXI from "pixi.js";
+import { GeneratorFunc, Textures } from "../textures";
 
 import { Collider } from "./collider";
+
+const spotTextureName = "spot";
 
 // Spot is any location a user can interact with.
 export class Spot extends Collider {
@@ -10,6 +13,7 @@ export class Spot extends Collider {
 
   constructor(id: number, x: number, y: number, width: number, height: number) {
     super(false);
+    console.log("creating spot", id);
 
     this.id = id;
     this.name = id.toString();
@@ -17,23 +21,33 @@ export class Spot extends Collider {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.createTexture();
+
+    const t = Textures.get();
+    const texture = t.library[spotTextureName];
+    if (!texture) {
+      t.enqueue(
+        this,
+        spotTextureName,
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
+          return this.generateTexture(renderer);
+        }
+      );
+      return;
+    }
+    console.log("texture already exists", texture);
+    this.texture = texture;
   }
 
-  createTexture() {
-    const canvas = document.createElement("canvas");
-    canvas.width = this.width;
-    canvas.height = this.height;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#00FFFF";
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    ctx.font = "30px Arial";
-    ctx.fillStyle = "red";
-    ctx.textAlign = "center";
-    ctx.fillText("Sit", canvas.width / 2, canvas.height / 2);
-
-    this.texture = PIXI.Texture.from(canvas);
+  generateTexture(
+    renderer: PIXI.Renderer | PIXI.AbstractRenderer
+  ): PIXI.Texture {
+    console.log("generateTexture", this);
+    const graphics = new PIXI.Graphics();
+    graphics.beginFill(0xf79400);
+    graphics.lineStyle(1, 0xd48200, 0.3);
+    graphics.drawRoundedRect(this.x, this.y, this.width, this.height, 3);
+    graphics.endFill();
+    const texture = renderer.generateTexture(graphics);
+    return texture;
   }
 }

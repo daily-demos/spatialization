@@ -130,7 +130,7 @@ describe("User zone tests", () => {
     const ru = new User("remote", 200, 200, false);
 
     ru.updateZone(1);
-    expect(ru.zoneID).toBe(1);
+    expect(ru.getZone()).toBe(1);
 
     lu.checkUserProximity([ru]);
     // Since the user is now in a different zone, they should
@@ -146,15 +146,14 @@ describe("User zone tests", () => {
     lu.earshotDistance = 300;
 
     const ru = new User("remote", 1000, 1000, false);
-    ru.zoneID = 2;
-
+    ru.updateZone(2);
     lu.updateZone(2);
 
     // Both users are now within the same non-default zone.
     lu.checkUserProximity([ru]);
     expect(ru.isInVicinity).toBe(true);
     expect(ru.isInEarshot).toBe(false);
-    expect(ru.media.audioTag.muted).toBe(false);
+    expect(ru.media.audioTag.muted).toBe(true);
   });
 });
 

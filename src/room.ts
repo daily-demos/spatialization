@@ -125,6 +125,7 @@ function handleError(room: Room, event: DailyEventObjectFatalError) {
 
 function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
   const p = event.participants["local"];
+  console.log("JOINED MEETING. session ID, pID", p.session_id, p.user_id);
 
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);
@@ -148,20 +149,6 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     room.broadcast(data, recipient);
   };
 
-  // When a user enters a broadcast spot
-  const onEnterBroadcast = (sessionID: string) => {
-    subToUserTracks(room, sessionID);
-    const p = room.callObject.participants()[sessionID];
-    const tracks = getParticipantTracks(p);
-    showBroadcast(tracks.video, tracks.audio);
-  };
-
-  // When a user leaves a broadcast spot
-  const onLeaveBroadcast = (sessionID: string) => {
-    //   unsubFromUserTracks(room, sessionID);
-    stopBroadcast();
-  };
-
   const onJoinZone = (sessionID: string, zoneID: number, pos: Pos) => {
     const data = {
       action: "zoneChange",
@@ -177,8 +164,6 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     world.onLeaveVicinity = onLeaveVicinity;
     world.onCreateUser = onCreateUser;
     world.onMove = onMove;
-    world.onEnterBroadcast = onEnterBroadcast;
-    world.onLeaveBroadcast = onLeaveBroadcast;
     world.onJoinZone = onJoinZone;
     world.start();
     world.initLocalAvatar(event.participants.local.session_id);

@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { GenerateTexture } from "../worldTypes";
 
 import { Collider } from "./collider";
 import { Spot } from "./spot";
@@ -61,7 +62,7 @@ export class Desk extends Collider {
     canvas.height = this.height;
 
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#FF0000";
+    ctx.fillStyle = "#d48200";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     this.texture = PIXI.Texture.from(canvas);
@@ -70,13 +71,25 @@ export class Desk extends Collider {
   async tryInteract(user: User) {
     for (let spot of this.spots) {
       if (!spot.occupantID && spot.hits(user)) {
-        console.log("entering spot", spot.occupantID);
+        console.log(
+          "entering spot",
+          this.id,
+          spot.id,
+          spot.getBounds(true),
+          user.getBounds(true)
+        );
         spot.occupantID = user.id;
         user.updateZone(this.id);
         break;
       }
       if (spot.occupantID === user.id && !spot.hits(user)) {
-        console.log("leaving spot");
+        console.log(
+          "leaving spot",
+          this.id,
+          spot.id,
+          spot.getBounds(true),
+          this.getBounds(true)
+        );
         spot.occupantID = null;
         // Global zone id is 0
         user.updateZone(0);
