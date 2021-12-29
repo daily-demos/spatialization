@@ -13,7 +13,12 @@ import {
   DailyEventObjectParticipants,
 } from "@daily-co/daily-js";
 
-import { showBroadcast, showWorld, stopBroadcast } from "./util/nav";
+import {
+  showBroadcast,
+  showJoinForm,
+  showWorld,
+  stopBroadcast,
+} from "./util/nav";
 import { World } from "./world";
 
 const playableState = "playable";
@@ -84,6 +89,15 @@ export class Room {
     micBtn.onclick = () => {
       const current = this.callObject.participants().local.audio;
       this.callObject.setLocalAudio(!current);
+    };
+
+    const leaveBtn = document.getElementById("leave");
+    leaveBtn.onclick = () => {
+      this.callObject.leave();
+      this.callObject.destroy();
+      world.destroy();
+      world = new World();
+      showJoinForm();
     };
   }
 

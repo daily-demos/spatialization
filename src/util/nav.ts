@@ -40,6 +40,20 @@ export function showWorld() {
   controlsDiv.style.display = "block";
 }
 
+export function showJoinForm() {
+  removeAllZonemates();
+  stopBroadcast();
+
+  const worldDiv = document.getElementById("world");
+  const entryDiv = document.getElementById("entry");
+  const controlsDiv = document.getElementById("controls");
+
+  worldDiv.style.display = "none";
+  entryDiv.style.display = "block";
+  joinForm.style.display = "block";
+  controlsDiv.style.display = "none";
+}
+
 export function showBroadcast(
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack

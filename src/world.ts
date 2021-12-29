@@ -340,6 +340,10 @@ export class World {
     this.onMove(la.zoneID, la.getPos(), sessionID);
   }
 
+  destroy() {
+    this.app.destroy(true, true);
+  }
+
   private initAudioContext() {
     window.audioContext = new AudioContext();
     const listener = window.audioContext.listener;
