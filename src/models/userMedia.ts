@@ -60,12 +60,10 @@ export class UserMedia {
   }
 
   updateVideoSource(newTrack: MediaStreamTrack) {
-    console.log("updating video source", newTrack, this.currentAction);
     if (!newTrack) {
       this.cameraDisabled = true;
       this.videoTag.style.opacity = "0";
       if (this.currentAction === Action.InZone) {
-        console.log("showing or updating zonemate while disabled");
         this.showOrUpdateZonemate();
         return;
       }
@@ -124,11 +122,13 @@ export class UserMedia {
     return this.audioTrack;
   }
   enterBroadcast() {
+    this.muteAudio();
     this.currentAction = Action.Broadcasting;
     this.showOrUpdateBroadcast();
   }
 
   leaveBroadcast() {
+    this.unmuteAudio();
     this.currentAction = Action.Traversing;
     stopBroadcast();
   }
@@ -198,7 +198,6 @@ export class UserMedia {
   showOrUpdateZonemate() {
     let videoTrack = null;
     if (this.videoTrack && !this.cameraDisabled) {
-      console.log("got track and stuff");
       videoTrack = this.videoTrack;
     }
     showZonemate(this.id, videoTrack, this.audioTrack);
@@ -207,7 +206,6 @@ export class UserMedia {
   showOrUpdateBroadcast() {
     let videoTrack = null;
     if (this.videoTrack && !this.cameraDisabled) {
-      console.log("got track and stuff");
       videoTrack = this.videoTrack;
     }
     showBroadcast(videoTrack, this.audioTrack);

@@ -13,7 +13,6 @@ export class Spot extends Collider {
 
   constructor(id: number, x: number, y: number, width: number, height: number) {
     super(false);
-    console.log("creating spot", id);
 
     this.id = id;
     this.name = id.toString();
@@ -34,14 +33,12 @@ export class Spot extends Collider {
       );
       return;
     }
-    console.log("texture already exists", texture);
     this.texture = texture;
   }
 
   generateTexture(
     renderer: PIXI.Renderer | PIXI.AbstractRenderer
   ): PIXI.Texture {
-    console.log("generateTexture", this);
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0xf79400);
     graphics.lineStyle(1, 0xd48200, 0.3);

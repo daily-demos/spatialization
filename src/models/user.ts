@@ -88,7 +88,6 @@ export class User extends Collider {
   }
 
   private setVideoTexture() {
-    console.log("setting video texture", this.id);
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
@@ -97,6 +96,9 @@ export class User extends Collider {
       return;
     }
 
+    // I am not (yet) sure why this is needed, but without
+    // it we get inconsistent bounds and broken collision
+    // detection when switching textures.
     this.getBounds(true);
     let texture = new PIXI.BaseTexture(this.media.videoTag);
 
@@ -112,10 +114,6 @@ export class User extends Collider {
     this.width = baseSize;
     this.height = baseSize;
 
-    /* const b2 = this.getBounds(true);
-
-    console.log("b2", b2); */
-
     this.textureType = TextureType.Video;
   }
 
@@ -126,10 +124,13 @@ export class User extends Collider {
       texture = generateGradientTexture();
       t.addTexture(gradientTextureName, texture);
     }
+
+    // I am not (yet) sure why this is needed, but without
+    // it we get inconsistent bounds and broken collision
+    // detection when switching textures.
     this.getBounds(true);
 
     this.texture = texture;
-    //this.getBounds(true);
     this.textureType = TextureType.Default;
   }
 
@@ -173,7 +174,6 @@ export class User extends Collider {
   }
 
   updateZone(zoneID: number) {
-    console.log("updatingZone", this.zoneID, zoneID, this.id);
     const oldZoneID = this.zoneID;
     if (zoneID === oldZoneID) return;
     this.zoneID = zoneID;
@@ -231,7 +231,6 @@ export class User extends Collider {
       // We don't want two audio sources for the same user.
       if (o.media.currentAction === Action.Broadcasting) {
         o.alpha = 1;
-        o.media.muteAudio();
         continue;
       }
 
@@ -246,7 +245,6 @@ export class User extends Collider {
       if (o.zoneID > 0 && o.zoneID === this.zoneID) {
         if (o.media.currentAction !== Action.InZone) {
           if (!o.isInVicinity) {
-            console.log("entering vicinity");
             o.alpha = 1;
             o.isInVicinity = true;
             if (this.onEnterVicinity) this.onEnterVicinity(o.id);
@@ -276,7 +274,6 @@ export class User extends Collider {
         // Stop streaming to a zone if they are currently doing so,
         // Since the users are not in the same zone.
         if (o.media.currentAction === Action.InZone) {
-          console.log("REmovng zonemate!");
           o.media.currentAction = Action.Traversing;
           removeZonemate(o.id);
         }
@@ -326,18 +323,11 @@ export class User extends Collider {
     // will happen. We do it when the user is in vicinity rather than earshot
     // to prepare the tracks in advance, creating a more seamless transition when
     // the user needs the tracks.
-
     if (this.inVicinity(distance)) {
       // If we just entered vicinity, trigger onEnterVicinity
       if (!other.isInVicinity) {
         other.isInVicinity = true;
         if (this.onEnterVicinity) {
-          console.log(
-            "entering vicinity",
-            distance,
-            this.getPos(),
-            other.getPos()
-          );
           this.onEnterVicinity(other.id);
         }
       }
@@ -353,7 +343,6 @@ export class User extends Collider {
 
     // User is in earshot
     if (this.inEarshot(distance)) {
-      console.log("is in earshot");
       const pm = this.getPannerMod(distance, other.getPos());
       other.media.updatePanner(pm.pos, pm.pan);
 

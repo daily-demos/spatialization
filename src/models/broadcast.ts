@@ -57,6 +57,8 @@ export class BroadcastSpot extends Collider {
       console.log("entering broadcast", other.id);
       this.occupantID = other.id;
       other.media.enterBroadcast();
+      other.isInVicinity = false;
+      other.isInEarshot = false;
       if (this.onEnterBroadcast) this.onEnterBroadcast(other.id);
       return;
     }

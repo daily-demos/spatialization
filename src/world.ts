@@ -58,10 +58,7 @@ export class World {
     if (!avatar) {
       avatar = this.createAvatar(sessionID, pos.x, pos.y);
     }
-    // const oldZone = avatar.zoneID;
-    console.log("updateParticipantZone", sessionID, zoneID);
     avatar.updateZone(zoneID);
-    if (zoneID === 0) return;
     if (avatar.isZonemate(this.localAvatar)) {
       // Send data back to make sure the newly joined participant knows
       // we are in the same zone
