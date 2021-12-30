@@ -132,11 +132,11 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     world.setUserTracks(p.session_id, tracks.video, tracks.audio);
   };
 
-  const onEnterVicinity = (sessionID: string) => {
+  const subToTracks = (sessionID: string) => {
     subToUserTracks(room, sessionID);
   };
 
-  const onLeaveVicinity = (sessionID: string) => {
+  const unsubFromTracks = (sessionID: string) => {
     unsubFromUserTracks(room, sessionID);
   };
 
@@ -160,8 +160,8 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
 
   if (room.isGlobal) {
     showWorld();
-    world.onEnterVicinity = onEnterVicinity;
-    world.onLeaveVicinity = onLeaveVicinity;
+    world.subToTracks = subToTracks;
+    world.unsubFromTracks = unsubFromTracks;
     world.onCreateUser = onCreateUser;
     world.onMove = onMove;
     world.onJoinZone = onJoinZone;
@@ -211,7 +211,12 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
         delete room.pendingAcks[event.fromId];
         world.sendDataToParticipant(event.fromId);
       }
-      world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+      world.updateParticipantPos(
+        event.fromId,
+        data.zoneID,
+        data.pos.x,
+        data.pos.y
+      );
       break;
   }
 }

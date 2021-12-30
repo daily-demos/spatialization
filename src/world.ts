@@ -21,8 +21,8 @@ declare global {
 const defaultWorldSize = 1000;
 
 export class World {
-  onEnterVicinity: (sessionID: string) => void = null;
-  onLeaveVicinity: (sessionID: string) => void = null;
+  subToTracks: (sessionID: string) => void = null;
+  unsubFromTracks: (sessionID: string) => void = null;
   onCreateUser: () => void = null;
   onMove: (zoneID: number, pos: Pos, recipient?: string) => void = null;
   onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null;
@@ -80,10 +80,19 @@ export class World {
     avatar.setUserName(userName);
   }
 
-  updateParticipantPos(sessionID: string, posX: number, posY: number) {
+  updateParticipantPos(
+    sessionID: string,
+    zoneID: number,
+    posX: number,
+    posY: number
+  ) {
     let avatar = this.getAvatar(sessionID);
     if (!avatar) {
       avatar = this.createAvatar(sessionID, posX, posY);
+      avatar.updateZone(zoneID);
+    }
+    if (avatar.getZone() !== zoneID) {
+      avatar.updateZone(zoneID);
     }
     avatar.moveTo({ x: posX, y: posY });
     avatar.checkFurniture(this.furnitureContainer.children);
@@ -180,8 +189,8 @@ export class World {
       0,
       0,
       50,
-      this.onEnterVicinity,
-      this.onLeaveVicinity
+      this.subToTracks,
+      this.unsubFromTracks
     );
     spot.x = defaultWorldSize / 2 - spot.width / 2;
     this.furnitureContainer.addChild(spot);
@@ -270,8 +279,8 @@ export class World {
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
     if (isLocal) {
-      onEnterVicinity = this.onEnterVicinity;
-      onLeaveVicinity = this.onLeaveVicinity;
+      onEnterVicinity = this.subToTracks;
+      onLeaveVicinity = this.unsubFromTracks;
     }
     const avatar = new User(
       userID,

@@ -8,6 +8,12 @@ import { Pos } from "../worldTypes";
 
 export const maxPannerDistance = 1000;
 
+export enum Action {
+  Traversing,
+  InZone,
+  Broadcasting,
+}
+
 // UserMedia holds all audio and video related tags,
 // streams, and panners for a user.
 export class UserMedia {
@@ -23,8 +29,7 @@ export class UserMedia {
   pannerNode: PannerNode<AudioContext>;
   stereoPannerNode: StereoPannerNode<AudioContext>;
 
-  streamToZone: boolean;
-  isBroadcasting: boolean;
+  currentAction: Action = Action.Traversing;
   id: string;
 
   constructor(id: string, isLocal: boolean) {
@@ -47,23 +52,24 @@ export class UserMedia {
 
   private createAudioTag() {
     // Set up audio tag
-    const audio = document.createElement("audio");
+    const audio = new Audio();
     audio.autoplay = true;
     audio.classList.add("invisible");
-    document.documentElement.appendChild(audio);
+    (audio.muted = true), document.documentElement.appendChild(audio);
     this.audioTag = audio;
   }
 
   updateVideoSource(newTrack: MediaStreamTrack) {
+    console.log("updating video source", newTrack, this.currentAction);
     if (!newTrack) {
       this.cameraDisabled = true;
       this.videoTag.style.opacity = "0";
-      if (this.streamToZone) {
+      if (this.currentAction === Action.InZone) {
         console.log("showing or updating zonemate while disabled");
         this.showOrUpdateZonemate();
         return;
       }
-      if (this.isBroadcasting) {
+      if (this.currentAction === Action.Broadcasting) {
         this.showOrUpdateBroadcast();
       }
       return;
@@ -75,11 +81,11 @@ export class UserMedia {
       this.videoTag.srcObject = new MediaStream([newTrack]);
     }
 
-    if (this.streamToZone) {
+    if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
       return;
     }
-    if (this.isBroadcasting) {
+    if (this.currentAction === Action.Broadcasting) {
       this.showOrUpdateBroadcast();
     }
   }
@@ -87,10 +93,8 @@ export class UserMedia {
   updateAudioSource(newTrack: MediaStreamTrack) {
     if (!this.audioTag) return;
     if (!newTrack) {
-      this.muteAudio();
       return;
     }
-    this.unmuteAudio();
 
     if (newTrack.id === this.audioTrack?.id) {
       return;
@@ -99,7 +103,7 @@ export class UserMedia {
     this.audioTag.srcObject = new MediaStream([newTrack]);
     // Reset panner node
     this.pannerNode = null;
-    if (this.streamToZone) {
+    if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
     }
   }
@@ -120,11 +124,12 @@ export class UserMedia {
     return this.audioTrack;
   }
   enterBroadcast() {
-    this.isBroadcasting = true;
+    this.currentAction = Action.Broadcasting;
+    this.showOrUpdateBroadcast();
   }
 
   leaveBroadcast() {
-    this.isBroadcasting = false;
+    this.currentAction = Action.Traversing;
     stopBroadcast();
   }
 
@@ -196,12 +201,6 @@ export class UserMedia {
       console.log("got track and stuff");
       videoTrack = this.videoTrack;
     }
-    console.log(
-      "showing zonemate.",
-      videoTrack,
-      this.cameraDisabled,
-      this.videoTrack
-    );
     showZonemate(this.id, videoTrack, this.audioTrack);
   }
 
@@ -211,12 +210,6 @@ export class UserMedia {
       console.log("got track and stuff");
       videoTrack = this.videoTrack;
     }
-    console.log(
-      "showing zonemate.",
-      videoTrack,
-      this.cameraDisabled,
-      this.videoTrack
-    );
     showBroadcast(videoTrack, this.audioTrack);
   }
 }

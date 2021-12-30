@@ -3,7 +3,7 @@ import * as PIXI from "pixi.js";
 import { DisplayObject } from "pixi.js";
 import { BroadcastSpot } from "./broadcast";
 import { Desk } from "./desk";
-import { maxPannerDistance, UserMedia } from "./userMedia";
+import { Action, maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
 import { Pos, Size } from "../worldTypes";
 import { Textures } from "../textures";
@@ -209,7 +209,6 @@ export class User extends Collider {
   private updateListener() {
     if (!this.isLocal) return;
     const listener = window.audioContext.listener;
-    console.log("listener", listener);
     if (listener.positionX && listener.positionY) {
       // This is the correct way to set the position
       listener.positionX.value = this.x;
@@ -230,7 +229,7 @@ export class User extends Collider {
 
       // If the other user is broadcasting, mute their default tile audio
       // We don't want two audio sources for the same user.
-      if (o.media.isBroadcasting) {
+      if (o.media.currentAction === Action.Broadcasting) {
         o.alpha = 1;
         o.media.muteAudio();
         continue;
@@ -245,7 +244,7 @@ export class User extends Collider {
       // If the users are in the same zone that is not the default zone,
       // enter vicinity and display them as zonemates in focused-mode.
       if (o.zoneID > 0 && o.zoneID === this.zoneID) {
-        if (!o.media.streamToZone) {
+        if (o.media.currentAction !== Action.InZone) {
           if (!o.isInVicinity) {
             console.log("entering vicinity");
             o.alpha = 1;
@@ -253,7 +252,7 @@ export class User extends Collider {
             if (this.onEnterVicinity) this.onEnterVicinity(o.id);
           }
           if (o.isInEarshot) o.isInEarshot = false;
-          o.media.streamToZone = true;
+          o.media.currentAction = Action.InZone;
         }
         // Mute the other user's default audio, since we'll
         // be streaming via a zone.
@@ -276,9 +275,9 @@ export class User extends Collider {
 
         // Stop streaming to a zone if they are currently doing so,
         // Since the users are not in the same zone.
-        if (o.media.streamToZone) {
+        if (o.media.currentAction === Action.InZone) {
           console.log("REmovng zonemate!");
-          o.media.streamToZone = false;
+          o.media.currentAction = Action.Traversing;
           removeZonemate(o.id);
         }
 
@@ -333,6 +332,12 @@ export class User extends Collider {
       if (!other.isInVicinity) {
         other.isInVicinity = true;
         if (this.onEnterVicinity) {
+          console.log(
+            "entering vicinity",
+            distance,
+            this.getPos(),
+            other.getPos()
+          );
           this.onEnterVicinity(other.id);
         }
       }
@@ -348,6 +353,7 @@ export class User extends Collider {
 
     // User is in earshot
     if (this.inEarshot(distance)) {
+      console.log("is in earshot");
       const pm = this.getPannerMod(distance, other.getPos());
       other.media.updatePanner(pm.pos, pm.pan);
 

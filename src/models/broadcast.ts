@@ -54,6 +54,7 @@ export class BroadcastSpot extends Collider {
 
   tryInteract(other: User) {
     if (this.hits(other) && !this.occupantID) {
+      console.log("entering broadcast", other.id);
       this.occupantID = other.id;
       other.media.enterBroadcast();
       if (this.onEnterBroadcast) this.onEnterBroadcast(other.id);
@@ -61,6 +62,7 @@ export class BroadcastSpot extends Collider {
     }
     if (other.id === this.occupantID && !this.hits(other)) {
       this.occupantID = null;
+      console.log("leaving browscast");
       other.media.leaveBroadcast();
       if (this.onLeaveBroadcast) this.onLeaveBroadcast(other.id);
     }
