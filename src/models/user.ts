@@ -14,7 +14,6 @@ const earshot = 300;
 const maxAlpha = 1;
 const baseSize = 50;
 const defaultSpeed = 4;
-const gradientTextureName = "user-gradient";
 enum TextureType {
   Unknown = 1,
   Default,
@@ -42,6 +41,9 @@ export class User extends Collider {
   isInVicinity = false;
   isInEarshot = false;
   lastMoveAt: number;
+
+  emoji: string = "😊";
+  gradientTextureName: string = "user-gradient";
 
   media: UserMedia;
 
@@ -118,19 +120,29 @@ export class User extends Collider {
   }
 
   private setDefaultTexture() {
-    const t = Textures.get();
-    let texture = t.library[gradientTextureName];
-    if (!texture) {
-      texture = generateGradientTexture();
-      t.addTexture(gradientTextureName, texture);
-    }
-
     // I am not (yet) sure why this is needed, but without
     // it we get inconsistent bounds and broken collision
     // detection when switching textures.
     this.getBounds(true);
 
-    this.texture = texture;
+    const t = Textures.get();
+    const texture = t.library[this.gradientTextureName];
+
+    if (!texture) {
+      t.enqueue(
+        this,
+        this.gradientTextureName,
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
+          return this.generateTexture(renderer);
+        },
+        false
+      );
+      return;
+    } else {
+      this.texture = texture;
+    }
+
+    // this.texture = texture;
     this.textureType = TextureType.Default;
   }
 
@@ -174,6 +186,7 @@ export class User extends Collider {
   }
 
   updateZone(zoneID: number) {
+    if (this.isLocal) console.log("updating zone", zoneID);
     const oldZoneID = this.zoneID;
     if (zoneID === oldZoneID) return;
     this.zoneID = zoneID;
@@ -410,22 +423,37 @@ export class User extends Collider {
   private inVicinity(distance: number) {
     return distance < this.earshotDistance * 2;
   }
-}
 
-function generateGradientTexture(): PIXI.Texture {
-  const canvas = document.createElement("canvas");
-  canvas.width = baseSize;
-  canvas.height = baseSize;
+  private generateTexture(
+    renderer: PIXI.Renderer | PIXI.AbstractRenderer
+  ): PIXI.Texture {
+    const cont = new PIXI.Container();
+    cont.x = 0;
+    cont.y = 0;
+    cont.width = this.width;
+    cont.height = this.height;
 
-  const ctx = canvas.getContext("2d");
+    const graphics = new PIXI.Graphics();
+    graphics.beginFill(0x1f2d3d, 1);
+    graphics.lineStyle(1, 0x121a24, 1);
 
-  // use canvas2d API to create gradient
-  const grd = ctx.createLinearGradient(0, 0, baseSize, baseSize);
-  grd.addColorStop(0, "#121a24");
-  grd.addColorStop(1, "#2b3f56");
+    graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
+    graphics.endFill();
+    cont.addChild(graphics);
 
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, baseSize, baseSize);
+    const txt = new PIXI.Text(this.emoji, {
+      fontFamily: "Arial",
+      fontSize: 24,
+      fill: 0xff1010,
+      align: "center",
+    });
+    txt.anchor.set(0.5);
+    txt.position.x = cont.x + cont.width / 2;
+    txt.position.y = cont.y + cont.height / 2;
 
-  return PIXI.Texture.from(canvas);
+    cont.addChild(txt);
+
+    const texture = renderer.generateTexture(cont);
+    return texture;
+  }
 }

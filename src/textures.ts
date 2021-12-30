@@ -9,6 +9,7 @@ type PendingGenerator = {
   sprite: PIXI.Sprite;
   textureName: string;
   generator: GeneratorFunc;
+  setOnCreation: boolean;
 };
 type Queue = {
   [key: string]: PendingGenerator;
@@ -41,12 +42,14 @@ export class Textures {
   public enqueue(
     sprite: PIXI.Sprite,
     textureName: string,
-    generator: GeneratorFunc
+    generator: GeneratorFunc,
+    setOnCreation = true
   ) {
     this.queue.push({
       textureName: textureName,
       generator: generator,
       sprite: sprite,
+      setOnCreation: setOnCreation,
     });
   }
 
@@ -60,7 +63,9 @@ export class Textures {
         this.library[next.textureName] = texture;
       }
       texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-      next.sprite.texture = texture;
+      if (next.setOnCreation) {
+        next.sprite.texture = texture;
+      }
       next = this.queue.shift();
     }
   }

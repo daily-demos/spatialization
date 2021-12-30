@@ -39,12 +39,33 @@ export class Spot extends Collider {
   generateTexture(
     renderer: PIXI.Renderer | PIXI.AbstractRenderer
   ): PIXI.Texture {
+    const cont = new PIXI.Container();
+    cont.x = 0;
+    cont.y = 0;
+    cont.width = this.width;
+    cont.height = this.height;
+
     const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xf79400);
-    graphics.lineStyle(1, 0xd48200, 0.3);
-    graphics.drawRoundedRect(this.x, this.y, this.width, this.height, 3);
+    graphics.beginFill(0xf79400, 1);
+    graphics.lineStyle(1, 0xd48200, 1);
+
+    graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
     graphics.endFill();
-    const texture = renderer.generateTexture(graphics);
+    cont.addChild(graphics);
+
+    const txt = new PIXI.Text("🪑", {
+      fontFamily: "Arial",
+      fontSize: 24,
+      fill: 0xff1010,
+      align: "center",
+    });
+    txt.anchor.set(0.5);
+    txt.position.x = cont.x + cont.width / 2;
+    txt.position.y = cont.y + cont.height / 2;
+
+    cont.addChild(txt);
+
+    const texture = renderer.generateTexture(cont);
     return texture;
   }
 }

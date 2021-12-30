@@ -108,9 +108,9 @@ export class World {
 
     // Center world container on local avatar
     this.worldContainer.position.x =
-      500 / 2 - this.localAvatar.getPos().x - this.localAvatar.width / 2;
+      this.app.view.width / 2 - finalPos.x - this.localAvatar.width / 2;
     this.worldContainer.position.y =
-      500 / 2 - this.localAvatar.getPos().y - this.localAvatar.height / 2;
+      this.app.view.height / 2 - finalPos.y - this.localAvatar.height / 2;
     if (this.onCreateUser) {
       this.onCreateUser();
     }
@@ -144,7 +144,7 @@ export class World {
     this.app.ticker.maxFPS = 30;
     // Create window frame
     let frame = new PIXI.Graphics();
-    frame.beginFill(0xe6eaef);
+    frame.beginFill(0x121a24);
     frame.lineStyle({ color: 0xffffff, width: 4, alignment: 0 });
     frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
     frame.position.set(0, 0);
@@ -155,9 +155,9 @@ export class World {
     this.worldContainer.height = defaultWorldSize;
     this.worldContainer.sortableChildren = true;
 
-    /*const floor = new Floor();
+    const floor = new Floor();
+    this.worldContainer.addChild(floor);
 
-    this.worldContainer.addChild(floor); */
     frame.addChild(this.worldContainer);
 
     // Add container that will hold our users
@@ -357,11 +357,13 @@ export class World {
 
     this.localAvatar.moveTo({ x: newX, y: newY });
 
+    const pos = this.localAvatar.getPos();
+
     // Center world container on local avatar
     this.worldContainer.position.x =
-      500 / 2 - this.localAvatar.getPos().x - this.localAvatar.width / 2;
+      this.app.view.width / 2 - pos.x - this.localAvatar.width / 2;
     this.worldContainer.position.y =
-      500 / 2 - this.localAvatar.getPos().y - this.localAvatar.height / 2;
+      this.app.view.height / 2 - pos.y - this.localAvatar.height / 2;
 
     this.sendData();
   }

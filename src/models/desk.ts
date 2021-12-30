@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Textures } from "../textures";
 import { GenerateTexture } from "../worldTypes";
 
 import { Collider } from "./collider";
@@ -8,6 +9,7 @@ import { User } from "./user";
 const spotSize = 50;
 const spotBuffer = 10;
 const deskDepth = 50;
+const textureName = "desk";
 
 // Desk is a location that holds spots, through which a user can
 // join other users in an isolated zone.
@@ -36,11 +38,25 @@ export class Desk extends Collider {
       this.createSpot(i, px, py);
       px += spotSize + spotBuffer;
       if (px + spotSize + spotBuffer >= this.width) {
+        // New line
         px = spotBuffer;
-        py = this.height;
+        py = this.height + 2;
       }
     }
-    this.createTexture();
+
+    const t = Textures.get();
+    const texture = t.library[textureName];
+    if (!texture) {
+      t.enqueue(
+        this,
+        textureName,
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
+          return this.generateTexture(renderer);
+        }
+      );
+      return;
+    }
+    this.texture = texture;
   }
 
   setSize(numSpots: number) {
@@ -56,16 +72,16 @@ export class Desk extends Collider {
     this.spots.push(spot);
   }
 
-  createTexture() {
-    const canvas = document.createElement("canvas");
-    canvas.width = this.width;
-    canvas.height = this.height;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#d48200";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    this.texture = PIXI.Texture.from(canvas);
+  generateTexture(
+    renderer: PIXI.Renderer | PIXI.AbstractRenderer
+  ): PIXI.Texture {
+    const graphics = new PIXI.Graphics();
+    graphics.beginFill(0xd48200);
+    graphics.lineStyle(2, 0xf7f9fa, 1);
+    graphics.drawRoundedRect(this.x, this.y, this.width, this.height, 5);
+    graphics.endFill();
+    const texture = renderer.generateTexture(graphics);
+    return texture;
   }
 
   async tryInteract(user: User) {
