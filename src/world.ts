@@ -2,10 +2,10 @@ import * as PIXI from "pixi.js";
 
 import KeyListener, { removeZonemate } from "./util/nav";
 import { User } from "./models/user";
-import { lerp, rand } from "./util/math";
+import { rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastSpot } from "./models/broadcast";
-import { AudioContext, IAudioContext } from "standardized-audio-context";
+import { IAudioContext, AudioContext } from "standardized-audio-context";
 import { Desk } from "./models/desk";
 import { Collider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";

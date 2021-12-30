@@ -209,8 +209,17 @@ export class User extends Collider {
   private updateListener() {
     if (!this.isLocal) return;
     const listener = window.audioContext.listener;
-    listener.positionX.value = this.x;
-    listener.positionY.value = this.y;
+    console.log("listener", listener);
+    if (listener.positionX && listener.positionY) {
+      // This is the correct way to set the position
+      listener.positionX.value = this.x;
+      listener.positionY.value = this.y;
+    } else {
+      // setPosition is deprecated, but is the only way to update
+      // position in some browsers: https://developer.mozilla.org/en-US/docs/Web/API/AudioListener
+      const l = <AudioListener>listener;
+      l.setPosition(this.x, this.y, 300);
+    }
   }
 
   async checkUserProximity(others: Array<DisplayObject>) {
