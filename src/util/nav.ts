@@ -58,7 +58,6 @@ export function showBroadcast(
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack
 ) {
-  console.log("showing broadcast");
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
   if (audioTrack) tracks.push(audioTrack);

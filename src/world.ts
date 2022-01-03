@@ -123,7 +123,6 @@ export class World {
     for (let item of this.furnitureContainer.children) {
       const collider = <Collider>item;
       if (collider.willHit(size, proposedPos, true)) {
-        console.log("regenerating", proposedPos);
         proposedPos = {
           x: rand(50, 450),
           y: rand(50, 450),
@@ -319,7 +318,7 @@ export class World {
       robot.checkFurniture(this.furnitureContainer.children);
     }
 
-    this.localAvatar.checkUserProximity(this.usersContainer.children);
+    this.localAvatar.processUsers(this.usersContainer.children);
     this.localAvatar.checkFurniture(this.furnitureContainer.children);
 
     const s = delta * this.localAvatar.speed;

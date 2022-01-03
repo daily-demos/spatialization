@@ -51,26 +51,8 @@ export class BroadcastSpot extends Collider {
     this.texture = texture;
   }
 
-  createTexture() {
-    const canvas = document.createElement("canvas");
-    canvas.width = this.width;
-    canvas.height = this.height;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#00FFFF";
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    ctx.font = "10px Arial";
-    ctx.fillStyle = "red";
-    ctx.textAlign = "center";
-    ctx.fillText("Broadcast", canvas.width / 2, canvas.height / 2);
-
-    this.texture = PIXI.Texture.from(canvas);
-  }
-
   tryInteract(other: User) {
     if (this.hits(other) && !this.occupantID) {
-      console.log("entering broadcast", other.id);
       this.occupantID = other.id;
       other.media.enterBroadcast();
       other.isInVicinity = false;
@@ -80,7 +62,6 @@ export class BroadcastSpot extends Collider {
     }
     if (other.id === this.occupantID && !this.hits(other)) {
       this.occupantID = null;
-      console.log("leaving browscast");
       other.media.leaveBroadcast();
       if (this.onLeaveBroadcast) this.onLeaveBroadcast(other.id);
     }

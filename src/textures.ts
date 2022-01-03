@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import { generateUniformBufferSync } from "pixi.js";
 
 export type GeneratorFunc = (
   renderer: PIXI.Renderer | PIXI.AbstractRenderer
@@ -10,9 +9,6 @@ type PendingGenerator = {
   textureName: string;
   generator: GeneratorFunc;
   setOnCreation: boolean;
-};
-type Queue = {
-  [key: string]: PendingGenerator;
 };
 
 export class Textures {
@@ -59,6 +55,7 @@ export class Textures {
     while (next) {
       let texture = this.library[next.textureName];
       if (!texture) {
+        console.log("Creating texture", next.textureName);
         texture = next.generator(renderer);
         this.library[next.textureName] = texture;
       }

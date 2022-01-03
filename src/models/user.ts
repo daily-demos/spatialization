@@ -110,7 +110,6 @@ export class User extends Collider {
       settings.height,
       settings.height
     );
-
     this.texture = new PIXI.Texture(texture, textureMask);
     this.texture.updateUvs();
     this.width = baseSize;
@@ -234,67 +233,69 @@ export class User extends Collider {
     }
   }
 
-  async checkUserProximity(others: Array<DisplayObject>) {
+  async processUsers(others: Array<DisplayObject>) {
     for (let other of others) {
-      const o = <User>other;
-      // If this is the local user, skip
-      if (o.id === this.id) continue;
+      this.processUser(<User>other);
+    }
+  }
 
-      // If the other user is broadcasting, mute their default tile audio
-      // We don't want two audio sources for the same user.
-      if (o.media.currentAction === Action.Broadcasting) {
-        o.alpha = 1;
-        continue;
-      }
+  async processUser(o: User) {
+    // If this is the local user, skip
+    if (o.id === this.id) return;
 
-      // Both users are in the default zone
-      if (this.zoneID === 0 && o.zoneID === 0) {
-        this.proximityUpdate(o);
-        continue;
-      }
+    // If the other user is broadcasting, mute their default tile audio
+    // We don't want two audio sources for the same user.
+    if (o.media.currentAction === Action.Broadcasting) {
+      o.alpha = 1;
+      return;
+    }
 
-      // If the users are in the same zone that is not the default zone,
-      // enter vicinity and display them as zonemates in focused-mode.
-      if (o.zoneID > 0 && o.zoneID === this.zoneID) {
-        if (o.media.currentAction !== Action.InZone) {
-          if (!o.isInVicinity) {
-            o.alpha = 1;
-            o.isInVicinity = true;
-            if (this.onEnterVicinity) this.onEnterVicinity(o.id);
-          }
-          if (o.isInEarshot) o.isInEarshot = false;
-          o.media.currentAction = Action.InZone;
-        }
-        // Mute the other user's default audio, since we'll
-        // be streaming via a zone.
-        o.media.muteAudio();
-        continue;
-      }
+    // Both users are in the default zone
+    if (this.zoneID === 0 && o.zoneID === 0) {
+      this.proximityUpdate(o);
+      return;
+    }
 
-      if (o.zoneID !== this.zoneID) {
-        // If the other user is not in a default zone but the zone does
-        // NOT match local user...
-
-        // Leave vicinity if they are in vicinity
-        if (o.isInVicinity) {
-          console.log("leaving vicinity");
-          o.isInVicinity = false;
-          if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
-          o.setDefaultTexture();
+    // If the users are in the same zone that is not the default zone,
+    // enter vicinity and display them as zonemates in focused-mode.
+    if (o.zoneID > 0 && o.zoneID === this.zoneID) {
+      if (o.media.currentAction !== Action.InZone) {
+        if (!o.isInVicinity) {
+          o.alpha = 1;
+          o.isInVicinity = true;
+          if (this.onEnterVicinity) this.onEnterVicinity(o.id);
         }
         if (o.isInEarshot) o.isInEarshot = false;
-
-        // Stop streaming to a zone if they are currently doing so,
-        // Since the users are not in the same zone.
-        if (o.media.currentAction === Action.InZone) {
-          o.media.currentAction = Action.Traversing;
-          removeZonemate(o.id);
-        }
-
-        // Mute the other user's default audio
-        o.media.muteAudio();
-        continue;
+        o.media.currentAction = Action.InZone;
       }
+      // Mute the other user's default audio, since we'll
+      // be streaming via a zone.
+      o.media.muteAudio();
+      return;
+    }
+
+    if (o.zoneID !== this.zoneID) {
+      // If the other user is not in a default zone but the zone does
+      // NOT match local user...
+
+      // Leave vicinity if they are in vicinity
+      if (o.isInVicinity) {
+        o.isInVicinity = false;
+        if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
+        o.setDefaultTexture();
+      }
+      if (o.isInEarshot) o.isInEarshot = false;
+
+      // Stop streaming to a zone if they are currently doing so,
+      // Since the users are not in the same zone.
+      if (o.media.currentAction === Action.InZone) {
+        o.media.currentAction = Action.Traversing;
+        removeZonemate(o.id);
+      }
+
+      // Mute the other user's default audio
+      o.media.muteAudio();
+      return;
     }
   }
 
