@@ -26,7 +26,7 @@ describe("User listener and panner tests", () => {
     window.audioContext = audioCtx;
 
     const listener = new User("local", 100, 100, true);
-    listener.earshotDistance = 100;
+    listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 200, y: 100 };
     const pannerMod = listener["getPannerMod"](100, speakerPos);
@@ -38,7 +38,7 @@ describe("User listener and panner tests", () => {
     window.audioContext = audioCtx;
 
     const listener = new User("local", 100, 100, true);
-    listener.earshotDistance = 100;
+    listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 0, y: 100 };
     const pannerMod = listener["getPannerMod"](100, speakerPos);
@@ -50,7 +50,7 @@ describe("User listener and panner tests", () => {
     window.audioContext = audioCtx;
 
     const listener = new User("local", 100, 100, true);
-    listener.earshotDistance = 100;
+    listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 150, y: 100 };
     const pannerMod = listener["getPannerMod"](50, speakerPos);
@@ -62,7 +62,7 @@ describe("User listener and panner tests", () => {
     window.audioContext = audioCtx;
 
     const listener = new User("local", 100, 100, true);
-    listener.earshotDistance = 100;
+    listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 50, y: 100 };
     const pannerMod = listener["getPannerMod"](50, speakerPos);
@@ -74,7 +74,7 @@ describe("User listener and panner tests", () => {
     window.audioContext = audioCtx;
 
     const listener = new User("local", 100, 100, true);
-    listener.earshotDistance = 100;
+    listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 100, y: 200 };
     const pannerMod = listener["getPannerMod"](100, speakerPos);
@@ -104,7 +104,7 @@ describe("Distance and earshot tests", () => {
 describe("User zone tests", () => {
   test("Users enter and leave proximity", () => {
     const lu = new User("local", 100, 100, true);
-    lu.earshotDistance = 300;
+    lu["earshotDistance"] = 300;
 
     const ru = new User("remote", 200, 200, false);
     // Right now, both users are in the same zone and within
@@ -125,7 +125,7 @@ describe("User zone tests", () => {
 
   test("Remote user leaves default zone", () => {
     const lu = new User("local", 100, 100, true);
-    lu.earshotDistance = 300;
+    lu["earshotDistance"] = 300;
 
     const ru = new User("remote", 200, 200, false);
 
@@ -143,7 +143,7 @@ describe("User zone tests", () => {
 
   test("Local user joins non-default zone", () => {
     const lu = new User("local", 100, 100, true);
-    lu.earshotDistance = 300;
+    lu["earshotDistance"] = 300;
 
     const ru = new User("remote", 1000, 1000, false);
     ru.updateZone(2);

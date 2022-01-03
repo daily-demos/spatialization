@@ -11,7 +11,7 @@ export enum RobotRole {
   Broadcast = 2,
 }
 
-// This is here for testing purposes
+// Robot exists for testing purposes
 export class Robot extends User {
   targetPos: Pos;
   maxCoords: Pos;
@@ -51,6 +51,25 @@ export class Robot extends User {
     this.stepToTarget();
   }
 
+  // "Furniture" can be any non-user colliders in the world.
+  // Eg: desks or broadcast spots. This overrides the user
+  // furniture check.
+  checkFurnitures(others: Array<DisplayObject>) {
+    for (let other of others) {
+      if (other instanceof BroadcastSpot) {
+        const o = <BroadcastSpot>other;
+        if (o) o.tryInteract(this);
+        continue;
+      }
+
+      if (other instanceof Desk) {
+        const o = <Desk>other;
+        if (o) o.tryInteract(this);
+        continue;
+      }
+    }
+  }
+
   private pickNewTargetPos() {
     if (this.role === RobotRole.World) {
       this.targetPos = {
@@ -81,24 +100,5 @@ export class Robot extends User {
 
     this.x += velX;
     this.y += velY;
-  }
-
-  // "Furniture" can be any non-user colliders in the world.
-  // Eg: desks or broadcast spots. This overrides the user
-  // furniture check.
-  checkFurniture(others: Array<DisplayObject>) {
-    for (let other of others) {
-      if (other instanceof BroadcastSpot) {
-        const o = <BroadcastSpot>other;
-        if (o) o.tryInteract(this);
-        continue;
-      }
-
-      if (other instanceof Desk) {
-        const o = <Desk>other;
-        if (o) o.tryInteract(this);
-        continue;
-      }
-    }
   }
 }

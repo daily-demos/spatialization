@@ -92,7 +92,7 @@ export class World {
       avatar.updateZone(zoneID);
     }
     avatar.moveTo({ x: posX, y: posY });
-    avatar.checkFurniture(this.furnitureContainer.children);
+    avatar.checkFurnitures(this.furnitureContainer.children);
   }
 
   initLocalAvatar(sessionID: string) {
@@ -119,62 +119,17 @@ export class World {
     this.initAudioContext();
   }
 
-  private getFinalLocalPos(size: Size, proposedPos: Pos): Pos {
-    for (let item of this.furnitureContainer.children) {
-      const collider = <Collider>item;
-      // I am not yet sure why this is required it. Without it, 
-      // collision check below is extremely unreliable
-      collider.getBounds(false);
-      if (collider.willHit(size, proposedPos, true)) {
-        console.log("User will hit furniture; finding new position:", proposedPos);
-        proposedPos = {
-          x: rand(50, 450),
-          y: rand(50, 450),
-        };
-        return this.getFinalLocalPos(size, proposedPos);
+  removeAvatar(userId: string) {
+    const avatar = this.getAvatar(userId);
+    if (!avatar) return;
+    this.usersContainer.removeChild(avatar);
+    for (let i = 0; i < this.robots.length; i++) {
+      const robot = this.robots[i];
+      if (robot.id === userId) {
+        this.robots.splice(i, 1);
+        i--;
       }
     }
-    return proposedPos;
-  }
-
-  private init() {
-    this.app = new PIXI.Application({
-      width: 500,
-      height: 500,
-      backgroundColor: 0xeefae0,
-      resolution: 1,
-    });
-    this.app.ticker.maxFPS = 30;
-    // Create window frame
-    let frame = new PIXI.Graphics();
-    frame.beginFill(0x121a24);
-    frame.lineStyle({ color: 0xffffff, width: 4, alignment: 0 });
-    frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
-    frame.position.set(0, 0);
-    this.app.stage.addChild(frame);
-
-    this.worldContainer = new PIXI.Container();
-    this.worldContainer.width = defaultWorldSize;
-    this.worldContainer.height = defaultWorldSize;
-    this.worldContainer.sortableChildren = true;
-
-    const floor = new Floor();
-    this.worldContainer.addChild(floor);
-
-    frame.addChild(this.worldContainer);
-
-    // Add container that will hold our users
-    this.usersContainer = new PIXI.Container();
-    this.usersContainer.width = this.worldContainer.width;
-    this.usersContainer.height = this.worldContainer.height;
-    this.usersContainer.zIndex = 100;
-    this.worldContainer.addChild(this.usersContainer);
-
-    document.getElementById("world").appendChild(this.app.view);
-    this.app.ticker.add((deltaTime) => {
-      this.draw(this.app.ticker.elapsedMS);
-      this.update(deltaTime);
-    });
   }
 
   start() {
@@ -295,17 +250,65 @@ export class World {
     return avatar;
   }
 
-  removeAvatar(userId: string) {
-    const avatar = this.getAvatar(userId);
-    if (!avatar) return;
-    this.usersContainer.removeChild(avatar);
-    for (let i = 0; i < this.robots.length; i++) {
-      const robot = this.robots[i];
-      if (robot.id === userId) {
-        this.robots.splice(i, 1);
-        i--;
+  private getFinalLocalPos(size: Size, proposedPos: Pos): Pos {
+    for (let item of this.furnitureContainer.children) {
+      const collider = <Collider>item;
+      // I am not yet sure why this is required it. Without it,
+      // collision check below is extremely unreliable
+      collider.getBounds(false);
+      if (collider.willHit(size, proposedPos, true)) {
+        console.log(
+          "User will hit furniture; finding new position:",
+          proposedPos
+        );
+        proposedPos = {
+          x: rand(50, 450),
+          y: rand(50, 450),
+        };
+        return this.getFinalLocalPos(size, proposedPos);
       }
     }
+    return proposedPos;
+  }
+
+  private init() {
+    this.app = new PIXI.Application({
+      width: 500,
+      height: 500,
+      backgroundColor: 0xeefae0,
+      resolution: 1,
+    });
+    this.app.ticker.maxFPS = 30;
+    // Create window frame
+    let frame = new PIXI.Graphics();
+    frame.beginFill(0x121a24);
+    frame.lineStyle({ color: 0xffffff, width: 4, alignment: 0 });
+    frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
+    frame.position.set(0, 0);
+    this.app.stage.addChild(frame);
+
+    this.worldContainer = new PIXI.Container();
+    this.worldContainer.width = defaultWorldSize;
+    this.worldContainer.height = defaultWorldSize;
+    this.worldContainer.sortableChildren = true;
+
+    const floor = new Floor();
+    this.worldContainer.addChild(floor);
+
+    frame.addChild(this.worldContainer);
+
+    // Add container that will hold our users
+    this.usersContainer = new PIXI.Container();
+    this.usersContainer.width = this.worldContainer.width;
+    this.usersContainer.height = this.worldContainer.height;
+    this.usersContainer.zIndex = 100;
+    this.worldContainer.addChild(this.usersContainer);
+
+    document.getElementById("world").appendChild(this.app.view);
+    this.app.ticker.add((deltaTime) => {
+      this.draw(this.app.ticker.elapsedMS);
+      this.update(deltaTime);
+    });
   }
 
   private draw(elapsedMS: number) {}
@@ -319,12 +322,15 @@ export class World {
     // Update all robots
     for (let robot of this.robots) {
       robot.update();
-      robot.checkFurniture(this.furnitureContainer.children);
+      robot.checkFurnitures(this.furnitureContainer.children);
     }
 
     this.localAvatar.processUsers(this.usersContainer.children);
-    this.localAvatar.checkFurniture(this.furnitureContainer.children);
+    this.localAvatar.checkFurnitures(this.furnitureContainer.children);
+    this.checkNavigation(delta);
+  }
 
+  private checkNavigation(delta: number) {
     const s = delta * this.localAvatar.speed;
 
     let newX = this.localAvatar.x;

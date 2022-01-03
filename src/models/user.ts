@@ -22,30 +22,26 @@ enum TextureType {
 
 // User is a participant in the world (and the call)
 export class User extends Collider {
-  textureType = TextureType.Unknown;
-
-  private zoneID = 0;
-
-  earshotDistance: number;
-  onEnterVicinity: Function;
-  onLeaveVicinity: Function;
-  onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void;
-
-  isLocal: boolean;
-
-  userName: string;
   id: string;
-
   speed: number;
-
   isInVicinity = false;
   isInEarshot = false;
-  lastMoveAt: number;
-
-  emoji: string = "😊";
-  gradientTextureName: string = "user-gradient";
-
   media: UserMedia;
+
+  protected emoji: string = "😊";
+  protected gradientTextureName: string = "user-gradient";
+
+  private textureType = TextureType.Unknown;
+  private zoneID = 0;
+
+  private earshotDistance: number;
+  private onEnterVicinity: Function;
+  private onLeaveVicinity: Function;
+  private onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void;
+
+  private isLocal: boolean;
+
+  private userName: string;
 
   constructor(
     id: string,
@@ -118,33 +114,6 @@ export class User extends Collider {
     this.textureType = TextureType.Video;
   }
 
-  private setDefaultTexture() {
-    // I am not (yet) sure why this is needed, but without
-    // it we get inconsistent bounds and broken collision
-    // detection when switching textures.
-    this.getBounds(true);
-
-    const t = Textures.get();
-    const texture = t.library[this.gradientTextureName];
-
-    if (!texture) {
-      t.enqueue(
-        this,
-        this.gradientTextureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
-          return this.generateTexture(renderer);
-        },
-        false
-      );
-      return;
-    } else {
-      this.texture = texture;
-    }
-
-    // this.texture = texture;
-    this.textureType = TextureType.Default;
-  }
-
   // updateTracks sets the tracks, but does not
   // necessarily update the texture until we are in
   // earshot
@@ -156,24 +125,6 @@ export class User extends Collider {
     if (!this.isLocal) {
       this.streamAudio(audioTrack);
     }
-  }
-
-  private streamVideo(newTrack: MediaStreamTrack) {
-    this.media.updateVideoSource(newTrack);
-    if (this.media.cameraDisabled) {
-      if (this.textureType === TextureType.Video) {
-        this.setDefaultTexture();
-      }
-      return;
-    }
-
-    if (this.isLocal) {
-      this.setVideoTexture();
-    }
-  }
-
-  private streamAudio(newTrack: MediaStreamTrack) {
-    this.media.updateAudioSource(newTrack);
   }
 
   getPos(): Pos {
@@ -218,6 +169,22 @@ export class User extends Collider {
     this.updateListener();
   }
 
+  async processUsers(others: Array<DisplayObject>) {
+    for (let other of others) {
+      this.processUser(<User>other);
+    }
+  }
+
+  // "Furniture" can be any non-user colliders in the world.
+  // Eg: desks or broadcast spots
+  checkFurnitures(others: Array<DisplayObject>) {
+    for (let other of others) {
+      this.checkFurniture(other);
+    }
+  }
+
+  // Private methods below
+
   private updateListener() {
     if (!this.isLocal) return;
     const listener = window.audioContext.listener;
@@ -233,13 +200,7 @@ export class User extends Collider {
     }
   }
 
-  async processUsers(others: Array<DisplayObject>) {
-    for (let other of others) {
-      this.processUser(<User>other);
-    }
-  }
-
-  async processUser(o: User) {
+  private async processUser(o: User) {
     // If this is the local user, skip
     if (o.id === this.id) return;
 
@@ -299,25 +260,66 @@ export class User extends Collider {
     }
   }
 
-  // "Furniture" can be any non-user colliders in the world.
-  // Eg: desks or broadcast spots
-  checkFurniture(others: Array<DisplayObject>) {
-    for (let other of others) {
-      // Only non-local users can interact with broadcast
-      // spots.
-      if (!this.isLocal) {
-        if (other instanceof BroadcastSpot) {
-          const o = <BroadcastSpot>other;
-          if (o) o.tryInteract(this);
-        }
-        continue;
-      }
-      // Only local users can interact with desks
-      if (other instanceof Desk) {
-        const o = <Desk>other;
+  private async checkFurniture(other: DisplayObject) {
+    // Only non-local users can interact with broadcast
+    // spots.
+    if (!this.isLocal) {
+      if (other instanceof BroadcastSpot) {
+        const o = <BroadcastSpot>other;
         if (o) o.tryInteract(this);
       }
+      return;
     }
+    // Only local users can interact with desks
+    if (other instanceof Desk) {
+      const o = <Desk>other;
+      if (o) o.tryInteract(this);
+    }
+  }
+
+  private streamVideo(newTrack: MediaStreamTrack) {
+    this.media.updateVideoSource(newTrack);
+    if (this.media.cameraDisabled) {
+      if (this.textureType === TextureType.Video) {
+        this.setDefaultTexture();
+      }
+      return;
+    }
+
+    if (this.isLocal) {
+      this.setVideoTexture();
+    }
+  }
+
+  private streamAudio(newTrack: MediaStreamTrack) {
+    this.media.updateAudioSource(newTrack);
+  }
+
+  private setDefaultTexture() {
+    // I am not (yet) sure why this is needed, but without
+    // it we get inconsistent bounds and broken collision
+    // detection when switching textures.
+    this.getBounds(true);
+
+    const t = Textures.get();
+    const texture = t.library[this.gradientTextureName];
+
+    if (!texture) {
+      t.enqueue(
+        this,
+        this.gradientTextureName,
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
+          return this.generateTexture(renderer);
+        },
+        false
+      );
+      return;
+    } else {
+      this.texture = texture;
+    }
+
+    // this.texture = texture;
+    this.textureType = TextureType.Default;
   }
 
   private async proximityUpdate(other: User) {
