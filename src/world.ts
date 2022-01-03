@@ -334,7 +334,15 @@ export class World {
       newY -= s;
     });
 
+    this.keyListener.on("ArrowUp", () => {
+      newY -= s;
+    });
+
     this.keyListener.on("s", () => {
+      newY += s;
+    });
+
+    this.keyListener.on("ArrowDown", () => {
       newY += s;
     });
 
@@ -342,7 +350,15 @@ export class World {
       newX -= s;
     });
 
+    this.keyListener.on("ArrowLeft", () => {
+      newX -= s;
+    });
+
     this.keyListener.on("d", () => {
+      newX += s;
+    });
+
+    this.keyListener.on("ArrowRight", () => {
       newX += s;
     });
 
