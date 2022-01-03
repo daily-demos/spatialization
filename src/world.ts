@@ -122,7 +122,11 @@ export class World {
   private getFinalLocalPos(size: Size, proposedPos: Pos): Pos {
     for (let item of this.furnitureContainer.children) {
       const collider = <Collider>item;
+      // I am not yet sure why this is required it. Without it, 
+      // collision check below is extremely unreliable
+      collider.getBounds(false);
       if (collider.willHit(size, proposedPos, true)) {
+        console.log("User will hit furniture; finding new position:", proposedPos);
         proposedPos = {
           x: rand(50, 450),
           y: rand(50, 450),
