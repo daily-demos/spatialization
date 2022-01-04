@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
 
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; frame-src 'self' https://*.daily.co; script-src 'self' https://unpkg.com/@daily-co/daily-js 'unsafe-eval'; connect-src https://*.daily.co https://*.pluot.blue wss:; worker-src 'self' blob:; style-src-elem 'self' https://fonts.googleapis.com/css2; font-src 'self' https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu72xKKTU1Kvnz.woff2 https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2 https://*.gstatic.com"
+    />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,6 +17,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" type="text/css" href="./style.css" />
+
     <title>Daily Spatial Audio/Video Demo</title>
   </head>
   <body>
