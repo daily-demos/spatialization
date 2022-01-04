@@ -146,25 +146,24 @@ export class UserMedia {
       try {
         this.pannerNode.positionX.value = pos.x;
         this.pannerNode.positionY.value = pos.y;
-      }
-      catch (e) {
-        console.error(`failed to update panner position: ${e} (position: x: ${pos.x}, y: ${pos.y})`);
+      } catch (e) {
+        console.error(
+          `failed to update panner position: ${e} (position: x: ${pos.x}, y: ${pos.y})`
+        );
       }
     }
     if (this.stereoPannerNode.pan.value != panValue) {
       try {
         this.stereoPannerNode.pan.value = panValue;
-      }
-      catch (e) {
-        console.error(`failed to update panner position: ${e} (pan value: ${panValue})`);
+      } catch (e) {
+        console.error(
+          `failed to update panner position: ${e} (pan value: ${panValue})`
+        );
       }
     }
   }
 
   private createPannerNode(pos: Pos, panValue: number) {
-    let gainNode = window.audioContext.createGain();
-    gainNode.gain.setValueAtTime(1, window.audioContext.currentTime);
-
     const stream = new MediaStream([this.audioTrack]);
 
     this.pannerNode = new PannerNode(window.audioContext, {
@@ -186,7 +185,6 @@ export class UserMedia {
 
     this.stereoPannerNode = new StereoPannerNode(window.audioContext);
 
-    // Get pan value
     this.stereoPannerNode.pan.value = panValue;
 
     // Apparently this is required due to a Chromium bug!

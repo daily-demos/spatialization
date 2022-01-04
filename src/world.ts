@@ -96,6 +96,8 @@ export class World {
   }
 
   initLocalAvatar(sessionID: string) {
+    this.initAudioContext();
+
     const worldCenter = defaultWorldSize / 2;
     const p = {
       x: rand(worldCenter - 300, worldCenter + 300),
@@ -118,7 +120,6 @@ export class World {
     }
     this.sendData();
     this.keyListener.listenKeys();
-    this.initAudioContext();
   }
 
   removeAvatar(userId: string) {
@@ -152,7 +153,6 @@ export class World {
     );
     spot.x = defaultWorldSize / 2 - spot.width / 2;
     this.furnitureContainer.addChild(spot);
-    console.log("broadcast x: ", spot.x);
 
     const desk1 = new Desk(1, 4, 0, defaultWorldSize / 2 + 200);
     desk1.x = defaultWorldSize / 2 - desk1.width - spot.width;
@@ -279,7 +279,6 @@ export class World {
 
   private init() {
     const w = document.getElementById("world");
-    console.log("w7", w.offsetWidth, w.offsetHeight);
     this.app = new PIXI.Application({
       width: w.offsetWidth,
       height: w.offsetHeight,

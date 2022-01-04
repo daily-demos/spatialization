@@ -187,17 +187,15 @@ export class User extends Collider {
 
   private updateListener() {
     if (!this.isLocal) return;
+
     const listener = window.audioContext.listener;
-    if (listener.positionX && listener.positionY) {
-      // This is the correct way to set the position
-      listener.positionX.value = this.x;
-      listener.positionY.value = this.y;
-    } else {
-      // setPosition is deprecated, but is the only way to update
-      // position in some browsers: https://developer.mozilla.org/en-US/docs/Web/API/AudioListener
-      const l = <AudioListener>listener;
-      l.setPosition(this.x, this.y, 300);
-    }
+    // Note that this only works through our use of `standardized-audio-context`
+    // With a vanilla AudioContext, this would need to conditionally use `setPosition()`
+    // depending on the browser. `setPosition()` is deprecated, but is the only way to
+    // update position in some browsers:
+    // https://developer.mozilla.org/en-US/docs/Web/API/AudioListener
+    listener.positionX.value = this.x;
+    listener.positionY.value = this.y;
   }
 
   private async processUser(o: User) {
