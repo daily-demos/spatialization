@@ -6,9 +6,9 @@ import { Collider } from "./collider";
 import { Spot } from "./spot";
 import { User } from "./user";
 
-const spotSize = 50;
+const spotSize = 75;
 const spotBuffer = 10;
-const deskDepth = 50;
+const deskDepth = 75;
 const textureName = "desk";
 
 // Desk is a location that holds spots, through which a user can
@@ -59,31 +59,6 @@ export class Desk extends Collider {
     this.texture = texture;
   }
 
-  setSize(numSpots: number) {
-    const perSpot = spotSize + spotBuffer * 2;
-    const spotsPerSide = Math.round(numSpots / 2);
-    this.width = spotsPerSide * perSpot;
-    this.height = deskDepth;
-  }
-
-  createSpot(id: number, posX: number, posY: number) {
-    const spot = new Spot(id, posX, posY, spotSize, spotSize);
-    this.addChild(spot);
-    this.spots.push(spot);
-  }
-
-  generateTexture(
-    renderer: PIXI.Renderer | PIXI.AbstractRenderer
-  ): PIXI.Texture {
-    const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xd48200);
-    graphics.lineStyle(2, 0xf7f9fa, 1);
-    graphics.drawRoundedRect(this.x, this.y, this.width, this.height, 5);
-    graphics.endFill();
-    const texture = renderer.generateTexture(graphics);
-    return texture;
-  }
-
   async tryInteract(user: User) {
     for (let spot of this.spots) {
       if (!spot.occupantID && spot.hits(user)) {
@@ -97,5 +72,30 @@ export class Desk extends Collider {
         user.updateZone(0);
       }
     }
+  }
+
+  private setSize(numSpots: number) {
+    const perSpot = spotSize + spotBuffer * 2;
+    const spotsPerSide = Math.round(numSpots / 2);
+    this.width = spotsPerSide * perSpot;
+    this.height = deskDepth;
+  }
+
+  private createSpot(id: number, posX: number, posY: number) {
+    const spot = new Spot(id, posX, posY, spotSize, spotSize);
+    this.addChild(spot);
+    this.spots.push(spot);
+  }
+
+  private generateTexture(
+    renderer: PIXI.Renderer | PIXI.AbstractRenderer
+  ): PIXI.Texture {
+    const graphics = new PIXI.Graphics();
+    graphics.beginFill(0xd48200);
+    graphics.lineStyle(2, 0xf7f9fa, 1);
+    graphics.drawRoundedRect(this.x, this.y, this.width, this.height, 5);
+    graphics.endFill();
+    const texture = renderer.generateTexture(graphics);
+    return texture;
   }
 }

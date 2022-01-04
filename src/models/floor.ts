@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import FloorImg from "../assets/floor.jpg";
 import { Textures } from "../textures";
 
 const textureName = "floorTile";

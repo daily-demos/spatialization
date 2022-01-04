@@ -4,7 +4,7 @@ import { Textures } from "../textures";
 import { Collider } from "./collider";
 import { User } from "./user";
 
-const spotSize = 50;
+const spotSize = 75;
 const textureName = "broadcast";
 
 // BroadcastSpot is a location from which any user

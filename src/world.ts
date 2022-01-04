@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 
-import KeyListener, { removeZonemate } from "./util/nav";
+import KeyListener from "./util/nav";
 import { User } from "./models/user";
 import { rand } from "./util/math";
 import Floor from "./models/floor";
@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-const defaultWorldSize = 1000;
+const defaultWorldSize = 2000;
 
 export class World {
   subToTracks: (sessionID: string) => void = null;
@@ -96,10 +96,12 @@ export class World {
   }
 
   initLocalAvatar(sessionID: string) {
+    const worldCenter = defaultWorldSize / 2;
     const p = {
-      x: rand(150, 450),
-      y: rand(150, 450),
+      x: rand(worldCenter - 300, worldCenter + 300),
+      y: rand(worldCenter - 250, worldCenter + 250),
     };
+
     const avatar = this.createAvatar(sessionID, p.x, p.y, true);
 
     const finalPos = this.getFinalLocalPos(avatar.getSize(), p);
@@ -133,6 +135,7 @@ export class World {
   }
 
   start() {
+    this.app.resize();
     // Container that will hold our room "furniture" elements,
     // like broadcast spots
     this.furnitureContainer = new PIXI.Container();
@@ -143,18 +146,19 @@ export class World {
     const spot = new BroadcastSpot(
       0,
       0,
-      50,
+      defaultWorldSize / 2,
       this.subToTracks,
       this.unsubFromTracks
     );
     spot.x = defaultWorldSize / 2 - spot.width / 2;
     this.furnitureContainer.addChild(spot);
+    console.log("broadcast x: ", spot.x);
 
-    const desk1 = new Desk(1, 4, 0, 250);
+    const desk1 = new Desk(1, 4, 0, defaultWorldSize / 2 + 200);
     desk1.x = defaultWorldSize / 2 - desk1.width - spot.width;
     this.furnitureContainer.addChild(desk1);
 
-    const desk2 = new Desk(2, 4, 0, 250);
+    const desk2 = new Desk(2, 4, 0, defaultWorldSize / 2 + 200);
     desk2.x = defaultWorldSize / 2 + spot.width;
     this.furnitureContainer.addChild(desk2);
 
@@ -261,9 +265,11 @@ export class World {
           "User will hit furniture; finding new position:",
           proposedPos
         );
+
+        const worldCenter = defaultWorldSize / 2;
         proposedPos = {
-          x: rand(50, 450),
-          y: rand(50, 450),
+          x: rand(worldCenter - 500, worldCenter + 500),
+          y: rand(worldCenter - 500, worldCenter + 500),
         };
         return this.getFinalLocalPos(size, proposedPos);
       }
@@ -272,13 +278,18 @@ export class World {
   }
 
   private init() {
+    const w = document.getElementById("world");
+    console.log("w7", w.offsetWidth, w.offsetHeight);
     this.app = new PIXI.Application({
-      width: 500,
-      height: 500,
-      backgroundColor: 0xeefae0,
+      width: w.offsetWidth,
+      height: w.offsetHeight,
+      resizeTo: w,
+      backgroundColor: 0x121a24,
       resolution: 1,
     });
+
     this.app.ticker.maxFPS = 30;
+
     // Create window frame
     let frame = new PIXI.Graphics();
     frame.beginFill(0x121a24);
@@ -292,7 +303,7 @@ export class World {
     this.worldContainer.height = defaultWorldSize;
     this.worldContainer.sortableChildren = true;
 
-    const floor = new Floor();
+    const floor = new Floor(defaultWorldSize, defaultWorldSize);
     this.worldContainer.addChild(floor);
 
     frame.addChild(this.worldContainer);
@@ -305,6 +316,7 @@ export class World {
     this.worldContainer.addChild(this.usersContainer);
 
     document.getElementById("world").appendChild(this.app.view);
+
     this.app.ticker.add((deltaTime) => {
       this.draw(this.app.ticker.elapsedMS);
       this.update(deltaTime);
@@ -408,7 +420,9 @@ export class World {
   }
 
   destroy() {
+    Textures.destroy();
     this.app.destroy(true, true);
+
   }
 
   private initAudioContext() {

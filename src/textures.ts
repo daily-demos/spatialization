@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Texture } from "pixi.js";
 
 export type GeneratorFunc = (
   renderer: PIXI.Renderer | PIXI.AbstractRenderer
@@ -24,6 +25,12 @@ export class Textures {
       Textures.instance = new Textures();
     }
     return Textures.instance;
+  }
+
+  public static destroy() {
+      const i = Textures.get();
+      i.queue = [];
+      i.library = {};
   }
 
   // addTexture can be used to immediately add a texture to the library.

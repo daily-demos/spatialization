@@ -12,7 +12,7 @@ import { sign } from "@pixi/utils";
 const baseAlpha = 0.2;
 const earshot = 300;
 const maxAlpha = 1;
-const baseSize = 50;
+const baseSize = 75;
 const defaultSpeed = 4;
 enum TextureType {
   Unknown = 1,
@@ -314,11 +314,9 @@ export class User extends Collider {
         false
       );
       return;
-    } else {
-      this.texture = texture;
     }
 
-    // this.texture = texture;
+    this.texture = texture;
     this.textureType = TextureType.Default;
   }
 

@@ -11,7 +11,6 @@ export default class KeyListener {
 
   listenKeys() {
     window.onkeydown = (e) => {
-      console.log("pressedkey1", e.key);
       this.pressedKeys[e.key] = true;
     };
     window.onkeyup = (e) => {
