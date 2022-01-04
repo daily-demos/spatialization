@@ -11,10 +11,7 @@ import {
   DailyEventObjectParticipants,
 } from "@daily-co/daily-js";
 
-import {
-  showJoinForm,
-  showWorld,
-} from "./util/nav";
+import { showJoinForm, showWorld } from "./util/nav";
 import { World } from "./world";
 import { Pos } from "./worldTypes";
 

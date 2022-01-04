@@ -422,7 +422,6 @@ export class World {
   destroy() {
     Textures.destroy();
     this.app.destroy(true, true);
-
   }
 
   private initAudioContext() {

@@ -28,9 +28,9 @@ export class Textures {
   }
 
   public static destroy() {
-      const i = Textures.get();
-      i.queue = [];
-      i.library = {};
+    const i = Textures.get();
+    i.queue = [];
+    i.library = {};
   }
 
   // addTexture can be used to immediately add a texture to the library.
