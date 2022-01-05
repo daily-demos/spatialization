@@ -1,13 +1,13 @@
-import { Collider } from "./collider";
+import { Collider, ICollider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject } from "pixi.js";
 import { BroadcastSpot } from "./broadcast";
-import { Desk } from "./desk";
 import { Action, maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
 import { Pos, Size } from "../worldTypes";
 import { Textures } from "../textures";
 import { sign } from "@pixi/utils";
+import { Zone } from "./zone";
 
 const baseAlpha = 0.2;
 const earshot = 300;
@@ -27,6 +27,7 @@ export class User extends Collider {
   isInVicinity = false;
   isInEarshot = false;
   media: UserMedia;
+  isLocal: boolean;
 
   protected emoji: string = "😊";
   protected gradientTextureName: string = "user-gradient";
@@ -38,8 +39,6 @@ export class User extends Collider {
   private onEnterVicinity: Function;
   private onLeaveVicinity: Function;
   private onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void;
-
-  private isLocal: boolean;
 
   private userName: string;
 
@@ -153,20 +152,21 @@ export class User extends Collider {
     return this.zoneID === other.zoneID;
   }
 
-  moveTo(pos: Pos) {
-    this.x = pos.x;
-    this.y = pos.y;
-    this.updateListener();
+  moveTo(pos: Pos, trial = false) {
+    this.x = Math.round(pos.x);
+    this.y = Math.round(pos.y);
+    this.getBounds();
+    if (!trial) this.tryUpdateListener();
   }
 
   moveX(x: number) {
     this.x += x;
-    this.updateListener();
+    this.tryUpdateListener();
   }
 
   moveY(y: number) {
     this.y += y;
-    this.updateListener();
+    this.tryUpdateListener();
   }
 
   async processUsers(others: Array<DisplayObject>) {
@@ -177,7 +177,7 @@ export class User extends Collider {
 
   // "Furniture" can be any non-user colliders in the world.
   // Eg: desks or broadcast spots
-  checkFurnitures(others: Array<DisplayObject>) {
+  checkFurnitures(others: Array<ICollider>) {
     for (let other of others) {
       this.checkFurniture(other);
     }
@@ -185,7 +185,7 @@ export class User extends Collider {
 
   // Private methods below
 
-  private updateListener() {
+  private tryUpdateListener() {
     if (!this.isLocal) return;
 
     const listener = window.audioContext.listener;
@@ -258,7 +258,7 @@ export class User extends Collider {
     }
   }
 
-  private async checkFurniture(other: DisplayObject) {
+  private async checkFurniture(other: ICollider) {
     // Only non-local users can interact with broadcast
     // spots.
     if (!this.isLocal) {
@@ -269,8 +269,8 @@ export class User extends Collider {
       return;
     }
     // Only local users can interact with desks
-    if (other instanceof Desk) {
-      const o = <Desk>other;
+    if (other instanceof Zone) {
+      const o = <Zone>other;
       if (o) o.tryInteract(this);
     }
   }
@@ -300,7 +300,7 @@ export class User extends Collider {
     this.getBounds(true);
 
     const t = Textures.get();
-    const texture = t.library[this.gradientTextureName];
+    const texture = t.catalog[this.gradientTextureName];
 
     if (!texture) {
       t.enqueue(

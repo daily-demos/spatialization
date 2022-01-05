@@ -2,8 +2,9 @@ import { DisplayObject } from "pixi.js";
 import { rand } from "../util/math";
 import { Pos } from "../worldTypes";
 import { BroadcastSpot } from "./broadcast";
-import { Desk } from "./desk";
+import { ICollider } from "./collider";
 import { User } from "./user";
+import { Zone } from "./zone";
 
 export enum RobotRole {
   World = 0,
@@ -54,7 +55,7 @@ export class Robot extends User {
   // "Furniture" can be any non-user colliders in the world.
   // Eg: desks or broadcast spots. This overrides the user
   // furniture check.
-  checkFurnitures(others: Array<DisplayObject>) {
+  checkFurnitures(others: Array<ICollider>) {
     for (let other of others) {
       if (other instanceof BroadcastSpot) {
         const o = <BroadcastSpot>other;
@@ -62,8 +63,8 @@ export class Robot extends User {
         continue;
       }
 
-      if (other instanceof Desk) {
-        const o = <Desk>other;
+      if (other instanceof Zone) {
+        const o = <Zone>other;
         if (o) o.tryInteract(this);
         continue;
       }

@@ -6,11 +6,11 @@ import { rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastSpot } from "./models/broadcast";
 import { IAudioContext, AudioContext } from "standardized-audio-context";
-import { Desk } from "./models/desk";
-import { Collider } from "./models/collider";
+import { Collider, ICollider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
 import { Pos, Size } from "./worldTypes";
 import { Textures } from "./textures";
+import { Zone } from "./models/zone";
 
 declare global {
   interface Window {
@@ -36,6 +36,7 @@ export class World {
   private furnitureContainer: PIXI.Container = null;
 
   private robots: Array<Robot> = [];
+  private furniture: Array<ICollider> = [];
 
   constructor() {
     this.init();
@@ -92,7 +93,7 @@ export class World {
       avatar.updateZone(zoneID);
     }
     avatar.moveTo({ x: posX, y: posY });
-    avatar.checkFurnitures(this.furnitureContainer.children);
+    avatar.checkFurnitures(this.furniture);
   }
 
   initLocalAvatar(sessionID: string) {
@@ -105,10 +106,13 @@ export class World {
     };
 
     const avatar = this.createAvatar(sessionID, p.x, p.y, true);
+    this.app.render();
 
-    const finalPos = this.getFinalLocalPos(avatar.getSize(), p);
-    avatar.moveTo(finalPos);
+    this.getFinalLocalPos(avatar);
+    avatar.moveTo(avatar.getPos());
+
     this.localAvatar = avatar;
+    const finalPos = this.localAvatar.getPos();
 
     // Center world container on local avatar
     this.worldContainer.position.x =
@@ -151,16 +155,22 @@ export class World {
       this.subToTracks,
       this.unsubFromTracks
     );
-    spot.x = defaultWorldSize / 2 - spot.width / 2;
+    spot.position.set(defaultWorldSize / 2 - spot.width / 2, spot.y);
     this.furnitureContainer.addChild(spot);
+    this.furniture.push(spot);
 
-    const desk1 = new Desk(1, 4, 0, defaultWorldSize / 2 + 200);
-    desk1.x = defaultWorldSize / 2 - desk1.width - spot.width;
-    this.furnitureContainer.addChild(desk1);
+    const yPos = defaultWorldSize / 2 + 200;
 
-    const desk2 = new Desk(2, 4, 0, defaultWorldSize / 2 + 200);
-    desk2.x = defaultWorldSize / 2 + spot.width;
-    this.furnitureContainer.addChild(desk2);
+    const zone1 = new Zone(1, 4, { x: 0, y: yPos });
+
+    zone1.x = defaultWorldSize / 2 - zone1.width - spot.width;
+    this.furnitureContainer.addChild(zone1);
+    this.furniture.push(zone1);
+
+    const zone2 = new Zone(2, 4, { x: 0, y: yPos });
+    zone2.x = defaultWorldSize / 2 + spot.width;
+    this.furnitureContainer.addChild(zone2);
+    this.furniture.push(zone2);
 
     // Add furniture container to the world
     this.worldContainer.addChild(this.furnitureContainer);
@@ -190,8 +200,8 @@ export class World {
       role = RobotRole.Desk;
       // Find a desk position
       for (let item of this.furnitureContainer.children) {
-        if (item instanceof Desk) {
-          const desk = <Desk>item;
+        if (item instanceof Zone) {
+          const desk = <Zone>item;
           const spot = desk.spots[0];
           persistentPos = { x: desk.x + spot.x, y: desk.y + spot.y };
           break;
@@ -254,27 +264,23 @@ export class World {
     return avatar;
   }
 
-  private getFinalLocalPos(size: Size, proposedPos: Pos): Pos {
-    for (let item of this.furnitureContainer.children) {
-      const collider = <Collider>item;
-      // I am not yet sure why this is required it. Without it,
-      // collision check below is extremely unreliable
-      collider.getBounds(false);
-      if (collider.willHit(size, proposedPos, true)) {
+  private getFinalLocalPos(avatar: User): void {
+    for (let item of this.furniture) {
+      if (item.hits(avatar)) {
         console.log(
           "User will hit furniture; finding new position:",
-          proposedPos
+          avatar.getPos()
         );
 
         const worldCenter = defaultWorldSize / 2;
-        proposedPos = {
+        const np = {
           x: rand(worldCenter - 500, worldCenter + 500),
           y: rand(worldCenter - 500, worldCenter + 500),
         };
-        return this.getFinalLocalPos(size, proposedPos);
+        avatar.moveTo(np, true);
+        return this.getFinalLocalPos(avatar);
       }
     }
-    return proposedPos;
   }
 
   private init() {
@@ -315,29 +321,27 @@ export class World {
     this.worldContainer.addChild(this.usersContainer);
 
     document.getElementById("world").appendChild(this.app.view);
-
+    this.app.render();
     this.app.ticker.add((deltaTime) => {
-      this.draw(this.app.ticker.elapsedMS);
       this.update(deltaTime);
     });
   }
 
-  private draw(elapsedMS: number) {}
-
   private update(delta: number) {
-    if (!this.localAvatar) return;
     // Process texture queue
     const textures = Textures.get();
     textures.processQueue(this.app.renderer);
 
+    if (!this.localAvatar) return;
+
     // Update all robots
     for (let robot of this.robots) {
       robot.update();
-      robot.checkFurnitures(this.furnitureContainer.children);
+      robot.checkFurnitures(this.furniture);
     }
 
     this.localAvatar.processUsers(this.usersContainer.children);
-    this.localAvatar.checkFurnitures(this.furnitureContainer.children);
+    this.localAvatar.checkFurnitures(this.furniture);
     this.checkNavigation(delta);
   }
 
@@ -346,6 +350,7 @@ export class World {
 
     let newX = this.localAvatar.x;
     let newY = this.localAvatar.y;
+    const currentPos = this.localAvatar.getPos();
 
     this.keyListener.on("w", () => {
       newY -= s;
@@ -379,27 +384,26 @@ export class World {
       newX += s;
     });
 
-    for (let o of this.furnitureContainer.children) {
-      if (o instanceof Collider) {
-        const c = <Collider>o;
-        if (
-          c.physics &&
-          c.willHit(this.localAvatar.getSize(), { x: newX, y: newY }, false)
-        ) {
-          return;
-        }
+    if (newX === currentPos.x && newY === currentPos.y) {
+      return;
+    }
+
+    this.localAvatar.moveTo({ x: newX, y: newY }, true);
+
+    for (let o of this.furniture) {
+      if (o.physics && o.hits(this.localAvatar)) {
+        this.localAvatar.moveTo(currentPos, true);
+        return;
       }
     }
 
-    this.localAvatar.moveTo({ x: newX, y: newY });
-
-    const pos = this.localAvatar.getPos();
-
+    this.localAvatar.moveTo({ x: newX, y: newY }, false);
+    const newPos = this.localAvatar.getPos();
     // Center world container on local avatar
     this.worldContainer.position.x =
-      this.app.view.width / 2 - pos.x - this.localAvatar.width / 2;
+      this.app.view.width / 2 - newPos.x - this.localAvatar.width / 2;
     this.worldContainer.position.y =
-      this.app.view.height / 2 - pos.y - this.localAvatar.height / 2;
+      this.app.view.height / 2 - newPos.y - this.localAvatar.height / 2;
 
     this.sendData();
   }
@@ -420,6 +424,8 @@ export class World {
 
   destroy() {
     Textures.destroy();
+    this.furniture = [];
+    this.robots = [];
     this.app.destroy(true, true);
   }
 

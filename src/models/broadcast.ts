@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { Textures } from "../textures";
 
-import { Collider } from "./collider";
+import { Collider, IInteractable } from "./collider";
 import { User } from "./user";
 
 const spotSize = 75;
@@ -10,7 +10,7 @@ const textureName = "broadcast";
 // BroadcastSpot is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastSpot extends Collider {
+export class BroadcastSpot extends Collider implements IInteractable {
   id: number;
   name: string;
   occupantID?: string;
@@ -36,7 +36,7 @@ export class BroadcastSpot extends Collider {
     this.onLeaveBroadcast = onLeaveBroadcast;
 
     const t = Textures.get();
-    const texture = t.library[textureName];
+    const texture = t.catalog[textureName];
     if (!texture) {
       t.enqueue(
         this,

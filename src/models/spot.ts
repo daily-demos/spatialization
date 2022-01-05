@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { GeneratorFunc, Textures } from "../textures";
+import { Pos, Size } from "../worldTypes";
 
 import { Collider } from "./collider";
 
@@ -11,18 +12,18 @@ export class Spot extends Collider {
   name: string;
   occupantID: string;
 
-  constructor(id: number, x: number, y: number, width: number, height: number) {
+  constructor(id: number, pos: Pos, size: Size) {
     super(false);
 
     this.id = id;
     this.name = id.toString();
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
+    this.x = pos.x;
+    this.y = pos.y;
+    this.width = size.width;
+    this.height = size.height;
 
     const t = Textures.get();
-    const texture = t.library[spotTextureName];
+    const texture = t.catalog[spotTextureName];
     if (!texture) {
       t.enqueue(
         this,
@@ -34,6 +35,8 @@ export class Spot extends Collider {
       return;
     }
     this.texture = texture;
+    this.getBounds();
+    console.log("created spot", this.position, this.width, this.height);
   }
 
   generateTexture(

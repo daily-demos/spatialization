@@ -8,7 +8,7 @@ export default class Floor extends PIXI.TilingSprite {
     super(null, width, height);
 
     const t = Textures.get();
-    const texture = t.library[textureName];
+    const texture = t.catalog[textureName];
     if (!texture) {
       t.enqueue(
         this,

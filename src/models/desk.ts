@@ -1,15 +1,13 @@
 import * as PIXI from "pixi.js";
 import { Textures } from "../textures";
-import { GenerateTexture } from "../worldTypes";
+import { GenerateTexture, Pos, Size } from "../worldTypes";
 
 import { Collider } from "./collider";
 import { Spot } from "./spot";
 import { User } from "./user";
 
-const spotSize = 75;
-const spotBuffer = 10;
 const deskDepth = 75;
-const textureName = "desk";
+const deskTextureName = "desk";
 
 // Desk is a location that holds spots, through which a user can
 // join other users in an isolated zone.
@@ -17,9 +15,8 @@ export class Desk extends Collider {
   isPresenter = false;
   id: number;
   name: string;
-  spots: Array<Spot> = [];
 
-  constructor(id: number, numSpots: number, posX: number, posY: number) {
+  constructor(id: number, length: number, pos: Pos) {
     super(true);
 
     if (this.id === 0) {
@@ -28,28 +25,27 @@ export class Desk extends Collider {
 
     this.id = id;
     this.name = id.toString();
-    this.x = posX;
-    this.y = posY;
-    this.setSize(numSpots);
+    this.x = pos.x;
+    this.y = pos.y;
+    this.width = length;
+    this.height = deskDepth;
 
-    let px = spotBuffer;
-    let py = -spotSize;
-    for (let i = 0; i < numSpots; i++) {
-      this.createSpot(i, px, py);
-      px += spotSize + spotBuffer;
-      if (px + spotSize + spotBuffer >= this.width) {
-        // New line
-        px = spotBuffer;
-        py = this.height + 2;
-      }
-    }
+    console.log(
+      "new desk pos:",
+      this.id,
+      this.x,
+      this.y,
+      this.width,
+      this.height
+    );
 
     const t = Textures.get();
-    const texture = t.library[textureName];
+    const texture = t.catalog[deskTextureName];
+
     if (!texture) {
       t.enqueue(
         this,
-        textureName,
+        deskTextureName,
         (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
           return this.generateTexture(renderer);
         }
@@ -57,34 +53,7 @@ export class Desk extends Collider {
       return;
     }
     this.texture = texture;
-  }
-
-  async tryInteract(user: User) {
-    for (let spot of this.spots) {
-      if (!spot.occupantID && spot.hits(user)) {
-        spot.occupantID = user.id;
-        user.updateZone(this.id);
-        break;
-      }
-      if (spot.occupantID === user.id && !spot.hits(user)) {
-        spot.occupantID = null;
-        // Global zone id is 0
-        user.updateZone(0);
-      }
-    }
-  }
-
-  private setSize(numSpots: number) {
-    const perSpot = spotSize + spotBuffer * 2;
-    const spotsPerSide = Math.round(numSpots / 2);
-    this.width = spotsPerSide * perSpot;
-    this.height = deskDepth;
-  }
-
-  private createSpot(id: number, posX: number, posY: number) {
-    const spot = new Spot(id, posX, posY, spotSize, spotSize);
-    this.addChild(spot);
-    this.spots.push(spot);
+    this.getBounds();
   }
 
   private generateTexture(
