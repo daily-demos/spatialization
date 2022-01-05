@@ -4,7 +4,6 @@ import { User } from "./user";
 
 export interface ICollider {
   physics: boolean;
-  willHit: (futureSize: Size, futurePos: Pos, withChildren: boolean) => boolean;
   hits: (other: ICollider) => boolean;
 }
 
@@ -31,39 +30,6 @@ export class Collider extends PIXI.Sprite implements ICollider {
       { width: tb.width, height: tb.height },
       { width: ob.width, height: ob.height }
     );
-  }
-
-  // Check whether the other
-  willHit(futureSize: Size, futurePos: Pos, withChildren = true): boolean {
-    let tp: Pos;
-    let ts: Size;
-
-    if (withChildren) {
-      const thisBounds = this.getBounds(true);
-
-      console.log("bounds", thisBounds, futurePos);
-      tp = {
-        x: thisBounds.x,
-        y: thisBounds.y,
-      };
-      ts = {
-        width: thisBounds.width,
-        height: thisBounds.height,
-      };
-    } else {
-      const point = this.getGlobalPosition();
-      if (!point) return;
-      console.log("gp", point);
-      tp = {
-        x: point.x,
-        y: point.y,
-      };
-      ts = {
-        width: this.width,
-        height: this.height,
-      };
-    }
-    return doesCollide(tp, futurePos, ts, futureSize);
   }
 }
 

@@ -52,23 +52,6 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
     console.log("this pos: ", this.x, this.y, this.width, this.height);
   }
 
-  public willHit(
-    futureSize: Size,
-    futurePos: Pos,
-    withChildren = true
-  ): boolean {
-    const willHitDesk = this.desk.willHit(futureSize, futurePos, true);
-    if (!withChildren || willHitDesk) {
-      return willHitDesk;
-    }
-    for (let spot of this.spots) {
-      if (spot.willHit(futureSize, futurePos, withChildren)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public hits(other: Collider): boolean {
     // For the zone, the only collision we care about is the desk.
     // Since we'll be handling spot interaction separately.
@@ -105,7 +88,13 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
     graphics.beginFill(0xfddddd);
     graphics.lineStyle(2, 0xbb0c0c, 1);
     const bounds = this.getBounds(true);
-    graphics.drawRoundedRect(bounds.x - 5, bounds.y - 5, bounds.width + 10, bounds.height + 10, 1);
+    graphics.drawRoundedRect(
+      bounds.x - 5,
+      bounds.y - 5,
+      bounds.width + 10,
+      bounds.height + 10,
+      1
+    );
     graphics.endFill();
     graphics.zIndex = 0;
     this.addChild(graphics);
