@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Bounds } from "pixi.js";
 import { Pos, Size } from "../worldTypes";
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Desk } from "./desk";
@@ -6,7 +7,6 @@ import { Spot } from "./spot";
 import { User } from "./user";
 
 const spotSize = 75;
-const spotBuffer = 10;
 
 export class Zone extends PIXI.Container implements ICollider, IInteractable {
   isPresenter = false;
@@ -15,6 +15,9 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
   desk: Desk;
   spots: Array<Spot> = [];
   physics = true;
+
+  staticBounds: PIXI.Rectangle;
+
   private zoneMarker: PIXI.Graphics;
 
   constructor(id: number, numSpots: number, pos: Pos) {
@@ -36,20 +39,36 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
     this.addChild(this.desk);
 
     // Generate the sittig spots associated with this zone
-    let px = spotBuffer;
+    let px = 0;
     let py = -spotSize;
     for (let i = 0; i < numSpots; i++) {
       this.createSpot(i, { x: px, y: py });
-      px += spotSize + spotBuffer;
-      if (px + spotSize + spotBuffer >= this.width) {
+      px += spotSize;
+      if (px + spotSize > this.desk.width) {
         // New line
-        px = spotBuffer;
-        py = this.desk.height + 2;
+        px = 0;
+        py = this.desk.height;
       }
     }
+
+    // We create this because PIXI Bounds are subject to change, and likely will as child
+    // textures may be generated post-construction. The position here is relative to the
+    // container.
+    const deskSize = this.desk.staticSize;
+    this.staticBounds = new PIXI.Rectangle(
+      0,
+      0 - spotSize,
+      deskSize.width,
+      deskSize.height + spotSize * 2
+    );
+
     this.createZoneMarker();
     this.sortableChildren = true;
-    console.log("this pos: ", this.x, this.y, this.width, this.height);
+  }
+
+  public moveTo(pos: Pos) {
+    this.x = pos.x;
+    this.y = pos.y;
   }
 
   public hits(other: Collider): boolean {
@@ -66,28 +85,59 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
     );
   }
 
-  public async tryInteract(user: User) {
+  public hitsSpot(other: Collider): boolean {
     for (let spot of this.spots) {
+      if (spot.hits(other)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public async tryInteract(user: User) {
+    let hadPriorSpot: boolean;
+    let hasNewSpot: boolean;
+    for (let spot of this.spots) {
+      // If the user is already registered in this spot...
+      if (spot.occupantID === user.id) {
+        // ...and is still in the spot, do nothing
+        if (spot.hits(user)) return;
+        // User is no longer in the spot - clear the spot
+        spot.occupantID = null;
+        hadPriorSpot = true;
+        if (user.isLocal) this.hideZoneMarker();
+        continue;
+      }
+
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
         user.updateZone(this.id);
-        if (user.isLocal) this.zoneMarker.alpha = 0.1;
-        break;
-      }
-      if (spot.occupantID === user.id && !spot.hits(user)) {
-        spot.occupantID = null;
-        // Global zone id is 0
-        user.updateZone(0);
-        if (user.isLocal) this.zoneMarker.alpha = 1;
+        if (user.isLocal) this.showZoneMarker();
+        hasNewSpot = true;
+        continue;
       }
     }
+
+    if (hadPriorSpot && !hasNewSpot) {
+      console.log("leaving zone", this.id);
+      // Global zone id is 0
+      user.updateZone(0);
+    }
+  }
+
+  private showZoneMarker() {
+    this.zoneMarker.alpha = 0.1;
+  }
+
+  private hideZoneMarker() {
+    this.zoneMarker.alpha = 1;
   }
 
   private createZoneMarker() {
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0xfddddd);
     graphics.lineStyle(2, 0xbb0c0c, 1);
-    const bounds = this.getBounds(true);
+    const bounds = this.staticBounds;
     graphics.drawRoundedRect(
       bounds.x - 5,
       bounds.y - 5,
@@ -104,9 +154,8 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
   // Desk length depends on the number of spots
   // at the desk.
   private getDeskLength(numSpots: number): number {
-    const perSpot = spotSize + spotBuffer * 2;
     const spotsPerSide = Math.round(numSpots / 2);
-    return spotsPerSide * perSpot;
+    return spotsPerSide * spotSize;
   }
 
   private createSpot(id: number, pos: Pos) {

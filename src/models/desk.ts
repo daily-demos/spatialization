@@ -1,10 +1,8 @@
 import * as PIXI from "pixi.js";
 import { Textures } from "../textures";
-import { GenerateTexture, Pos, Size } from "../worldTypes";
+import { Pos, Size } from "../worldTypes";
 
 import { Collider } from "./collider";
-import { Spot } from "./spot";
-import { User } from "./user";
 
 const deskDepth = 75;
 const deskTextureName = "desk";
@@ -15,6 +13,7 @@ export class Desk extends Collider {
   isPresenter = false;
   id: number;
   name: string;
+  staticSize: Size;
 
   constructor(id: number, length: number, pos: Pos) {
     super(true);
@@ -30,14 +29,7 @@ export class Desk extends Collider {
     this.width = length;
     this.height = deskDepth;
 
-    console.log(
-      "new desk pos:",
-      this.id,
-      this.x,
-      this.y,
-      this.width,
-      this.height
-    );
+    this.staticSize = { width: length, height: deskDepth };
 
     const t = Textures.get();
     const texture = t.catalog[deskTextureName];

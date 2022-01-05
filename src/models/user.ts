@@ -39,7 +39,6 @@ export class User extends Collider {
   private onEnterVicinity: Function;
   private onLeaveVicinity: Function;
   private onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void;
-
   private userName: string;
 
   constructor(

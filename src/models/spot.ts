@@ -36,7 +36,6 @@ export class Spot extends Collider {
     }
     this.texture = texture;
     this.getBounds();
-    console.log("created spot", this.position, this.width, this.height);
   }
 
   generateTexture(
@@ -50,7 +49,7 @@ export class Spot extends Collider {
 
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0xf79400, 1);
-    graphics.lineStyle(1, 0xd48200, 1);
+    graphics.lineStyle(5, 0xffffff, 1, 1);
 
     graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
     graphics.endFill();

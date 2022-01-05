@@ -162,13 +162,15 @@ export class World {
     const yPos = defaultWorldSize / 2 + 200;
 
     const zone1 = new Zone(1, 4, { x: 0, y: yPos });
-
-    zone1.x = defaultWorldSize / 2 - zone1.width - spot.width;
+    zone1.moveTo({
+      x: defaultWorldSize / 2 - zone1.width - spot.width,
+      y: zone1.y,
+    });
     this.furnitureContainer.addChild(zone1);
     this.furniture.push(zone1);
 
     const zone2 = new Zone(2, 4, { x: 0, y: yPos });
-    zone2.x = defaultWorldSize / 2 + spot.width;
+    zone2.moveTo({ x: defaultWorldSize / 2 + spot.width, y: zone2.y });
     this.furnitureContainer.addChild(zone2);
     this.furniture.push(zone2);
 
@@ -266,20 +268,31 @@ export class World {
 
   private getFinalLocalPos(avatar: User): void {
     for (let item of this.furniture) {
-      if (item.hits(avatar)) {
-        console.log(
-          "User will hit furniture; finding new position:",
-          avatar.getPos()
-        );
-
-        const worldCenter = defaultWorldSize / 2;
-        const np = {
-          x: rand(worldCenter - 500, worldCenter + 500),
-          y: rand(worldCenter - 500, worldCenter + 500),
-        };
-        avatar.moveTo(np, true);
-        return this.getFinalLocalPos(avatar);
+      let doesHit = false;
+      if (item instanceof Zone) {
+        const z = <Zone>item;
+        if (z.hitsSpot(avatar)) {
+          doesHit = true;
+        }
       }
+      if (!doesHit && item.hits(avatar)) {
+        doesHit = true;
+      }
+
+      if (!doesHit) return;
+
+      console.log(
+        "User will hit furniture; finding new position:",
+        avatar.getPos()
+      );
+
+      const worldCenter = defaultWorldSize / 2;
+      const np = {
+        x: rand(worldCenter - 500, worldCenter + 500),
+        y: rand(worldCenter - 500, worldCenter + 500),
+      };
+      avatar.moveTo(np, true);
+      return this.getFinalLocalPos(avatar);
     }
   }
 
