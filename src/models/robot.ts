@@ -1,10 +1,10 @@
 import { DisplayObject } from "pixi.js";
 import { rand } from "../util/math";
 import { Pos } from "../worldTypes";
-import { BroadcastSpot } from "./broadcast";
+import { BroadcastZone } from "./broadcastZone";
 import { ICollider } from "./collider";
 import { User } from "./user";
-import { Zone } from "./zone";
+import { Zone } from "./deskZone";
 
 export enum RobotRole {
   World = 0,
@@ -57,8 +57,8 @@ export class Robot extends User {
   // furniture check.
   checkFurnitures(others: Array<ICollider>) {
     for (let other of others) {
-      if (other instanceof BroadcastSpot) {
-        const o = <BroadcastSpot>other;
+      if (other instanceof BroadcastZone) {
+        const o = <BroadcastZone>other;
         if (o) o.tryInteract(this);
         continue;
       }

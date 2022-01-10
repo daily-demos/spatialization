@@ -3,7 +3,12 @@ import {
   StereoPannerNode,
   AudioContext,
 } from "standardized-audio-context";
-import { showBroadcast, showZonemate, stopBroadcast } from "../util/nav";
+import {
+  removeZonemate,
+  showBroadcast,
+  showZonemate,
+  stopBroadcast,
+} from "../util/nav";
 import { Pos } from "../worldTypes";
 
 export const maxPannerDistance = 1000;
@@ -45,6 +50,8 @@ export class UserMedia {
     const video = document.createElement("video");
     video.autoplay = true;
     video.classList.add("fit");
+    video.width = 75;
+    video.height = 75;
     video.classList.add("invisible");
     document.documentElement.appendChild(video);
     this.videoTag = video;
@@ -121,14 +128,15 @@ export class UserMedia {
   getAudioTrack(): MediaStreamTrack {
     return this.audioTrack;
   }
+
   enterBroadcast() {
-    this.muteAudio();
+    if (this.audioTag) this.muteAudio();
     this.currentAction = Action.Broadcasting;
     this.showOrUpdateBroadcast();
   }
 
   leaveBroadcast() {
-    this.unmuteAudio();
+    if (this.audioTag) this.unmuteAudio();
     this.currentAction = Action.Traversing;
     stopBroadcast();
   }
@@ -161,6 +169,10 @@ export class UserMedia {
         );
       }
     }
+  }
+
+  destroy() {
+    removeZonemate(this.id);
   }
 
   private createPannerNode(pos: Pos, panValue: number) {
@@ -216,6 +228,7 @@ export class UserMedia {
   }
 
   showOrUpdateBroadcast() {
+    console.log("show or update broadcast", this.id);
     let videoTrack = null;
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;

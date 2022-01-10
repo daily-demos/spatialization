@@ -4,21 +4,20 @@ import KeyListener from "./util/nav";
 import { User } from "./models/user";
 import { rand } from "./util/math";
 import Floor from "./models/floor";
-import { BroadcastSpot } from "./models/broadcast";
+import { BroadcastZone } from "./models/broadcastZone";
 import { IAudioContext, AudioContext } from "standardized-audio-context";
 import { Collider, ICollider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
 import { Pos, Size } from "./worldTypes";
 import { Textures } from "./textures";
-import { Zone } from "./models/zone";
+import { Zone } from "./models/deskZone";
+import { broadcastZoneID, defaultWorldSize } from "./config";
 
 declare global {
   interface Window {
     audioContext: IAudioContext;
   }
 }
-
-const defaultWorldSize = 2000;
 
 export class World {
   subToTracks: (sessionID: string) => void = null;
@@ -129,6 +128,7 @@ export class World {
   removeAvatar(userId: string) {
     const avatar = this.getAvatar(userId);
     if (!avatar) return;
+    avatar.destroy();
     this.usersContainer.removeChild(avatar);
     for (let i = 0; i < this.robots.length; i++) {
       const robot = this.robots[i];
@@ -148,13 +148,7 @@ export class World {
     this.furnitureContainer.width = this.worldContainer.width;
     this.furnitureContainer.height = this.worldContainer.height;
     // Create a single broadcast spot
-    const spot = new BroadcastSpot(
-      0,
-      0,
-      defaultWorldSize / 2,
-      this.subToTracks,
-      this.unsubFromTracks
-    );
+    const spot = new BroadcastZone(broadcastZoneID, 0, defaultWorldSize / 2);
     spot.position.set(defaultWorldSize / 2 - spot.width / 2, spot.y);
     this.furnitureContainer.addChild(spot);
     this.furniture.push(spot);
@@ -215,8 +209,8 @@ export class World {
       role = RobotRole.Broadcast;
       // Find a broadcast position
       for (let item of this.furnitureContainer.children) {
-        if (item instanceof BroadcastSpot) {
-          const spot = <BroadcastSpot>item;
+        if (item instanceof BroadcastZone) {
+          const spot = <BroadcastZone>item;
           persistentPos = { x: spot.x, y: spot.y };
           break;
         }

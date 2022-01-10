@@ -10,20 +10,14 @@ const textureName = "broadcast";
 // BroadcastSpot is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastSpot extends Collider implements IInteractable {
+export class BroadcastZone extends Collider implements IInteractable {
   id: number;
   name: string;
   occupantID?: string;
-  onEnterBroadcast: (sessionID: string) => void;
-  onLeaveBroadcast: (sessionID: string) => void;
+  //onEnterBroadcast: (sessionID: string) => void;
+  //onLeaveBroadcast: (sessionID: string) => void;
 
-  constructor(
-    id: number,
-    x: number,
-    y: number,
-    onEnterBroadcast: (sessionID: string) => void,
-    onLeaveBroadcast: (sessionID: string) => void
-  ) {
+  constructor(id: number, x: number, y: number) {
     super();
 
     this.id = id;
@@ -32,8 +26,6 @@ export class BroadcastSpot extends Collider implements IInteractable {
     this.y = y;
     this.width = spotSize;
     this.height = spotSize;
-    this.onEnterBroadcast = onEnterBroadcast;
-    this.onLeaveBroadcast = onLeaveBroadcast;
 
     const t = Textures.get();
     const texture = t.catalog[textureName];
@@ -56,14 +48,14 @@ export class BroadcastSpot extends Collider implements IInteractable {
       this.occupantID = other.id;
       other.media.enterBroadcast();
       other.isInVicinity = false;
-      other.isInEarshot = false;
-      if (this.onEnterBroadcast) this.onEnterBroadcast(other.id);
+      other.updateZone(this.id);
+
       return;
     }
     if (other.id === this.occupantID && !this.hits(other)) {
       this.occupantID = null;
       other.media.leaveBroadcast();
-      if (this.onLeaveBroadcast) this.onLeaveBroadcast(other.id);
+      other.updateZone(0);
     }
   }
 

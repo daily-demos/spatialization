@@ -1,13 +1,14 @@
 import { Collider, ICollider } from "./collider";
 import * as PIXI from "pixi.js";
-import { DisplayObject } from "pixi.js";
-import { BroadcastSpot } from "./broadcast";
+import { DisplayObject, Texture, TilingSprite } from "pixi.js";
+import { BroadcastZone } from "./broadcastZone";
 import { Action, maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
 import { Pos, Size } from "../worldTypes";
 import { Textures } from "../textures";
 import { sign } from "@pixi/utils";
-import { Zone } from "./zone";
+import { Zone } from "./deskZone";
+import { broadcastZoneID, globalZoneID } from "../config";
 
 const baseAlpha = 0.2;
 const earshot = 300;
@@ -25,7 +26,6 @@ export class User extends Collider {
   id: string;
   speed: number;
   isInVicinity = false;
-  isInEarshot = false;
   media: UserMedia;
   isLocal: boolean;
 
@@ -83,6 +83,10 @@ export class User extends Collider {
     this.userName = name;
   }
 
+  destroy() {
+    this.media.destroy();
+  }
+
   private setVideoTexture() {
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
@@ -92,24 +96,21 @@ export class User extends Collider {
       return;
     }
 
+    this.textureType = TextureType.Video;
+
     // I am not (yet) sure why this is needed, but without
     // it we get inconsistent bounds and broken collision
     // detection when switching textures.
     this.getBounds(true);
     let texture = new PIXI.BaseTexture(this.media.videoTag);
+    texture.setSize(baseSize, baseSize);
+    let textureMask: PIXI.Rectangle = null;
+    textureMask = new PIXI.Rectangle(0, 0, baseSize, baseSize);
 
-    const textureMask = new PIXI.Rectangle(
-      settings.height / 2,
-      0,
-      settings.height,
-      settings.height
-    );
     this.texture = new PIXI.Texture(texture, textureMask);
     this.texture.updateUvs();
     this.width = baseSize;
     this.height = baseSize;
-
-    this.textureType = TextureType.Video;
   }
 
   // updateTracks sets the tracks, but does not
@@ -134,12 +135,20 @@ export class User extends Collider {
   }
 
   updateZone(zoneID: number) {
-    if (this.isLocal) console.log("updating zone", zoneID);
+    console.log("updating zone", this.id, zoneID);
     const oldZoneID = this.zoneID;
     if (zoneID === oldZoneID) return;
     this.zoneID = zoneID;
+    if (oldZoneID === broadcastZoneID) {
+      this.media.leaveBroadcast();
+    }
     if (this.isLocal) {
       if (this.onJoinZone) this.onJoinZone(this.id, this.zoneID, this.getPos());
+      if (this.zoneID === globalZoneID) {
+        this.setVideoTexture();
+        return;
+      }
+      this.setDefaultTexture();
     }
   }
 
@@ -209,11 +218,11 @@ export class User extends Collider {
     }
 
     // Both users are in the default zone
-    if (this.zoneID === 0 && o.zoneID === 0) {
+    if (this.zoneID === globalZoneID && o.zoneID === globalZoneID) {
       this.proximityUpdate(o);
       return;
     }
-
+    o.media.muteAudio();
     // If the users are in the same zone that is not the default zone,
     // enter vicinity and display them as zonemates in focused-mode.
     if (o.zoneID > 0 && o.zoneID === this.zoneID) {
@@ -223,12 +232,24 @@ export class User extends Collider {
           o.isInVicinity = true;
           if (this.onEnterVicinity) this.onEnterVicinity(o.id);
         }
-        if (o.isInEarshot) o.isInEarshot = false;
         o.media.currentAction = Action.InZone;
       }
       // Mute the other user's default audio, since we'll
       // be streaming via a zone.
       o.media.muteAudio();
+      return;
+    }
+
+    // If the other user is broadcasting,
+    // enter vicinity and display them in focused-mode
+    if (o.zoneID === broadcastZoneID) {
+      if (!o.isInVicinity) {
+        o.alpha = 1;
+        o.isInVicinity = true;
+        if (this.onEnterVicinity) this.onEnterVicinity(o.id);
+
+        o.media.enterBroadcast();
+      }
       return;
     }
 
@@ -243,7 +264,6 @@ export class User extends Collider {
         if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
         o.setDefaultTexture();
       }
-      if (o.isInEarshot) o.isInEarshot = false;
 
       // Stop streaming to a zone if they are currently doing so,
       // Since the users are not in the same zone.
@@ -259,16 +279,21 @@ export class User extends Collider {
   }
 
   private async checkFurniture(other: ICollider) {
-    // Only non-local users can interact with broadcast
-    // spots.
-    if (!this.isLocal) {
-      if (other instanceof BroadcastSpot) {
-        const o = <BroadcastSpot>other;
-        if (o) o.tryInteract(this);
-      }
+    if (
+      !this.isLocal &&
+      this.zoneID === broadcastZoneID &&
+      other instanceof BroadcastZone
+    ) {
+      other.occupantID = this.id;
       return;
     }
-    // Only local users can interact with desks
+
+    if (other instanceof BroadcastZone) {
+      const o = <BroadcastZone>other;
+      if (o) o.tryInteract(this);
+      return;
+    }
+
     if (other instanceof Zone) {
       const o = <Zone>other;
       if (o) o.tryInteract(this);
@@ -294,6 +319,7 @@ export class User extends Collider {
   }
 
   private setDefaultTexture() {
+    if (this.textureType === TextureType.Default) return;
     // I am not (yet) sure why this is needed, but without
     // it we get inconsistent bounds and broken collision
     // detection when switching textures.
@@ -358,10 +384,7 @@ export class User extends Collider {
       const pm = this.getPannerMod(distance, other.getPos());
       other.media.updatePanner(pm.pos, pm.pan);
 
-      if (!other.isInEarshot) {
-        other.isInEarshot = true;
-        other.media.unmuteAudio();
-      }
+      other.media.unmuteAudio();
       if (
         !other.media.cameraDisabled &&
         other.textureType != TextureType.Video
@@ -371,12 +394,8 @@ export class User extends Collider {
       return;
     }
 
-    // User is not currently in earshot, but was before
-    if (other.isInEarshot) {
-      other.isInEarshot = false;
-      other.setDefaultTexture();
-      other.media.muteAudio();
-    }
+    console.log("setting default texture", other.media.audioTag.muted);
+    other.setDefaultTexture();
   }
 
   private getPannerMod(

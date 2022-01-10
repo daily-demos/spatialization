@@ -25,12 +25,19 @@ type BroadcastData = {
   pos: Pos;
 };
 
+enum BandwidthLevel {
+  Unknown = 0,
+  Tile,
+  Focus,
+}
+
 export class Room {
   url: string;
   userName: string;
   isGlobal: boolean;
   callObject: DailyCall;
   pendingAcks: { [key: string]: ReturnType<typeof setInterval> } = {};
+  localBandwidthLevel = BandwidthLevel.Unknown;
 
   constructor(url: string, userName: string, isGlobal = false) {
     this.url = url;
@@ -104,7 +111,32 @@ export class Room {
   }
 
   broadcast(data: BroadcastData, recipientSessionID = "*") {
+    if (data.zoneID === 0) {
+      this.setBandwidth(BandwidthLevel.Tile);
+    } else {
+      this.setBandwidth(BandwidthLevel.Focus);
+    }
     this.callObject.sendAppMessage(data, recipientSessionID);
+  }
+
+  setBandwidth(level: BandwidthLevel) {
+    if (this.localBandwidthLevel === level) {
+      return;
+    }
+    switch (level) {
+      case BandwidthLevel.Tile:
+        this.localBandwidthLevel = level;
+        this.callObject.setBandwidth({
+          trackConstraints: { width: 75, height: 75, frameRate: 15 },
+        });
+        break;
+      case BandwidthLevel.Focus:
+        this.localBandwidthLevel = level;
+        this.callObject.setBandwidth({
+          trackConstraints: { width: 200, height: 200, frameRate: 30 },
+        });
+        break;
+    }
   }
 }
 
@@ -119,6 +151,7 @@ function handleError(room: Room, event: DailyEventObjectFatalError) {
 function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
   const p = event.participants["local"];
   console.log("JOINED MEETING. session ID, pID", p.session_id, p.user_id);
+  room.setBandwidth(BandwidthLevel.Tile);
 
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);

@@ -68,6 +68,7 @@ export function showBroadcast(
 }
 
 export function stopBroadcast() {
+  console.log("Stopping broadcast");
   const vid = <HTMLVideoElement>document.getElementById("broadcastVideo");
   vid.srcObject = null;
 }

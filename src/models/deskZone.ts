@@ -118,7 +118,6 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
     }
 
     if (hadPriorSpot && !hasNewSpot) {
-      console.log("leaving zone", this.id);
       // Global zone id is 0
       user.updateZone(0);
       if (user.isLocal) this.showZoneMarker();

@@ -112,14 +112,12 @@ describe("User zone tests", () => {
     // and earshot.
     lu.processUsers([ru]);
     expect(ru.isInVicinity).toBe(true);
-    expect(ru.isInEarshot).toBe(true);
     expect(ru.media.audioTag.muted).toBe(false);
 
     // Remote user steps away
     ru.moveTo({ x: 1000, y: 1000 });
     lu.processUsers([ru]);
     expect(ru.isInVicinity).toBe(false);
-    expect(ru.isInEarshot).toBe(false);
     expect(ru.media.audioTag.muted).toBe(true);
   });
 
@@ -137,7 +135,6 @@ describe("User zone tests", () => {
     // not be in the vicinity or earshot, AND they should be
     // muted
     expect(ru.isInVicinity).toBe(false);
-    expect(ru.isInEarshot).toBe(false);
     expect(ru.media.audioTag.muted).toBe(true);
   });
 
@@ -152,7 +149,6 @@ describe("User zone tests", () => {
     // Both users are now within the same non-default zone.
     lu.processUsers([ru]);
     expect(ru.isInVicinity).toBe(true);
-    expect(ru.isInEarshot).toBe(false);
     expect(ru.media.audioTag.muted).toBe(true);
   });
 });
