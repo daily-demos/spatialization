@@ -105,15 +105,14 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
         // User is no longer in the spot - clear the spot
         spot.occupantID = null;
         hadPriorSpot = true;
-        if (user.isLocal) this.hideZoneMarker();
         continue;
       }
 
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
         user.updateZone(this.id);
-        if (user.isLocal) this.showZoneMarker();
         hasNewSpot = true;
+        if (user.isLocal) this.hideZoneMarker();
         continue;
       }
     }
@@ -122,14 +121,15 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
       console.log("leaving zone", this.id);
       // Global zone id is 0
       user.updateZone(0);
+      if (user.isLocal) this.showZoneMarker();
     }
   }
 
-  private showZoneMarker() {
+  private hideZoneMarker() {
     this.zoneMarker.alpha = 0.1;
   }
 
-  private hideZoneMarker() {
+  private showZoneMarker() {
     this.zoneMarker.alpha = 1;
   }
 

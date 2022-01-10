@@ -109,11 +109,11 @@ export class Room {
 }
 
 function handleCameraError(room: Room, event: DailyEventObjectCameraError) {
-  console.error(event);
+  console.error(`camera error in room ${room.url}": ${event}`);
 }
 
 function handleError(room: Room, event: DailyEventObjectFatalError) {
-  console.error(event);
+  console.error(`error in room ${room.url}": ${event}`);
 }
 
 function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
@@ -230,7 +230,6 @@ function handleParticipantJoined(
   event: DailyEventObjectParticipant
 ) {
   const sID = event.participant.session_id;
-
   if (isRobot(event.participant.user_name)) {
     world.createRobot(sID);
     return;

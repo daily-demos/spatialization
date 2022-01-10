@@ -239,6 +239,7 @@ export class User extends Collider {
       // Leave vicinity if they are in vicinity
       if (o.isInVicinity) {
         o.isInVicinity = false;
+        o.alpha = baseAlpha;
         if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
         o.setDefaultTexture();
       }
