@@ -1,9 +1,9 @@
 import { Collider, ICollider } from "./collider";
 import * as PIXI from "pixi.js";
-import { DisplayObject, Texture, TilingSprite } from "pixi.js";
+import { DisplayObject } from "pixi.js";
 import { BroadcastZone } from "./broadcastZone";
 import { Action, maxPannerDistance, UserMedia } from "./userMedia";
-import { removeZonemate, showZonemate } from "../util/nav";
+import { removeZonemate } from "../util/nav";
 import { Pos, Size } from "../worldTypes";
 import { Textures } from "../textures";
 import { DeskZone } from "./deskZone";
@@ -429,8 +429,6 @@ export class User extends Collider {
     distance: number,
     otherPos: Pos
   ): { pos: Pos; pan: number } {
-    // earshotDistance = maxPannerDistance
-    // distance = desiredPannerdistance
     const desiredPannerDistance =
       (distance * maxPannerDistance) / this.earshotDistance;
 
@@ -451,7 +449,7 @@ export class User extends Collider {
   }
 
   protected distanceTo(other: Pos) {
-    // We need to get distance from the center of the avatar
+    // We need to get distance from the center of the user
     const thisX = Math.round(this.x + baseSize / 2);
     const thisY = Math.round(this.y + baseSize / 2);
 

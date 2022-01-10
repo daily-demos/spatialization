@@ -7,7 +7,10 @@ import { User } from "./user";
 
 const spotSize = 75;
 
-export class DeskZone extends PIXI.Container implements ICollider, IInteractable {
+export class DeskZone
+  extends PIXI.Container
+  implements ICollider, IInteractable
+{
   isPresenter = false;
   id: number;
   name: string;

@@ -27,7 +27,7 @@ export class World {
   onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null;
 
   private keyListener = new KeyListener();
-  private localAvatar: User = null;
+  private localUser: User = null;
 
   private app: PIXI.Application = null;
   private worldContainer: PIXI.Container = null;
@@ -44,12 +44,11 @@ export class World {
   setUserTracks(
     id: string,
     video: MediaStreamTrack = null,
-    audio: MediaStreamTrack = null,
-    screen: MediaStreamTrack = null
+    audio: MediaStreamTrack = null
   ) {
-    const avatar = this.getAvatar(id);
-    if (avatar) {
-      avatar.updateTracks(video, audio);
+    const user = this.getUser(id);
+    if (user) {
+      user.updateTracks(video, audio);
     }
   }
 
@@ -59,12 +58,12 @@ export class World {
     pos: Pos,
     spotID: number = -1
   ) {
-    let avatar = this.getAvatar(sessionID);
-    if (!avatar) {
-      avatar = this.createAvatar(sessionID, pos.x, pos.y);
+    let user = this.getUser(sessionID);
+    if (!user) {
+      user = this.createUser(sessionID, pos.x, pos.y);
     }
-    avatar.updateZone(zoneID);
-    if (avatar.isZonemate(this.localAvatar)) {
+    user.updateZone(zoneID);
+    if (user.isZonemate(this.localUser)) {
       // Send data back to make sure the newly joined participant knows
       // we are in the same zone
       this.sendDataToParticipant(sessionID);
@@ -72,20 +71,20 @@ export class World {
     }
     for (let item of this.furniture) {
       if (item instanceof DeskZone) {
-        item.tryPlace(avatar, spotID);
+        item.tryPlace(user, spotID);
         return;
       }
     }
   }
 
   initRemoteParticpant(sessionID: string, userName: string) {
-    // Avatar may have been created as part of an out of order
+    // User may have been created as part of an out of order
     // update. If it already exists, just update the name
-    let avatar = this.getAvatar(sessionID);
-    if (!avatar) {
-      avatar = this.createAvatar(sessionID, -10000, -1000);
+    let user = this.getUser(sessionID);
+    if (!user) {
+      user = this.createUser(sessionID, -10000, -1000);
     }
-    avatar.setUserName(userName);
+    user.setUserName(userName);
   }
 
   updateParticipantPos(
@@ -94,19 +93,19 @@ export class World {
     posX: number,
     posY: number
   ) {
-    let avatar = this.getAvatar(sessionID);
-    if (!avatar) {
-      avatar = this.createAvatar(sessionID, posX, posY);
-      avatar.updateZone(zoneID);
+    let user = this.getUser(sessionID);
+    if (!user) {
+      user = this.createUser(sessionID, posX, posY);
+      user.updateZone(zoneID);
     }
-    if (avatar.getZone() !== zoneID) {
-      avatar.updateZone(zoneID);
+    if (user.getZone() !== zoneID) {
+      user.updateZone(zoneID);
     }
-    avatar.moveTo({ x: posX, y: posY });
-    avatar.checkFurnitures(this.furniture);
+    user.moveTo({ x: posX, y: posY });
+    user.checkFurnitures(this.furniture);
   }
 
-  initLocalAvatar(sessionID: string) {
+  initLocalUser(sessionID: string): void {
     this.initAudioContext();
 
     const worldCenter = defaultWorldSize / 2;
@@ -115,20 +114,20 @@ export class World {
       y: rand(worldCenter - 250, worldCenter + 250),
     };
 
-    const avatar = this.createAvatar(sessionID, p.x, p.y, true);
+    const user = this.createUser(sessionID, p.x, p.y, true);
     this.app.render();
 
-    this.getFinalLocalPos(avatar);
-    avatar.moveTo(avatar.getPos());
+    this.getFinalLocalPos(user);
+    user.moveTo(user.getPos());
 
-    this.localAvatar = avatar;
-    const finalPos = this.localAvatar.getPos();
+    this.localUser = user;
+    const finalPos = this.localUser.getPos();
 
-    // Center world container on local avatar
+    // Center world container on local user
     this.worldContainer.position.x =
-      this.app.view.width / 2 - finalPos.x - this.localAvatar.width / 2;
+      this.app.view.width / 2 - finalPos.x - this.localUser.width / 2;
     this.worldContainer.position.y =
-      this.app.view.height / 2 - finalPos.y - this.localAvatar.height / 2;
+      this.app.view.height / 2 - finalPos.y - this.localUser.height / 2;
     if (this.onCreateUser) {
       this.onCreateUser();
     }
@@ -136,11 +135,11 @@ export class World {
     this.keyListener.listenKeys();
   }
 
-  removeAvatar(userId: string) {
-    const avatar = this.getAvatar(userId);
-    if (!avatar) return;
-    avatar.destroy();
-    this.usersContainer.removeChild(avatar);
+  removeUser(userId: string): void {
+    const user = this.getUser(userId);
+    if (!user) return;
+    user.destroy();
+    this.usersContainer.removeChild(user);
     for (let i = 0; i < this.robots.length; i++) {
       const robot = this.robots[i];
       if (robot.id === userId) {
@@ -246,7 +245,7 @@ export class World {
     this.usersContainer.addChild(robot);
   }
 
-  private createAvatar(
+  private createUser(
     userID: string,
     x: number,
     y: number,
@@ -260,7 +259,7 @@ export class World {
       onLeaveVicinity = this.unsubFromTracks;
       onJoinZone = this.onJoinZone;
     }
-    const avatar = new User(
+    const user = new User(
       userID,
       x,
       y,
@@ -269,28 +268,28 @@ export class World {
       (onLeaveVicinity = onLeaveVicinity),
       onJoinZone
     );
-    this.usersContainer.addChild(avatar);
-    return avatar;
+    this.usersContainer.addChild(user);
+    return user;
   }
 
-  private getFinalLocalPos(avatar: User): void {
+  private getFinalLocalPos(user: User): void {
     for (let item of this.furniture) {
       let doesHit = false;
       if (item instanceof DeskZone) {
         const z = <DeskZone>item;
-        if (z.hitsSpot(avatar)) {
+        if (z.hitsSpot(user)) {
           doesHit = true;
         }
       }
-      if (!doesHit && item.hits(avatar)) {
+      if (!doesHit && item.hits(user)) {
         doesHit = true;
       }
 
-      if (!doesHit) return;
+      if (!doesHit) continue;
 
       console.log(
         "User will hit furniture; finding new position:",
-        avatar.getPos()
+        user.getPos()
       );
 
       const worldCenter = defaultWorldSize / 2;
@@ -298,8 +297,8 @@ export class World {
         x: rand(worldCenter - 500, worldCenter + 500),
         y: rand(worldCenter - 500, worldCenter + 500),
       };
-      avatar.moveTo(np, true);
-      return this.getFinalLocalPos(avatar);
+      user.moveTo(np, true);
+      return this.getFinalLocalPos(user);
     }
   }
 
@@ -352,7 +351,7 @@ export class World {
     const textures = Textures.get();
     textures.processQueue(this.app.renderer);
 
-    if (!this.localAvatar) return;
+    if (!this.localUser) return;
 
     // Update all robots
     for (let robot of this.robots) {
@@ -360,17 +359,17 @@ export class World {
       robot.checkFurnitures(this.furniture);
     }
 
-    this.localAvatar.processUsers(this.usersContainer.children);
-    this.localAvatar.checkFurnitures(this.furniture);
+    this.localUser.processUsers(this.usersContainer.children);
+    this.localUser.checkFurnitures(this.furniture);
     this.checkNavigation(delta);
   }
 
   private checkNavigation(delta: number) {
-    const s = delta * this.localAvatar.speed;
+    const s = delta * this.localUser.speed;
 
-    let newX = this.localAvatar.x;
-    let newY = this.localAvatar.y;
-    const currentPos = this.localAvatar.getPos();
+    let newX = this.localUser.x;
+    let newY = this.localUser.y;
+    const currentPos = this.localUser.getPos();
 
     this.keyListener.on("w", () => {
       newY -= s;
@@ -408,32 +407,32 @@ export class World {
       return;
     }
 
-    this.localAvatar.moveTo({ x: newX, y: newY }, true);
+    this.localUser.moveTo({ x: newX, y: newY }, true);
 
     for (let o of this.furniture) {
-      if (o.physics && o.hits(this.localAvatar)) {
-        this.localAvatar.moveTo(currentPos, true);
+      if (o.physics && o.hits(this.localUser)) {
+        this.localUser.moveTo(currentPos, true);
         return;
       }
     }
 
-    this.localAvatar.moveTo({ x: newX, y: newY }, false);
-    const newPos = this.localAvatar.getPos();
-    // Center world container on local avatar
+    this.localUser.moveTo({ x: newX, y: newY }, false);
+    const newPos = this.localUser.getPos();
+    // Center world container on local user
     this.worldContainer.position.x =
-      this.app.view.width / 2 - newPos.x - this.localAvatar.width / 2;
+      this.app.view.width / 2 - newPos.x - this.localUser.width / 2;
     this.worldContainer.position.y =
-      this.app.view.height / 2 - newPos.y - this.localAvatar.height / 2;
+      this.app.view.height / 2 - newPos.y - this.localUser.height / 2;
 
     this.sendData();
   }
 
-  private getAvatar(id: string): User {
+  private getUser(id: string): User {
     return <User>this.usersContainer.getChildByName(id);
   }
 
   private async sendData() {
-    const la = this.localAvatar;
+    const la = this.localUser;
 
     const lz = la.getZone();
     // If we are in an isolated zone and have zonemates,
@@ -451,7 +450,7 @@ export class World {
   }
 
   sendDataToParticipant(sessionID: string) {
-    const la = this.localAvatar;
+    const la = this.localUser;
     this.onMove(la.getZone(), la.getPos(), sessionID);
   }
 
