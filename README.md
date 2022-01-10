@@ -1,4 +1,4 @@
-# Daily spatializatoin demo
+# Daily spatialization demo
 
 This demo shows one way to implement a video and audio call application with gamified spatialization elements using [Daily's call object](https://docs.daily.co/guides/products/call-object).
 
