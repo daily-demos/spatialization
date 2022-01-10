@@ -395,7 +395,6 @@ export class User extends Collider {
 
     // User is in earshot
     if (this.inEarshot(distance)) {
-      console.log("user is in earshot:", distance);
       const pm = this.getPannerMod(distance, other.getPos());
       other.media.updatePanner(pm.pos, pm.pan);
 

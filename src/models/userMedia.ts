@@ -117,7 +117,7 @@ export class UserMedia {
     if (!this.audioTag.muted) {
       this.audioTag.muted = true;
       console.log("muted audio");
-    } 
+    }
   }
 
   unmuteAudio() {

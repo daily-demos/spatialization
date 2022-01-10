@@ -83,6 +83,7 @@ export class Room {
     const micBtn = document.getElementById("toggleMic");
     micBtn.onclick = () => {
       const current = this.callObject.participants().local.audio;
+      console.log("toggling mic to:", !current);
       this.callObject.setLocalAudio(!current);
     };
 
@@ -284,8 +285,11 @@ function isRobot(userName: string): Boolean {
 }
 
 function getParticipantTracks(participant: DailyParticipant) {
-  const vt = <{ [key: string]: any }>participant?.tracks?.video;
-  const at = <{ [key: string]: any }>participant?.tracks?.audio;
+  const tracks = participant?.tracks;
+  if (!tracks) return { video: null, audio: null };
+
+  const vt = <{ [key: string]: any }>tracks.video;
+  const at = <{ [key: string]: any }>tracks.audio;
 
   const videoTrack = vt?.state === playableState ? vt["persistentTrack"] : null;
   const audioTrack = at?.state === playableState ? at["persistentTrack"] : null;
