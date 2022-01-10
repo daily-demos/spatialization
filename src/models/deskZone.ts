@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { Bounds } from "pixi.js";
+import { Bounds, TilingSprite } from "pixi.js";
 import { Pos, Size } from "../worldTypes";
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Desk } from "./desk";
@@ -66,6 +66,21 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
     this.sortableChildren = true;
   }
 
+  public tryPlace(user: User, spotID: number) {
+    for (let spot of this.spots) {
+      if (spot.id === spotID) {
+        console.log("user occupied zone and spot:", this.id, spot.id);
+        spot.occupantID = user.id;
+        const np = {
+          x: this.x + spot.x,
+          y: this.y + spot.y,
+        };
+        user.moveTo(np);
+        return;
+      }
+    }
+  }
+
   public moveTo(pos: Pos) {
     this.x = pos.x;
     this.y = pos.y;
@@ -110,7 +125,7 @@ export class Zone extends PIXI.Container implements ICollider, IInteractable {
 
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
-        user.updateZone(this.id);
+        user.updateZone(this.id, spot.id);
         hasNewSpot = true;
         if (user.isLocal) this.hideZoneMarker();
         continue;

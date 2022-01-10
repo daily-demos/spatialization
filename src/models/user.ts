@@ -38,7 +38,13 @@ export class User extends Collider {
   private earshotDistance: number;
   private onEnterVicinity: Function;
   private onLeaveVicinity: Function;
-  private onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void;
+  private onJoinZone: (
+    sessionID: string,
+    zoneID: number,
+    pos: Pos,
+    spotID: number
+  ) => void;
+  private localZoneMates: Array<string> = [];
   private userName: string;
 
   constructor(
@@ -48,7 +54,12 @@ export class User extends Collider {
     isLocal = false,
     onEnterVicinity: Function = null,
     onLeaveVicinity: Function = null,
-    onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null
+    onJoinZone: (
+      sessionID: string,
+      zoneID: number,
+      pos: Pos,
+      spotID: number
+    ) => void = null
   ) {
     super();
     this.media = new UserMedia(id, isLocal);
@@ -134,7 +145,7 @@ export class User extends Collider {
     return { width: this.width, height: this.height };
   }
 
-  updateZone(zoneID: number) {
+  updateZone(zoneID: number, spotID: number = -1) {
     console.log("updating zone", this.id, zoneID);
     const oldZoneID = this.zoneID;
     if (zoneID === oldZoneID) return;
@@ -143,7 +154,10 @@ export class User extends Collider {
       this.media.leaveBroadcast();
     }
     if (this.isLocal) {
-      if (this.onJoinZone) this.onJoinZone(this.id, this.zoneID, this.getPos());
+      this.localZoneMates = [];
+      if (this.onJoinZone)
+        this.onJoinZone(this.id, this.zoneID, this.getPos(), spotID);
+
       if (this.zoneID === globalZoneID) {
         this.setVideoTexture();
         return;
@@ -158,6 +172,10 @@ export class User extends Collider {
 
   isZonemate(other: User) {
     return this.zoneID === other.zoneID;
+  }
+
+  getZonemates(): Array<string> {
+    return this.localZoneMates;
   }
 
   moveTo(pos: Pos, trial = false) {
@@ -222,10 +240,20 @@ export class User extends Collider {
       this.proximityUpdate(o);
       return;
     }
+
+    // If both users are not in the default zone, we already know we won't
+    // be playing audio through the traversal tile. Mute it.
     o.media.muteAudio();
+
     // If the users are in the same zone that is not the default zone,
     // enter vicinity and display them as zonemates in focused-mode.
     if (o.zoneID > 0 && o.zoneID === this.zoneID) {
+      // Store this in the localZoneMates array for more efficient
+      // broadcasting later.
+      if (this.localZoneMates.indexOf(o.id) === -1) {
+        this.localZoneMates.push(o.id);
+      }
+
       if (o.media.currentAction !== Action.InZone) {
         if (!o.isInVicinity) {
           o.alpha = 1;

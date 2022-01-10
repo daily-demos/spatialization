@@ -22,6 +22,7 @@ let world = new World();
 type BroadcastData = {
   action: string;
   zoneID: number;
+  spotID: number;
   pos: Pos;
 };
 
@@ -170,15 +171,22 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     const data = {
       action: "posChange",
       zoneID: zoneID,
+      spotID: -1,
       pos: pos,
     };
     room.broadcast(data, recipient);
   };
 
-  const onJoinZone = (sessionID: string, zoneID: number, pos: Pos) => {
+  const onJoinZone = (
+    sessionID: string,
+    zoneID: number,
+    pos: Pos,
+    spotID: number = -1
+  ) => {
     const data = {
       action: "zoneChange",
       zoneID: zoneID,
+      spotID: spotID,
       pos: pos,
     };
     room.broadcast(data, "*");
@@ -225,10 +233,15 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
   const msgType = data.action;
   switch (msgType) {
     case "zoneChange":
-      world.updateParticipantZone(event.fromId, data.zoneID, {
-        x: data.pos.x,
-        y: data.pos.y,
-      });
+      world.updateParticipantZone(
+        event.fromId,
+        data.zoneID,
+        {
+          x: data.pos.x,
+          y: data.pos.y,
+        },
+        data.spotID
+      );
       break;
     case "posChange":
       const pendingAck = room.pendingAcks[event.fromId];

@@ -11,7 +11,7 @@ import { Robot, RobotRole } from "./models/robot";
 import { Pos, Size } from "./worldTypes";
 import { Textures } from "./textures";
 import { Zone } from "./models/deskZone";
-import { broadcastZoneID, defaultWorldSize } from "./config";
+import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
 
 declare global {
   interface Window {
@@ -53,7 +53,12 @@ export class World {
     }
   }
 
-  updateParticipantZone(sessionID: string, zoneID: number, pos: Pos) {
+  updateParticipantZone(
+    sessionID: string,
+    zoneID: number,
+    pos: Pos,
+    spotID: number = -1
+  ) {
     let avatar = this.getAvatar(sessionID);
     if (!avatar) {
       avatar = this.createAvatar(sessionID, pos.x, pos.y);
@@ -64,6 +69,12 @@ export class World {
       // we are in the same zone
       this.sendDataToParticipant(sessionID);
       return;
+    }
+    for (let item of this.furniture) {
+      if (item instanceof Zone) {
+        item.tryPlace(avatar, spotID);
+        return;
+      }
     }
   }
 
@@ -243,9 +254,11 @@ export class World {
   ): User {
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
+    let onJoinZone = null;
     if (isLocal) {
       onEnterVicinity = this.subToTracks;
       onLeaveVicinity = this.unsubFromTracks;
+      onJoinZone = this.onJoinZone;
     }
     const avatar = new User(
       userID,
@@ -254,7 +267,7 @@ export class World {
       (isLocal = isLocal),
       (onEnterVicinity = onEnterVicinity),
       (onLeaveVicinity = onLeaveVicinity),
-      this.onJoinZone
+      onJoinZone
     );
     this.usersContainer.addChild(avatar);
     return avatar;
@@ -421,6 +434,19 @@ export class World {
 
   private async sendData() {
     const la = this.localAvatar;
+
+    const lz = la.getZone();
+    // If we are in an isolated zone and have zonemates,
+    // only broadcast to them
+    if (lz !== globalZoneID && lz !== broadcastZoneID) {
+      const zonemates = la.getZonemates();
+      console.log("In isolated zone! Only sending data to ", zonemates);
+      for (let zm of zonemates) {
+        this.onMove(la.getZone(), la.getPos(), zm);
+      }
+      return;
+    }
+    // If we're in the global zone, broadcast to everyone
     this.onMove(la.getZone(), la.getPos());
   }
 
