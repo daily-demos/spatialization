@@ -7,15 +7,13 @@ import { User } from "./user";
 const spotSize = 75;
 const textureName = "broadcast";
 
-// BroadcastSpot is a location from which any user
+// BroadcastZone is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
 export class BroadcastZone extends Collider implements IInteractable {
   id: number;
   name: string;
   occupantID?: string;
-  //onEnterBroadcast: (sessionID: string) => void;
-  //onLeaveBroadcast: (sessionID: string) => void;
 
   constructor(id: number, x: number, y: number) {
     super();
