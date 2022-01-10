@@ -8,7 +8,7 @@ import { BroadcastZone } from "./models/broadcastZone";
 import { IAudioContext, AudioContext } from "standardized-audio-context";
 import { ICollider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
-import { Pos } from "./worldTypes";
+import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
 import { DeskZone } from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
@@ -23,8 +23,10 @@ export class World {
   subToTracks: (sessionID: string) => void = null;
   unsubFromTracks: (sessionID: string) => void = null;
   onCreateUser: () => void = null;
-  onMove: (zoneID: number, pos: Pos, recipient?: string) => void = null;
-  onJoinZone: (sessionID: string, zoneID: number, pos: Pos) => void = null;
+  onMove: (pos: Pos, recipient?: string) => void = null;
+  onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null;
+  onDataDump: (zoneData: ZoneData, posData: Pos, recipient?: string) => void =
+    null;
 
   private keyListener = new KeyListener();
   private localUser: User = null;
@@ -55,24 +57,25 @@ export class World {
   updateParticipantZone(
     sessionID: string,
     zoneID: number,
-    pos: Pos,
     spotID: number = -1
   ) {
     let user = this.getUser(sessionID);
     if (!user) {
-      user = this.createUser(sessionID, pos.x, pos.y);
+      user = this.createUser(sessionID, -100, -100);
     }
     user.updateZone(zoneID);
     if (user.isZonemate(this.localUser)) {
-      // Send data back to make sure the newly joined participant knows
-      // we are in the same zone
-      this.sendDataToParticipant(sessionID);
+      // Send data back to make sure the newly joined participant knows exactly
+      // where we are
+      this.sendPosDataToParticipant(sessionID);
       return;
     }
     for (let item of this.furniture) {
       if (item instanceof DeskZone) {
-        item.tryPlace(user, spotID);
-        return;
+        if (item.id === zoneID) {
+          item.tryPlace(user, spotID);
+          return;
+        }
       }
     }
   }
@@ -87,19 +90,10 @@ export class World {
     user.setUserName(userName);
   }
 
-  updateParticipantPos(
-    sessionID: string,
-    zoneID: number,
-    posX: number,
-    posY: number
-  ) {
+  updateParticipantPos(sessionID: string, posX: number, posY: number) {
     let user = this.getUser(sessionID);
     if (!user) {
       user = this.createUser(sessionID, posX, posY);
-      user.updateZone(zoneID);
-    }
-    if (user.getZone() !== zoneID) {
-      user.updateZone(zoneID);
     }
     user.moveTo({ x: posX, y: posY });
     user.checkFurnitures(this.furniture);
@@ -131,7 +125,8 @@ export class World {
     if (this.onCreateUser) {
       this.onCreateUser();
     }
-    this.sendData();
+    this.sendZoneData();
+    this.sendPosData();
     this.keyListener.listenKeys();
   }
 
@@ -424,34 +419,54 @@ export class World {
     this.worldContainer.position.y =
       this.app.view.height / 2 - newPos.y - this.localUser.height / 2;
 
-    this.sendData();
+    this.sendPosData();
   }
 
   private getUser(id: string): User {
     return <User>this.usersContainer.getChildByName(id);
   }
 
-  private async sendData() {
-    const la = this.localUser;
-
-    const lz = la.getZone();
+  private async sendPosData() {
+    const lu = this.localUser;
+    const zd = lu.getZoneData();
+    const zID = zd.zoneID;
     // If we are in an isolated zone and have zonemates,
     // only broadcast to them
-    if (lz !== globalZoneID && lz !== broadcastZoneID) {
-      const zonemates = la.getZonemates();
-      console.log("In isolated zone! Only sending data to ", zonemates);
+    if (zID !== globalZoneID && zID !== broadcastZoneID) {
+      const zonemates = lu.getZonemates();
       for (let zm of zonemates) {
-        this.onMove(la.getZone(), la.getPos(), zm);
+        this.onMove(lu.getPos(), zm);
       }
       return;
     }
     // If we're in the global zone, broadcast to everyone
-    this.onMove(la.getZone(), la.getPos());
+    this.onMove(lu.getPos());
   }
 
-  sendDataToParticipant(sessionID: string) {
+  private async sendZoneData() {
+    const lu = this.localUser;
+    const zd = lu.getZoneData();
+    this.onJoinZone(zd, "*");
+  }
+
+  sendPosDataToParticipant(sessionID: string) {
     const la = this.localUser;
-    this.onMove(la.getZone(), la.getPos(), sessionID);
+    this.onMove(la.getPos(), sessionID);
+  }
+
+  sendZoneDataToParticipant(sessionID: string) {
+    const la = this.localUser;
+    const zd = la.getZoneData();
+    console.log("sending zone data to participant: ", sessionID, zd);
+    this.onJoinZone(zd, sessionID);
+  }
+
+  sendDataDumpToParticipant(sessionID: string) {
+    const la = this.localUser;
+    const pd = la.getPos();
+    const zd = la.getZoneData();
+    console.log("sending data dump to participant: ", sessionID, zd);
+    this.onDataDump(zd, pd, sessionID);
   }
 
   destroy() {

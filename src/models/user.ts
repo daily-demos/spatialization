@@ -4,7 +4,7 @@ import { DisplayObject } from "pixi.js";
 import { BroadcastZone } from "./broadcastZone";
 import { Action, maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate } from "../util/nav";
-import { Pos, Size } from "../worldTypes";
+import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
 import { DeskZone } from "./deskZone";
 import { broadcastZoneID, globalZoneID } from "../config";
@@ -32,17 +32,12 @@ export class User extends Collider {
   protected gradientTextureName: string = "user-gradient";
 
   private textureType = TextureType.Unknown;
-  private zoneID = 0;
+  private zoneData: ZoneData = { zoneID: 0, spotID: -1 };
 
   private earshotDistance: number;
   private onEnterVicinity: Function;
   private onLeaveVicinity: Function;
-  private onJoinZone: (
-    sessionID: string,
-    zoneID: number,
-    pos: Pos,
-    spotID: number
-  ) => void;
+  private onJoinZone: (zoneData: ZoneData, recipient?: string) => void;
   private localZoneMates: Array<string> = [];
   private userName: string;
 
@@ -53,12 +48,7 @@ export class User extends Collider {
     isLocal = false,
     onEnterVicinity: Function = null,
     onLeaveVicinity: Function = null,
-    onJoinZone: (
-      sessionID: string,
-      zoneID: number,
-      pos: Pos,
-      spotID: number
-    ) => void = null
+    onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null
   ) {
     super();
     this.media = new UserMedia(id, isLocal);
@@ -145,32 +135,34 @@ export class User extends Collider {
   }
 
   updateZone(zoneID: number, spotID: number = -1) {
-    console.log("updating zone", this.id, zoneID);
-    const oldZoneID = this.zoneID;
-    if (zoneID === oldZoneID) return;
-    this.zoneID = zoneID;
+    const oldZoneID = this.zoneData.zoneID;
+    const oldSpotID = this.zoneData.spotID;
+    if (zoneID === oldZoneID && spotID === oldSpotID) return;
+    console.log("updating zone:", oldZoneID, zoneID);
+    this.zoneData.zoneID = zoneID;
+    this.zoneData.spotID = spotID;
     if (oldZoneID === broadcastZoneID) {
       this.media.leaveBroadcast();
     }
     if (this.isLocal) {
       this.localZoneMates = [];
-      if (this.onJoinZone)
-        this.onJoinZone(this.id, this.zoneID, this.getPos(), spotID);
+      if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
 
-      if (this.zoneID === globalZoneID) {
+      if (zoneID === globalZoneID) {
         this.setVideoTexture();
         return;
       }
       this.setDefaultTexture();
+      return;
     }
   }
 
-  getZone(): number {
-    return this.zoneID;
+  getZoneData(): ZoneData {
+    return this.zoneData;
   }
 
   isZonemate(other: User) {
-    return this.zoneID === other.zoneID;
+    return this.zoneData.zoneID === other.zoneData.zoneID;
   }
 
   getZonemates(): Array<string> {
@@ -182,16 +174,6 @@ export class User extends Collider {
     this.y = Math.round(pos.y);
     this.getBounds();
     if (!trial) this.tryUpdateListener();
-  }
-
-  moveX(x: number) {
-    this.x += x;
-    this.tryUpdateListener();
-  }
-
-  moveY(y: number) {
-    this.y += y;
-    this.tryUpdateListener();
   }
 
   async processUsers(others: Array<DisplayObject>) {
@@ -234,8 +216,12 @@ export class User extends Collider {
       return;
     }
 
+    const tzID = this.zoneData.zoneID;
+    const ozID = o.zoneData.zoneID;
+
     // Both users are in the default zone
-    if (this.zoneID === globalZoneID && o.zoneID === globalZoneID) {
+
+    if (tzID === globalZoneID && ozID === globalZoneID) {
       this.proximityUpdate(o);
       return;
     }
@@ -246,7 +232,7 @@ export class User extends Collider {
 
     // If the users are in the same zone that is not the default zone,
     // enter vicinity and display them as zonemates in focused-mode.
-    if (o.zoneID > 0 && o.zoneID === this.zoneID) {
+    if (ozID > 0 && ozID === tzID) {
       // Store this in the localZoneMates array for more efficient
       // broadcasting later.
       if (this.localZoneMates.indexOf(o.id) === -1) {
@@ -269,7 +255,8 @@ export class User extends Collider {
 
     // If the other user is broadcasting,
     // enter vicinity and display them in focused-mode
-    if (o.zoneID === broadcastZoneID) {
+    if (ozID === broadcastZoneID) {
+      console.log("Other is in BROADCAST ID", o.isInVicinity);
       if (!o.isInVicinity) {
         o.alpha = 1;
         o.isInVicinity = true;
@@ -280,14 +267,14 @@ export class User extends Collider {
       return;
     }
 
-    if (o.zoneID !== this.zoneID) {
+    if (ozID !== tzID) {
       // If the other user is not in a default zone but the zone does
       // NOT match local user...
+      o.alpha = baseAlpha;
 
       // Leave vicinity if they are in vicinity
       if (o.isInVicinity) {
         o.isInVicinity = false;
-        o.alpha = baseAlpha;
         if (this.onLeaveVicinity) this.onLeaveVicinity(o.id);
         o.setDefaultTexture();
       }
@@ -308,7 +295,7 @@ export class User extends Collider {
   private async checkFurniture(other: ICollider) {
     if (
       !this.isLocal &&
-      this.zoneID === broadcastZoneID &&
+      this.zoneData.zoneID === broadcastZoneID &&
       other instanceof BroadcastZone
     ) {
       other.occupantID = this.id;
@@ -408,6 +395,7 @@ export class User extends Collider {
 
     // User is in earshot
     if (this.inEarshot(distance)) {
+      console.log("user is in earshot:", distance);
       const pm = this.getPannerMod(distance, other.getPos());
       other.media.updatePanner(pm.pos, pm.pan);
 
@@ -421,7 +409,7 @@ export class User extends Collider {
       return;
     }
 
-    console.log("setting default texture", other.media.audioTag.muted);
+    other.media.muteAudio();
     other.setDefaultTexture();
   }
 

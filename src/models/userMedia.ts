@@ -114,11 +114,17 @@ export class UserMedia {
   }
 
   muteAudio() {
-    if (!this.audioTag.muted) this.audioTag.muted = true;
+    if (!this.audioTag.muted) {
+      this.audioTag.muted = true;
+      console.log("muted audio");
+    } 
   }
 
   unmuteAudio() {
-    if (this.audioTag.muted) this.audioTag.muted = false;
+    if (this.audioTag.muted) {
+      this.audioTag.muted = false;
+      console.log("unmuted audio");
+    }
   }
 
   getVideoTrack(): MediaStreamTrack {
@@ -136,7 +142,6 @@ export class UserMedia {
   }
 
   leaveBroadcast() {
-    if (this.audioTag) this.unmuteAudio();
     this.currentAction = Action.Traversing;
     stopBroadcast();
   }
@@ -203,7 +208,6 @@ export class UserMedia {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
     // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
     const mutedAudio = new Audio();
-
     mutedAudio.muted = true;
     mutedAudio.srcObject = stream;
     mutedAudio.play();
@@ -233,6 +237,7 @@ export class UserMedia {
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
     }
+    console.log("showOrUpdateBroadcast:", videoTrack, this.audioTrack);
     showBroadcast(videoTrack, this.audioTrack);
   }
 }

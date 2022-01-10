@@ -128,7 +128,7 @@ describe("User zone tests", () => {
     const ru = new User("remote", 200, 200, false);
 
     ru.updateZone(1);
-    expect(ru.getZone()).toBe(1);
+    expect(ru.getZoneData().zoneID).toBe(1);
 
     lu.processUsers([ru]);
     // Since the user is now in a different zone, they should

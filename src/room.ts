@@ -13,7 +13,7 @@ import {
 
 import { showJoinForm, showWorld } from "./util/nav";
 import { World } from "./world";
-import { Pos } from "./worldTypes";
+import { Pos, ZoneData } from "./worldTypes";
 
 const playableState = "playable";
 
@@ -21,9 +21,8 @@ let world = new World();
 
 type BroadcastData = {
   action: string;
-  zoneID: number;
-  spotID: number;
-  pos: Pos;
+  zoneData?: ZoneData;
+  pos?: Pos;
 };
 
 enum BandwidthLevel {
@@ -71,12 +70,6 @@ export class Room {
       .on("participant-left", (e) => {
         handleParticipantLeft(this, e);
       })
-      .on("track-started", (e) => {
-        handleTrackStarted(this, e);
-      })
-      .on("track-stopped", (e) => {
-        handleTrackStopped(this, e);
-      })
       .on("app-message", (e) => {
         handleAppMessage(this, e);
       });
@@ -112,11 +105,6 @@ export class Room {
   }
 
   broadcast(data: BroadcastData, recipientSessionID = "*") {
-    if (data.zoneID === 0) {
-      this.setBandwidth(BandwidthLevel.Tile);
-    } else {
-      this.setBandwidth(BandwidthLevel.Focus);
-    }
     this.callObject.sendAppMessage(data, recipientSessionID);
   }
 
@@ -167,29 +155,34 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     unsubFromUserTracks(room, sessionID);
   };
 
-  const onMove = (zoneID: number, pos: Pos, recipient: string = "*") => {
+  const onMove = (pos: Pos, recipient: string = "*") => {
     const data = {
       action: "posChange",
-      zoneID: zoneID,
-      spotID: -1,
       pos: pos,
     };
     room.broadcast(data, recipient);
   };
 
-  const onJoinZone = (
-    sessionID: string,
-    zoneID: number,
-    pos: Pos,
-    spotID: number = -1
-  ) => {
+  const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
+    if (zoneData.zoneID === 0) {
+      room.setBandwidth(BandwidthLevel.Tile);
+    } else {
+      room.setBandwidth(BandwidthLevel.Focus);
+    }
     const data = {
       action: "zoneChange",
-      zoneID: zoneID,
-      spotID: spotID,
-      pos: pos,
+      zoneData: zoneData,
     };
-    room.broadcast(data, "*");
+    room.broadcast(data, recipient);
+  };
+
+  const onDataDump = (zoneData: ZoneData, posData: Pos, recipient: "*") => {
+    const data = {
+      action: "dump",
+      pos: posData,
+      zoneData: zoneData,
+    };
+    room.broadcast(data, recipient);
   };
 
   if (room.isGlobal) {
@@ -199,8 +192,9 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     world.onCreateUser = onCreateUser;
     world.onMove = onMove;
     world.onJoinZone = onJoinZone;
+    world.onDataDump = onDataDump;
     world.start();
-    world.initLocalAvatar(event.participants.local.session_id);
+    world.initLocalUser(event.participants.local.session_id);
   }
 }
 
@@ -216,46 +210,41 @@ function unsubFromUserTracks(room: Room, sessionID: string) {
   });
 }
 
-function handleTrackStarted(room: Room, event: DailyEventObjectTrack) {
-  /* const p = event.participant;
-  const tracks = getParticipantTracks(p);
-  setUserTracks(p.session_id, tracks.video, tracks.audio); */
-}
-
-function handleTrackStopped(room: Room, event: DailyEventObjectTrack) {
-  /*  const p = event.participant;
-  const tracks = getParticipantTracks(p);
-  setUserTracks(p.session_id, tracks.video, tracks.audio); */
-}
-
 function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
-  const data = event.data;
+  const data = <BroadcastData>event.data;
   const msgType = data.action;
   switch (msgType) {
-    case "zoneChange":
+    case "dump":
+      console.log("got full data dump:", event.fromId, data);
+      const pendingAck = room.pendingAcks[event.fromId];
+      if (pendingAck) {
+        console.log("clearing pending ack");
+        clearInterval(pendingAck);
+        delete room.pendingAcks[event.fromId];
+        world.sendDataDumpToParticipant(event.fromId);
+      }
       world.updateParticipantZone(
         event.fromId,
-        data.zoneID,
-        {
-          x: data.pos.x,
-          y: data.pos.y,
-        },
-        data.spotID
+        data.zoneData.zoneID,
+        data.zoneData.spotID
+      );
+
+      world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+    case "zoneChange":
+      console.log(
+        "got zone change event:",
+        event.fromId,
+        data.zoneData.zoneID,
+        data.zoneData.spotID
+      );
+      world.updateParticipantZone(
+        event.fromId,
+        data.zoneData.zoneID,
+        data.zoneData.spotID
       );
       break;
     case "posChange":
-      const pendingAck = room.pendingAcks[event.fromId];
-      if (pendingAck) {
-        clearInterval(pendingAck);
-        delete room.pendingAcks[event.fromId];
-        world.sendDataToParticipant(event.fromId);
-      }
-      world.updateParticipantPos(
-        event.fromId,
-        data.zoneID,
-        data.pos.x,
-        data.pos.y
-      );
+      world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
       break;
   }
 }
@@ -281,9 +270,10 @@ function handleParticipantJoined(
     return;
   }
   world.initRemoteParticpant(sID, event.participant.user_name);
-  world.sendDataToParticipant(sID);
+  world.sendZoneDataToParticipant(sID);
+  world.sendPosDataToParticipant(sID);
   room.pendingAcks[sID] = setInterval(() => {
-    world.sendDataToParticipant(sID);
+    world.sendDataDumpToParticipant(sID);
   }, 1000);
 }
 
@@ -307,5 +297,5 @@ function getParticipantTracks(participant: DailyParticipant) {
 
 function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
   const up = event.participant;
-  world.removeAvatar(up.session_id);
+  world.removeUser(up.session_id);
 }

@@ -2,8 +2,7 @@
 
 This demo shows one way to implement a video and audio call application with gamified spatialization elements using [Daily's call object](https://docs.daily.co/guides/products/call-object).
 
-
-![Call Overlay demo screenshot displaying participant tiles being positioned around a shared document](./screenshot.png)
+![Spatial video demo showing 2D world elements](./screenshot.png)
 
 ## Prerequisites
 
