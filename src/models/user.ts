@@ -6,8 +6,7 @@ import { Action, maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate, showZonemate } from "../util/nav";
 import { Pos, Size } from "../worldTypes";
 import { Textures } from "../textures";
-import { sign } from "@pixi/utils";
-import { Zone } from "./deskZone";
+import { DeskZone } from "./deskZone";
 import { broadcastZoneID, globalZoneID } from "../config";
 
 const baseAlpha = 0.2;
@@ -322,8 +321,8 @@ export class User extends Collider {
       return;
     }
 
-    if (other instanceof Zone) {
-      const o = <Zone>other;
+    if (other instanceof DeskZone) {
+      const o = <DeskZone>other;
       if (o) o.tryInteract(this);
     }
   }

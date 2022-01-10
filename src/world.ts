@@ -6,11 +6,11 @@ import { rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastZone } from "./models/broadcastZone";
 import { IAudioContext, AudioContext } from "standardized-audio-context";
-import { Collider, ICollider } from "./models/collider";
+import { ICollider } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
-import { Pos, Size } from "./worldTypes";
+import { Pos } from "./worldTypes";
 import { Textures } from "./textures";
-import { Zone } from "./models/deskZone";
+import { DeskZone } from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
 
 declare global {
@@ -71,7 +71,7 @@ export class World {
       return;
     }
     for (let item of this.furniture) {
-      if (item instanceof Zone) {
+      if (item instanceof DeskZone) {
         item.tryPlace(avatar, spotID);
         return;
       }
@@ -166,7 +166,7 @@ export class World {
 
     const yPos = defaultWorldSize / 2 + 200;
 
-    const zone1 = new Zone(1, 4, { x: 0, y: yPos });
+    const zone1 = new DeskZone(1, 4, { x: 0, y: yPos });
     zone1.moveTo({
       x: defaultWorldSize / 2 - zone1.width - spot.width,
       y: zone1.y,
@@ -174,7 +174,7 @@ export class World {
     this.furnitureContainer.addChild(zone1);
     this.furniture.push(zone1);
 
-    const zone2 = new Zone(2, 4, { x: 0, y: yPos });
+    const zone2 = new DeskZone(2, 4, { x: 0, y: yPos });
     zone2.moveTo({ x: defaultWorldSize / 2 + spot.width, y: zone2.y });
     this.furnitureContainer.addChild(zone2);
     this.furniture.push(zone2);
@@ -207,8 +207,8 @@ export class World {
       role = RobotRole.Desk;
       // Find a desk position
       for (let item of this.furnitureContainer.children) {
-        if (item instanceof Zone) {
-          const desk = <Zone>item;
+        if (item instanceof DeskZone) {
+          const desk = <DeskZone>item;
           const spot = desk.spots[0];
           persistentPos = { x: desk.x + spot.x, y: desk.y + spot.y };
           break;
@@ -276,8 +276,8 @@ export class World {
   private getFinalLocalPos(avatar: User): void {
     for (let item of this.furniture) {
       let doesHit = false;
-      if (item instanceof Zone) {
-        const z = <Zone>item;
+      if (item instanceof DeskZone) {
+        const z = <DeskZone>item;
         if (z.hitsSpot(avatar)) {
           doesHit = true;
         }

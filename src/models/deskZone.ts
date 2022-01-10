@@ -1,6 +1,5 @@
 import * as PIXI from "pixi.js";
-import { Bounds, TilingSprite } from "pixi.js";
-import { Pos, Size } from "../worldTypes";
+import { Pos } from "../worldTypes";
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Desk } from "./desk";
 import { Spot } from "./spot";
@@ -8,7 +7,7 @@ import { User } from "./user";
 
 const spotSize = 75;
 
-export class Zone extends PIXI.Container implements ICollider, IInteractable {
+export class DeskZone extends PIXI.Container implements ICollider, IInteractable {
   isPresenter = false;
   id: number;
   name: string;

@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { GeneratorFunc, Textures } from "../textures";
+import { Textures } from "../textures";
 import { Pos, Size } from "../worldTypes";
 
 import { Collider } from "./collider";
