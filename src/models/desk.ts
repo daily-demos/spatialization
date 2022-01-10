@@ -7,8 +7,8 @@ import { Collider } from "./collider";
 const deskDepth = 75;
 const deskTextureName = "desk";
 
-// Desk is a location that holds spots, through which a user can
-// join other users in an isolated zone.
+// Desk is part of a DeskZone which the user is unable to
+// walk through. Spots are positioned around it.
 export class Desk extends Collider {
   isPresenter = false;
   id: number;

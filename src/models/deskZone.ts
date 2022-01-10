@@ -7,6 +7,8 @@ import { User } from "./user";
 
 const spotSize = 75;
 
+// DeskZone is a location that holds spots, through which a user can
+// join other users in an isolated zone.
 export class DeskZone
   extends PIXI.Container
   implements ICollider, IInteractable
