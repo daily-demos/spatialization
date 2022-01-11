@@ -105,7 +105,6 @@ export class UserMedia {
       return;
     }
     this.audioTrack = newTrack;
-    this.audioTag.srcObject = new MediaStream([newTrack]);
     // Reset panner node
     this.pannerNode = null;
     if (this.currentAction === Action.InZone) {
