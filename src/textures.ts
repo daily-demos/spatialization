@@ -45,8 +45,8 @@ export class Textures {
     }
   }
 
-  // enqueue is used to queue texture generatoin once the app runs its update
-  // and providees a renderer.
+  // enqueue is used to queue texture generation once the app runs its update
+  // and provides a renderer.
   public enqueue(
     sprite: PIXI.Sprite,
     textureName: string,
