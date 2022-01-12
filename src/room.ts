@@ -9,6 +9,7 @@ import {
   DailyEventObjectCameraError,
   DailyEventObjectParticipants,
 } from "@daily-co/daily-js";
+import { globalZoneID } from "./config";
 
 import { showJoinForm, showWorld } from "./util/nav";
 import { World } from "./world";
@@ -228,15 +229,11 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
         data.zoneData.zoneID,
         data.zoneData.spotID
       );
-
-      world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+      if (data.zoneData.zoneID === globalZoneID) {
+        world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+      }
+      break;
     case "zoneChange":
-      console.log(
-        "got zone change event:",
-        event.fromId,
-        data.zoneData.zoneID,
-        data.zoneData.spotID
-      );
       world.updateParticipantZone(
         event.fromId,
         data.zoneData.zoneID,

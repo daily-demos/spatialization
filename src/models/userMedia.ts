@@ -231,12 +231,10 @@ export class UserMedia {
   }
 
   showOrUpdateBroadcast() {
-    console.log("show or update broadcast", this.id);
     let videoTrack = null;
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
     }
-    console.log("showOrUpdateBroadcast:", videoTrack, this.audioTrack);
     showBroadcast(videoTrack, this.audioTrack);
   }
 }

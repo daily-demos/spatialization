@@ -27,6 +27,7 @@ export class User extends Collider {
   isInVicinity = false;
   media: UserMedia;
   isLocal: boolean;
+  userName: string;
 
   protected emoji: string = "😊";
   protected gradientTextureName: string = "user-gradient";
@@ -39,7 +40,6 @@ export class User extends Collider {
   private onLeaveVicinity: Function;
   private onJoinZone: (zoneData: ZoneData, recipient?: string) => void;
   private localZoneMates: Array<string> = [];
-  private userName: string;
 
   constructor(
     id: string,
@@ -77,10 +77,6 @@ export class User extends Collider {
     }
 
     this.setDefaultTexture();
-  }
-
-  setUserName(name: string) {
-    this.userName = name;
   }
 
   destroy() {
@@ -138,7 +134,6 @@ export class User extends Collider {
     const oldZoneID = this.zoneData.zoneID;
     const oldSpotID = this.zoneData.spotID;
     if (zoneID === oldZoneID && spotID === oldSpotID) return;
-    console.log("updating zone:", oldZoneID, zoneID);
     this.zoneData.zoneID = zoneID;
     this.zoneData.spotID = spotID;
     if (oldZoneID === broadcastZoneID) {
@@ -256,7 +251,6 @@ export class User extends Collider {
     // If the other user is broadcasting,
     // enter vicinity and display them in focused-mode
     if (ozID === broadcastZoneID) {
-      console.log("Other is in BROADCAST ID", o.isInVicinity);
       if (!o.isInVicinity) {
         o.alpha = 1;
         o.isInVicinity = true;

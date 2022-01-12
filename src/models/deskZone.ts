@@ -81,14 +81,26 @@ export class DeskZone
 
   public tryPlace(user: User, spotID: number) {
     for (let spot of this.spots) {
-      if (spot.id === spotID) {
-        console.log("user occupied zone and spot:", this.id, spot.id);
+      if (spot.id === spotID && !spot.occupantID) {
         spot.occupantID = user.id;
+        this.freeSeats--;
         const np = {
           x: this.x + spot.x,
           y: this.y + spot.y,
         };
         user.moveTo(np);
+        this.updateLabel();
+        return;
+      }
+    }
+  }
+
+  public tryUnplace(userID: string, spotID: number) {
+    for (let spot of this.spots) {
+      if (spot.id === spotID && spot.occupantID === userID) {
+        spot.occupantID = null;
+        this.freeSeats++;
+        this.updateLabel();
         return;
       }
     }
@@ -139,7 +151,6 @@ export class DeskZone
 
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
-        this.freeSeats--;
         user.updateZone(this.id, spot.id);
         hasNewSpot = true;
         if (user.isLocal) this.hideZoneMarker();
@@ -148,10 +159,11 @@ export class DeskZone
     }
 
     if (hadPriorSpot && !hasNewSpot) {
-      // Global zone id is 0
       this.freeSeats++;
       user.updateZone(globalZoneID);
       if (user.isLocal) this.showZoneMarker();
+    } else if (!hadPriorSpot && hasNewSpot) {
+      this.freeSeats--;
     }
 
     if (oldFreeSeats !== this.freeSeats) {

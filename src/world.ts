@@ -63,18 +63,41 @@ export class World {
     if (!user) {
       user = this.createUser(sessionID, -100, -100);
     }
-    user.updateZone(zoneID);
+
+    const priorZone = user.getZoneData();
+    const oldZoneID = priorZone.zoneID;
+    const oldSpotID = priorZone.spotID;
+    user.updateZone(zoneID, spotID);
+
     if (user.isZonemate(this.localUser)) {
       // Send data back to make sure the newly joined participant knows exactly
       // where we are
       this.sendPosDataToParticipant(sessionID);
-      return;
     }
+
+    let handledOldPlacement = false;
+    let handledNewPlacement = false;
+    // Iterate through all furniture and try to place/unplace user in
+    // communicated zone and spot as needed. "Placement" does not impact
+    // user behavior itself (that is done via `user.updateZone()` above).
+    // Placement affects zone spot occupation status and remote positioning.
     for (let item of this.furniture) {
       if (item instanceof DeskZone) {
-        if (item.id === zoneID) {
+        if (item.id === oldZoneID) {
+          item.tryUnplace(user.id, oldSpotID);
+          // If the remote user has moved to the global zone, just
+          // unplace them from previous zone and return
+          if (zoneID === globalZoneID) return;
+          handledOldPlacement = true;
+        }
+        if (
+          zoneID !== globalZoneID &&
+          !handledNewPlacement &&
+          item.id === zoneID
+        ) {
           item.tryPlace(user, spotID);
-          return;
+          handledNewPlacement = true;
+          if (handledOldPlacement || oldZoneID === globalZoneID) return;
         }
       }
     }
@@ -87,7 +110,7 @@ export class World {
     if (!user) {
       user = this.createUser(sessionID, -10000, -1000);
     }
-    user.setUserName(userName);
+    user.userName = userName;
   }
 
   updateParticipantPos(sessionID: string, posX: number, posY: number) {
@@ -96,7 +119,7 @@ export class World {
       user = this.createUser(sessionID, posX, posY);
     }
     user.moveTo({ x: posX, y: posY });
-    user.checkFurnitures(this.furniture);
+    //  user.checkFurnitures(this.furniture);
   }
 
   initLocalUser(sessionID: string): void {
