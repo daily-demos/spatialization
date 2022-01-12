@@ -12,7 +12,7 @@ import { broadcastZoneID, globalZoneID } from "../config";
 const baseAlpha = 0.2;
 const earshot = 300;
 const maxAlpha = 1;
-const baseSize = 75;
+const baseSize = 94;
 const defaultSpeed = 4;
 enum TextureType {
   Unknown = 1,

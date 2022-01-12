@@ -160,7 +160,7 @@ export class World {
 
     const yPos = defaultWorldSize / 2 + 200;
 
-    const zone1 = new DeskZone(1, 4, { x: 0, y: yPos });
+    const zone1 = new DeskZone(1, "Koala", 4, { x: 0, y: yPos });
     zone1.moveTo({
       x: defaultWorldSize / 2 - zone1.width - spot.width,
       y: zone1.y,
@@ -168,7 +168,7 @@ export class World {
     this.furnitureContainer.addChild(zone1);
     this.furniture.push(zone1);
 
-    const zone2 = new DeskZone(2, 4, { x: 0, y: yPos });
+    const zone2 = new DeskZone(2, "Kangaroo", 4, { x: 0, y: yPos });
     zone2.moveTo({ x: defaultWorldSize / 2 + spot.width, y: zone2.y });
     this.furnitureContainer.addChild(zone2);
     this.furniture.push(zone2);
@@ -203,7 +203,8 @@ export class World {
       for (let item of this.furnitureContainer.children) {
         if (item instanceof DeskZone) {
           const desk = <DeskZone>item;
-          const spot = desk.spots[0];
+
+          const spot = desk.getSpots()[0];
           persistentPos = { x: desk.x + spot.x, y: desk.y + spot.y };
           break;
         }

@@ -4,7 +4,7 @@ import { Pos, Size } from "../worldTypes";
 
 import { Collider } from "./collider";
 
-const deskDepth = 75;
+const deskDepth = 58;
 const deskTextureName = "desk";
 
 // Desk is part of a DeskZone which the user is unable to
@@ -52,8 +52,8 @@ export class Desk extends Collider {
     renderer: PIXI.Renderer | PIXI.AbstractRenderer
   ): PIXI.Texture {
     const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xd48200);
-    graphics.lineStyle(2, 0xf7f9fa, 1);
+    graphics.beginFill(0x2b3f56);
+    //   graphics.lineStyle(10, 0x121a24, 1);
     graphics.drawRoundedRect(this.x, this.y, this.width, this.height, 5);
     graphics.endFill();
     const texture = renderer.generateTexture(graphics);

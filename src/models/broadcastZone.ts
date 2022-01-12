@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { globalZoneID } from "../config";
 import { Textures } from "../textures";
 
 import { Collider, IInteractable } from "./collider";
@@ -53,7 +54,7 @@ export class BroadcastZone extends Collider implements IInteractable {
     if (other.id === this.occupantID && !this.hits(other)) {
       this.occupantID = null;
       other.media.leaveBroadcast();
-      other.updateZone(0);
+      other.updateZone(globalZoneID);
     }
   }
 

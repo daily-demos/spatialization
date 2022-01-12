@@ -26,8 +26,8 @@ export default class Floor extends PIXI.TilingSprite {
     renderer: PIXI.Renderer | PIXI.AbstractRenderer
   ): PIXI.Texture {
     const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xfef2d8);
-    graphics.lineStyle(1, 0xf7f9fa, 1);
+    graphics.beginFill(0x121a24);
+    graphics.lineStyle(1, 0xfffff, 0.1);
     graphics.drawRect(this.x, this.y, 50, 50);
     graphics.endFill();
     const texture = renderer.generateTexture(graphics);

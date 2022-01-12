@@ -1,11 +1,13 @@
 import * as PIXI from "pixi.js";
+import { globalZoneID } from "../config";
 import { Pos } from "../worldTypes";
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Desk } from "./desk";
 import { Spot } from "./spot";
 import { User } from "./user";
 
-const spotSize = 75;
+const spotSize = 94;
+const spotBuffer = 10;
 
 // DeskZone is a location that holds spots, through which a user can
 // join other users in an isolated zone.
@@ -13,27 +15,29 @@ export class DeskZone
   extends PIXI.Container
   implements ICollider, IInteractable
 {
-  isPresenter = false;
-  id: number;
-  name: string;
-  desk: Desk;
-  spots: Array<Spot> = [];
   physics = true;
+  id: number;
+
+  private desk: Desk;
+  private spots: Array<Spot> = [];
+  private freeSeats: number;
 
   staticBounds: PIXI.Rectangle;
 
   private zoneMarker: PIXI.Graphics;
+  private labelGraphics: PIXI.Text;
 
-  constructor(id: number, numSpots: number, pos: Pos) {
+  constructor(id: number, name: string, numSpots: number, pos: Pos) {
     super();
 
     if (this.id === 0) {
       throw new Error("ID 0 is a reserved default zone ID");
     }
     this.id = id;
-    this.name = id.toString();
+    this.name = name;
     this.x = pos.x;
     this.y = pos.y;
+    this.freeSeats = numSpots;
 
     // The position is in relation to the container, not global
     // which is why we set it to 0,0
@@ -43,15 +47,15 @@ export class DeskZone
     this.addChild(this.desk);
 
     // Generate the sittig spots associated with this zone
-    let px = 0;
-    let py = -spotSize;
+    let px = spotBuffer;
+    let py = -spotSize - spotBuffer;
     for (let i = 0; i < numSpots; i++) {
       this.createSpot(i, { x: px, y: py });
-      px += spotSize;
-      if (px + spotSize > this.desk.width) {
+      px += spotSize + spotBuffer;
+      if (px + spotSize + spotBuffer > this.desk.width) {
         // New line
-        px = 0;
-        py = this.desk.height;
+        px = spotBuffer;
+        py = this.desk.height + spotBuffer;
       }
     }
 
@@ -61,13 +65,18 @@ export class DeskZone
     const deskSize = this.desk.staticSize;
     this.staticBounds = new PIXI.Rectangle(
       0,
-      0 - spotSize,
+      0 - spotSize - spotBuffer,
       deskSize.width,
-      deskSize.height + spotSize * 2
+      deskSize.height + (spotSize + spotBuffer) * 2
     );
 
     this.createZoneMarker();
+    this.createLabel();
     this.sortableChildren = true;
+  }
+
+  public getSpots(): Array<Spot> {
+    return this.spots;
   }
 
   public tryPlace(user: User, spotID: number) {
@@ -116,6 +125,7 @@ export class DeskZone
   public async tryInteract(user: User) {
     let hadPriorSpot: boolean;
     let hasNewSpot: boolean;
+    const oldFreeSeats = this.freeSeats;
     for (let spot of this.spots) {
       // If the user is already registered in this spot...
       if (spot.occupantID === user.id) {
@@ -129,6 +139,7 @@ export class DeskZone
 
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
+        this.freeSeats--;
         user.updateZone(this.id, spot.id);
         hasNewSpot = true;
         if (user.isLocal) this.hideZoneMarker();
@@ -138,11 +149,42 @@ export class DeskZone
 
     if (hadPriorSpot && !hasNewSpot) {
       // Global zone id is 0
-      user.updateZone(0);
+      this.freeSeats++;
+      user.updateZone(globalZoneID);
       if (user.isLocal) this.showZoneMarker();
+    }
+
+    if (oldFreeSeats !== this.freeSeats) {
+      this.updateLabel();
     }
   }
 
+  private createLabel() {
+    const bounds = this.staticBounds;
+
+    const t = this.getLabelTxt();
+    const txt = new PIXI.Text(t, {
+      fontFamily: "Arial",
+      fontSize: 16,
+      fill: 0xffffff,
+      align: "center",
+    });
+    txt.anchor.set(0.5);
+    txt.position.x = bounds.x + bounds.width / 2;
+    txt.position.y = bounds.y - 25;
+
+    this.addChild(txt);
+    this.labelGraphics = txt;
+  }
+
+  private updateLabel() {
+    const t = this.getLabelTxt();
+    this.labelGraphics.text = t;
+  }
+
+  private getLabelTxt(): string {
+    return `Room ${this.name} (${this.freeSeats}/${this.spots.length} seats available)`;
+  }
   private hideZoneMarker() {
     this.zoneMarker.alpha = 0.1;
   }
@@ -153,17 +195,18 @@ export class DeskZone
 
   private createZoneMarker() {
     const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xfddddd);
-    graphics.lineStyle(2, 0xbb0c0c, 1);
+    //   graphics.beginFill(0xfddddd);
+    graphics.lineStyle(2, 0x1bebb9, 1);
     const bounds = this.staticBounds;
     graphics.drawRoundedRect(
-      bounds.x - 5,
-      bounds.y - 5,
-      bounds.width + 10,
-      bounds.height + 10,
+      bounds.x - 10,
+      bounds.y - 10,
+      bounds.width + 20,
+      bounds.height + 20,
       1
     );
     graphics.endFill();
+
     graphics.zIndex = 0;
     this.addChild(graphics);
     this.zoneMarker = graphics;
@@ -173,7 +216,7 @@ export class DeskZone
   // at the desk.
   private getDeskLength(numSpots: number): number {
     const spotsPerSide = Math.round(numSpots / 2);
-    return spotsPerSide * spotSize;
+    return spotBuffer + spotsPerSide * (spotSize + spotBuffer);
   }
 
   private createSpot(id: number, pos: Pos) {

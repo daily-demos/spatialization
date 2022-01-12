@@ -4,7 +4,6 @@ import {
   DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
   DailyParticipant,
-  DailyEventObjectTrack,
   DailyEventObjectFatalError,
   DailyEventObjectNoPayload,
   DailyEventObjectCameraError,
