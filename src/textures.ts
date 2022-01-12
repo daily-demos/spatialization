@@ -74,8 +74,8 @@ export class Textures {
       texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
       if (next.setOnCreation) {
         next.sprite.texture = texture;
-        next.sprite.getBounds();
-        next.sprite.parent.getBounds();
+        //  next.sprite.getBounds();
+        //  next.sprite.parent.getBounds();
       }
       next = this.queue.shift();
     }

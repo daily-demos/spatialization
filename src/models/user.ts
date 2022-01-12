@@ -7,12 +7,13 @@ import { removeZonemate } from "../util/nav";
 import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
 import { DeskZone } from "./deskZone";
-import { broadcastZoneID, globalZoneID } from "../config";
+import { broadcastZoneID, globalZoneID, standardTileSize } from "../config";
 
-const baseAlpha = 0.2;
+const minAlpha = 0.2;
+const inZoneAlpha = 0.5;
 const earshot = 300;
 const maxAlpha = 1;
-const baseSize = 94;
+const baseSize = standardTileSize;
 const defaultSpeed = 4;
 enum TextureType {
   Unknown = 1,
@@ -71,7 +72,7 @@ export class User extends Collider {
     this.height = baseSize;
     this.width = baseSize;
     if (!isLocal) {
-      this.alpha = baseAlpha;
+      this.alpha = minAlpha;
     } else {
       this.alpha = maxAlpha;
     }
@@ -139,6 +140,10 @@ export class User extends Collider {
     if (oldZoneID === broadcastZoneID) {
       this.media.leaveBroadcast();
     }
+    if (zoneID === broadcastZoneID) {
+      this.alpha = maxAlpha;
+      this.media.enterBroadcast();
+    }
     if (this.isLocal) {
       this.localZoneMates = [];
       if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
@@ -204,13 +209,6 @@ export class User extends Collider {
     // If this is the local user, skip
     if (o.id === this.id) return;
 
-    // If the other user is broadcasting, mute their default tile audio
-    // We don't want two audio sources for the same user.
-    if (o.media.currentAction === Action.Broadcasting) {
-      o.alpha = 1;
-      return;
-    }
-
     const tzID = this.zoneData.zoneID;
     const ozID = o.zoneData.zoneID;
 
@@ -248,23 +246,19 @@ export class User extends Collider {
       return;
     }
 
-    // If the other user is broadcasting,
-    // enter vicinity and display them in focused-mode
-    if (ozID === broadcastZoneID) {
-      if (!o.isInVicinity) {
-        o.alpha = 1;
-        o.isInVicinity = true;
-        if (this.onEnterVicinity) this.onEnterVicinity(o.id);
-
-        o.media.enterBroadcast();
-      }
-      return;
-    }
-
     if (ozID !== tzID) {
+      // If the other user is broadcasting...
+      if (o.media.currentAction === Action.Broadcasting) {
+        if (!o.isInVicinity) {
+          o.isInVicinity = true;
+          if (this.onEnterVicinity) this.onEnterVicinity(o.id);
+        }
+        return;
+      }
+
       // If the other user is not in a default zone but the zone does
       // NOT match local user...
-      o.alpha = baseAlpha;
+      o.alpha = inZoneAlpha;
 
       // Leave vicinity if they are in vicinity
       if (o.isInVicinity) {
@@ -287,15 +281,6 @@ export class User extends Collider {
   }
 
   private async checkFurniture(other: ICollider) {
-    if (
-      !this.isLocal &&
-      this.zoneData.zoneID === broadcastZoneID &&
-      other instanceof BroadcastZone
-    ) {
-      other.occupantID = this.id;
-      return;
-    }
-
     if (other instanceof BroadcastZone) {
       const o = <BroadcastZone>other;
       if (o) o.tryInteract(this);

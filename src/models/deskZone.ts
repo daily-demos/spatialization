@@ -1,12 +1,12 @@
 import * as PIXI from "pixi.js";
-import { globalZoneID } from "../config";
+import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Desk } from "./desk";
 import { Spot } from "./spot";
 import { User } from "./user";
 
-const spotSize = 94;
+const spotSize = standardTileSize;
 const spotBuffer = 10;
 
 // DeskZone is a location that holds spots, through which a user can
@@ -39,14 +39,15 @@ export class DeskZone
     this.y = pos.y;
     this.freeSeats = numSpots;
 
+    const deskLength = this.getDeskLength(numSpots);
+
     // The position is in relation to the container, not global
     // which is why we set it to 0,0
-    const l = this.getDeskLength(numSpots);
-    this.desk = new Desk(id, l, { x: 0, y: 0 });
+    this.desk = new Desk(id, deskLength, { x: 0, y: 0 });
     this.desk.zIndex = 10;
     this.addChild(this.desk);
 
-    // Generate the sittig spots associated with this zone
+    // Generate the sitting spots associated with this zone
     let px = spotBuffer;
     let py = -spotSize - spotBuffer;
     for (let i = 0; i < numSpots; i++) {

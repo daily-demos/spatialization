@@ -1,20 +1,25 @@
 import * as PIXI from "pixi.js";
-import { globalZoneID } from "../config";
-import { Textures } from "../textures";
+import { globalZoneID, standardTileSize } from "../config";
+import { Pos, Size } from "../worldTypes";
 
-import { Collider, IInteractable } from "./collider";
+import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
+import { Spot } from "./spot";
 import { User } from "./user";
+import { default as Icon } from "../assets/megaphone.png";
 
-const spotSize = 75;
-const textureName = "broadcast";
+const spotSize = standardTileSize;
 
 // BroadcastZone is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastZone extends Collider implements IInteractable {
+export class BroadcastZone
+  extends PIXI.Container
+  implements ICollider, IInteractable
+{
   id: number;
   name: string;
-  occupantID?: string;
+  physics: false;
+  spot: Spot;
 
   constructor(id: number, x: number, y: number) {
     super();
@@ -23,71 +28,80 @@ export class BroadcastZone extends Collider implements IInteractable {
     this.name = id.toString();
     this.x = x;
     this.y = y;
-    this.width = spotSize;
-    this.height = spotSize;
 
-    const t = Textures.get();
-    const texture = t.catalog[textureName];
-    if (!texture) {
-      t.enqueue(
-        this,
-        textureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
-          return this.generateTexture(renderer);
-        }
-      );
-
-      return;
-    }
-    this.texture = texture;
+    // The position is in relation to the container, not global
+    // which is why we set it to 0,0
+    this.spot = new Spot(
+      0,
+      { x: 0, y: 0 },
+      { width: spotSize, height: spotSize },
+      Icon
+    );
+    this.addChild(this.spot);
+    this.createLabel();
+    this.sortableChildren = true;
   }
 
-  tryInteract(other: User) {
-    if (this.hits(other) && !this.occupantID) {
-      this.occupantID = other.id;
+  public moveTo(pos: Pos) {
+    this.x = pos.x;
+    this.y = pos.y;
+  }
+
+  public tryPlace(user: User) {
+    if (!this.spot.occupantID) {
+      this.spot.occupantID = user.id;
+      const np = {
+        x: this.x + this.spot.x,
+        y: this.y + this.spot.y,
+      };
+      user.moveTo(np);
+    }
+  }
+
+  public tryUnplace(userID: string) {
+    if (this.spot.occupantID === userID) {
+      this.spot.occupantID = null;
+    }
+  }
+
+  public hits(other: Collider): boolean {
+    // For the zone, the only collision we care about is the spot.
+    let tb = this.spot.getBounds(true);
+    let ob = other.getBounds(true);
+
+    return doesCollide(
+      { x: tb.x, y: tb.y },
+      { x: ob.x, y: ob.y },
+      { width: tb.width, height: tb.height },
+      { width: ob.width, height: ob.height }
+    );
+  }
+
+  public tryInteract(other: User) {
+    if (this.hits(other) && !this.spot.occupantID) {
+      this.spot.occupantID = other.id;
       other.media.enterBroadcast();
       other.isInVicinity = false;
       other.updateZone(this.id);
-
       return;
     }
-    if (other.id === this.occupantID && !this.hits(other)) {
-      this.occupantID = null;
+    if (other.id === this.spot.occupantID && !this.hits(other)) {
+      this.spot.occupantID = null;
       other.media.leaveBroadcast();
       other.updateZone(globalZoneID);
     }
   }
 
-  private generateTexture(
-    renderer: PIXI.Renderer | PIXI.AbstractRenderer
-  ): PIXI.Texture {
-    const cont = new PIXI.Container();
-    cont.x = 0;
-    cont.y = 0;
-    cont.width = this.width;
-    cont.height = this.height;
-
-    const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xe71115, 1);
-    graphics.lineStyle(1, 0xbb0c0c, 1);
-
-    graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
-    graphics.endFill();
-    cont.addChild(graphics);
-
-    const txt = new PIXI.Text("📢", {
+  private createLabel() {
+    const txt = new PIXI.Text("Broadcast to all", {
       fontFamily: "Arial",
-      fontSize: 24,
-      fill: 0xff1010,
+      fontSize: 16,
+      fill: 0xffffff,
       align: "center",
     });
     txt.anchor.set(0.5);
-    txt.position.x = cont.x + cont.width / 2;
-    txt.position.y = cont.y + cont.height / 2;
-
-    cont.addChild(txt);
-
-    const texture = renderer.generateTexture(cont);
-    return texture;
+    txt.position.x = spotSize / 2;
+    txt.position.y = 0 - 20;
+    this.addChild(txt);
   }
 }

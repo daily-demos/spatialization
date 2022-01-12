@@ -63,7 +63,6 @@ export class World {
     if (!user) {
       user = this.createUser(sessionID, -100, -100);
     }
-
     const priorZone = user.getZoneData();
     const oldZoneID = priorZone.zoneID;
     const oldSpotID = priorZone.spotID;
@@ -77,10 +76,25 @@ export class World {
 
     let handledOldPlacement = false;
     let handledNewPlacement = false;
+
     // Iterate through all furniture and try to place/unplace user in
     // communicated zone and spot as needed. "Placement" does not impact
     // user behavior itself (that is done via `user.updateZone()` above).
     // Placement affects zone spot occupation status and remote positioning.
+    if (zoneID === broadcastZoneID) {
+      for (let item of this.furniture) {
+        if (item instanceof BroadcastZone) {
+          item.tryPlace(user);
+        }
+      }
+    } else if (oldZoneID === broadcastZoneID) {
+      for (let item of this.furniture) {
+        if (item instanceof BroadcastZone) {
+          item.tryUnplace(user.id);
+        }
+      }
+    }
+
     for (let item of this.furniture) {
       if (item instanceof DeskZone) {
         if (item.id === oldZoneID) {
@@ -96,8 +110,8 @@ export class World {
           item.id === zoneID
         ) {
           item.tryPlace(user, spotID);
-          handledNewPlacement = true;
           if (handledOldPlacement || oldZoneID === globalZoneID) return;
+          handledNewPlacement = true;
         }
       }
     }
@@ -177,11 +191,11 @@ export class World {
     this.furnitureContainer.height = this.worldContainer.height;
     // Create a single broadcast spot
     const spot = new BroadcastZone(broadcastZoneID, 0, defaultWorldSize / 2);
-    spot.position.set(defaultWorldSize / 2 - spot.width / 2, spot.y);
+    spot.moveTo({ x: defaultWorldSize / 2 - spot.width / 2, y: spot.y });
     this.furnitureContainer.addChild(spot);
     this.furniture.push(spot);
 
-    const yPos = defaultWorldSize / 2 + 200;
+    const yPos = defaultWorldSize / 2 + 275;
 
     const zone1 = new DeskZone(1, "Koala", 4, { x: 0, y: yPos });
     zone1.moveTo({
@@ -322,6 +336,7 @@ export class World {
   }
 
   private init() {
+    //  PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
     const w = document.getElementById("world");
     this.app = new PIXI.Application({
       width: w.offsetWidth,
@@ -481,7 +496,6 @@ export class World {
   sendZoneDataToParticipant(sessionID: string) {
     const la = this.localUser;
     const zd = la.getZoneData();
-    console.log("sending zone data to participant: ", sessionID, zd);
     this.onJoinZone(zd, sessionID);
   }
 
@@ -489,7 +503,6 @@ export class World {
     const la = this.localUser;
     const pd = la.getPos();
     const zd = la.getZoneData();
-    console.log("sending data dump to participant: ", sessionID, zd);
     this.onDataDump(zd, pd, sessionID);
   }
 

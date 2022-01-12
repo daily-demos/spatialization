@@ -9,7 +9,7 @@ import {
   DailyEventObjectCameraError,
   DailyEventObjectParticipants,
 } from "@daily-co/daily-js";
-import { globalZoneID } from "./config";
+import { globalZoneID, standardTileSize } from "./config";
 
 import { showJoinForm, showWorld } from "./util/nav";
 import { World } from "./world";
@@ -117,7 +117,11 @@ export class Room {
       case BandwidthLevel.Tile:
         this.localBandwidthLevel = level;
         this.callObject.setBandwidth({
-          trackConstraints: { width: 75, height: 75, frameRate: 15 },
+          trackConstraints: {
+            width: standardTileSize,
+            height: standardTileSize,
+            frameRate: 15,
+          },
         });
         break;
       case BandwidthLevel.Focus:

@@ -109,6 +109,10 @@ export class UserMedia {
     this.pannerNode = null;
     if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
+      return;
+    }
+    if (this.currentAction === Action.Broadcasting) {
+      this.showOrUpdateBroadcast();
     }
   }
 
@@ -191,7 +195,7 @@ export class UserMedia {
       orientationX: 0.0,
       orientationY: 0.0,
       orientationZ: -1.0,
-      refDistance: 50,
+      refDistance: 94,
       maxDistance: maxPannerDistance,
       rolloffFactor: 1,
       coneInnerAngle: 360,
