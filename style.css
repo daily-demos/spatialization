@@ -1,23 +1,119 @@
+:root {
+  --grey-lightest: #f7f9fa;
+  --white: #ffffff;
+  --grey: #c8d1dc;
+  --dark-grey: #6b7785;
+  --dark-blue: #1f2d3d;
+  --dark-blue-border: #2b3f56;
+  --green: #72cc18;
+  --red-dark: #bb0c0c;
+  --font-family: GraphikRegular, "Helvetica Neue", Sans-Serif;
+}
+
 html,
 body {
   width: 100%;
   height: 100%;
   background-color: #1f2d3d;
-  color: #f7f9fa;
+  color: #000;
   font-family: "Roboto", sans-serif;
   margin: 0px;
 }
 
-#wrapper {
-  width: 100%;
-  height: 100%;
+.header {
+  background-color: #fff;
+  min-width: 100%;
+  height: 52px;
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  box-shadow: inset 0px -1px 0p var(--grey);
+  border-bottom: 1px solid var(--grey);
   display: flex;
-  flex-direction: column;
-  justify-content: top;
+  align-items: center;
+  justify-content: space-between;
 }
 
-#header {
-  padding: 25px;
+.left-header {
+  display: flex;
+  align-items: center;
+  width: 325px;
+  margin-left: 16px;
+}
+
+.daily-logo {
+  height: 24px;
+  width: 60px;
+  margin-right: 24px;
+}
+
+.header-title {
+  font-size: 12px;
+  line-height: 16px;
+  font-family: var(--font-family);
+}
+
+.right-header {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-right: 24px;
+}
+
+.title {
+  margin: 0;
+  text-align: center;
+}
+
+.docs-button {
+  justify-content: space-between;
+}
+
+.white-button {
+  color: var(--dark-blue);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--grey);
+  padding: 8px 16px;
+  border-radius: 8px;
+  flex: none;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.link {
+  text-decoration: none;
+}
+
+.divider {
+  background: var(--grey);
+  margin: 0 16px;
+  display: block;
+  height: 32px;
+  width: 1px;
+}
+
+.octocat {
+  height: 24px;
+  width: 24px;
+}
+
+.wrapper {
+  width: 100%;
+  height: calc(100% - 52px);
+  top: 52px;
+  background-color: var(--grey-lightest);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 16px;
 }
 
 #call {
