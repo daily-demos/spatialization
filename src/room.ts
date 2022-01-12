@@ -47,6 +47,7 @@ export class Room {
       subscribeToTracksAutomatically: false,
       dailyConfig: {
         experimentalChromeVideoMuteLightOff: true,
+        camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
       },
     })
       .on("camera-error", (e) => {

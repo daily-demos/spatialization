@@ -29,7 +29,7 @@ describe("User listener and panner tests", () => {
     listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 200, y: 100 };
-    const pannerMod = listener["getPannerMod"](100, speakerPos);
+    const pannerMod = listener["getAudioMod"](100, speakerPos);
     expect(pannerMod.pan).toBe(1);
   });
 
@@ -41,7 +41,7 @@ describe("User listener and panner tests", () => {
     listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 0, y: 100 };
-    const pannerMod = listener["getPannerMod"](100, speakerPos);
+    const pannerMod = listener["getAudioMod"](100, speakerPos);
     expect(pannerMod.pan).toBe(-1);
   });
 
@@ -53,7 +53,7 @@ describe("User listener and panner tests", () => {
     listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 150, y: 100 };
-    const pannerMod = listener["getPannerMod"](50, speakerPos);
+    const pannerMod = listener["getAudioMod"](50, speakerPos);
     expect(pannerMod.pan).toBe(0.5);
   });
 
@@ -65,7 +65,7 @@ describe("User listener and panner tests", () => {
     listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 50, y: 100 };
-    const pannerMod = listener["getPannerMod"](50, speakerPos);
+    const pannerMod = listener["getAudioMod"](50, speakerPos);
     expect(pannerMod.pan).toBe(-0.5);
   });
 
@@ -77,7 +77,7 @@ describe("User listener and panner tests", () => {
     listener["earshotDistance"] = 100;
 
     const speakerPos = { x: 100, y: 200 };
-    const pannerMod = listener["getPannerMod"](100, speakerPos);
+    const pannerMod = listener["getAudioMod"](100, speakerPos);
     expect(pannerMod.pan).toBe(0);
   });
 });

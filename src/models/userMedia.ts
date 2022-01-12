@@ -2,6 +2,7 @@ import {
   PannerNode,
   StereoPannerNode,
   AudioContext,
+  GainNode,
 } from "standardized-audio-context";
 import {
   removeZonemate,
@@ -31,7 +32,7 @@ export class UserMedia {
   cameraDisabled: boolean;
   tileDisabled: boolean;
 
-  pannerNode: PannerNode<AudioContext>;
+  gainNode: GainNode<AudioContext>;
   stereoPannerNode: StereoPannerNode<AudioContext>;
 
   currentAction: Action = Action.Traversing;
@@ -105,8 +106,10 @@ export class UserMedia {
       return;
     }
     this.audioTrack = newTrack;
-    // Reset panner node
-    this.pannerNode = null;
+    // Reset nodes
+    this.gainNode = null;
+    this.stereoPannerNode = null;
+
     if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
       return;
@@ -149,32 +152,33 @@ export class UserMedia {
     stopBroadcast();
   }
 
-  updatePanner(pos: Pos, panValue: number) {
+  updateAudio(gainValue: number, panValue: number) {
     if (!this.audioTag || !this.audioTrack) return;
 
-    if (!this.pannerNode) {
-      this.createPannerNode(pos, panValue);
+    if (!this.gainNode) {
+      this.createAudioNodes(gainValue, panValue);
       return;
     }
-    const currentX = this.pannerNode.positionX.value;
-    const currentY = this.pannerNode.positionY.value;
-    if (currentX !== pos.x || currentY !== pos.y) {
+
+    if (this.gainNode.gain.value != gainValue) {
       try {
-        this.pannerNode.positionX.value = pos.x;
-        this.pannerNode.positionY.value = pos.y;
-      } catch (e) {
-        console.error(
-          `failed to update panner position: ${e} (position: x: ${pos.x}, y: ${pos.y})`
+        this.gainNode.gain.setValueAtTime(
+          gainValue,
+          window.audioContext.currentTime
         );
+      } catch (e) {
+        console.error(`failed to update gain: ${e} (gain value: ${gainValue})`);
       }
     }
+
     if (this.stereoPannerNode.pan.value != panValue) {
       try {
-        this.stereoPannerNode.pan.value = panValue;
-      } catch (e) {
-        console.error(
-          `failed to update panner position: ${e} (pan value: ${panValue})`
+        this.stereoPannerNode.pan.setValueAtTime(
+          panValue,
+          window.audioContext.currentTime
         );
+      } catch (e) {
+        console.error(`failed to update pan: ${e} (pan value: ${panValue})`);
       }
     }
   }
@@ -183,29 +187,17 @@ export class UserMedia {
     removeZonemate(this.id);
   }
 
-  private createPannerNode(pos: Pos, panValue: number) {
+  private createAudioNodes(gainValue: number, panValue: number) {
     const stream = new MediaStream([this.audioTrack]);
 
-    this.pannerNode = new PannerNode(window.audioContext, {
-      panningModel: "HRTF",
-      distanceModel: "linear",
-      positionX: pos.x,
-      positionY: pos.y,
-      positionZ: 300,
-      orientationX: 0.0,
-      orientationY: 0.0,
-      orientationZ: -1.0,
-      refDistance: 94,
-      maxDistance: maxPannerDistance,
-      rolloffFactor: 1,
-      coneInnerAngle: 360,
-      coneOuterAngle: 0,
-      coneOuterGain: 1,
-    });
+    this.gainNode = window.audioContext.createGain();
+    this.gainNode.gain.value = gainValue;
 
-    this.stereoPannerNode = new StereoPannerNode(window.audioContext);
-
+    this.stereoPannerNode = window.audioContext.createStereoPanner();
     this.stereoPannerNode.pan.value = panValue;
+
+    const source = window.audioContext.createMediaStreamSource(stream);
+    const destination = window.audioContext.createMediaStreamDestination();
 
     // Apparently this is required due to a Chromium bug!
     // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
@@ -215,11 +207,8 @@ export class UserMedia {
     mutedAudio.srcObject = stream;
     mutedAudio.play();
 
-    const source = window.audioContext.createMediaStreamSource(stream);
-    const destination = window.audioContext.createMediaStreamDestination();
-
-    source.connect(this.pannerNode);
-    this.pannerNode.connect(this.stereoPannerNode);
+    source.connect(this.gainNode);
+    this.gainNode.connect(this.stereoPannerNode);
     this.stereoPannerNode.connect(destination);
     this.audioTag.muted = false;
     this.audioTag.srcObject = destination.stream;

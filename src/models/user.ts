@@ -8,10 +8,11 @@ import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
 import { DeskZone } from "./deskZone";
 import { broadcastZoneID, globalZoneID, standardTileSize } from "../config";
+import { clamp } from "../util/math";
 
 const minAlpha = 0.2;
 const inZoneAlpha = 0.5;
-const earshot = 300;
+const earshot = 350;
 const maxAlpha = 1;
 const baseSize = standardTileSize;
 const defaultSpeed = 4;
@@ -374,8 +375,9 @@ export class User extends Collider {
 
     // User is in earshot
     if (this.inEarshot(distance)) {
-      const pm = this.getPannerMod(distance, other.getPos());
-      other.media.updatePanner(pm.pos, pm.pan);
+      const pm = this.getAudioMod(distance, other.getPos());
+
+      other.media.updateAudio(pm.gain, pm.pan);
 
       other.media.unmuteAudio();
       if (
@@ -391,25 +393,21 @@ export class User extends Collider {
     other.setDefaultTexture();
   }
 
-  private getPannerMod(
+  private getAudioMod(
     distance: number,
     otherPos: Pos
-  ): { pos: Pos; pan: number } {
-    const desiredPannerDistance =
-      (distance * maxPannerDistance) / this.earshotDistance;
+  ): { gain: number; pan: number } {
+    let gainValue = clamp(
+      ((this.earshotDistance - distance) * 0.5) / this.earshotDistance,
+      0,
+      0.5
+    );
 
     const dx = otherPos.x - this.x;
-    const dy = otherPos.y - this.y;
-
-    const part = desiredPannerDistance / distance;
-
     const panValue = (1 * dx) / this.earshotDistance;
 
     return {
-      pos: {
-        x: Math.round(otherPos.x + dx * part),
-        y: Math.round(otherPos.y + dy * part),
-      },
+      gain: gainValue,
       pan: panValue,
     };
   }
