@@ -32,12 +32,14 @@ export function registerJoinFormListener(f: Function) {
 }
 
 export function showWorld() {
-  const worldDiv = document.getElementById("world");
+  const callDiv = document.getElementById("call");
+  //const worldDiv = document.getElementById("world");
   const entryDiv = document.getElementById("entry");
-  const controlsDiv = document.getElementById("controls");
-  worldDiv.style.display = "inline-block";
+  //  const controlsDiv = document.getElementById("controls");
+  callDiv.style.display = "block";
+  //  worldDiv.style.display = "inline-block";
   entryDiv.style.display = "none";
-  controlsDiv.style.display = "block";
+  // controlsDiv.style.display = "flex";
 }
 
 export function showJoinForm() {

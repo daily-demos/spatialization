@@ -43,28 +43,26 @@
       </div>
     </header>
     <div class="wrapper">
-      <div id="nav">
-        <div id="entry">
-          <form id="enterCall">
-            <span class="field">
-              <label>Your Name: </label>
-              <input type="text" id="userName" required="true" />
-            </span>
-            <span class="field">
-              <label>Room URL: </label>
-              <input type="url" id="roomURL" required="true" />
-            </span>
-            <button type="submit">Join</button>
-          </form>
-        </div>
+      <div id="entry">
+        <form id="enterCall">
+          <span class="field">
+            <label>Your Name: </label>
+            <input type="text" id="userName" required="true" />
+          </span>
+          <span class="field">
+            <label>Room URL: </label>
+            <input type="url" id="roomURL" required="true" />
+          </span>
+          <button type="submit">Join</button>
+        </form>
+      </div>
+
+      <div id="call">
         <div id="controls">
           <button id="toggleCam">Toggle Cam</button>
           <button id="toggleMic">Toggle Mic</button>
           <button id="leave">Leave Call</button>
         </div>
-      </div>
-
-      <div id="call">
         <div id="world"></div>
         <div id="focus">
           <div id="broadcast">
