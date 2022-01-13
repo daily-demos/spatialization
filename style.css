@@ -163,7 +163,12 @@ body {
 
 #zonemates {
   display: block;
-  width: 100%;
+  width: 300px
+}
+
+#zonemate {
+  width: 300px;
+  height: 200px;
 }
 
 #zonemates .zonemateVid {
@@ -179,4 +184,6 @@ body {
 
 .fit {
   object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
