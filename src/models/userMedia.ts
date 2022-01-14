@@ -4,6 +4,7 @@ import {
   AudioContext,
   GainNode,
 } from "standardized-audio-context";
+import { Loopback } from "../util/loopback";
 import {
   removeZonemate,
   showBroadcast,
@@ -37,6 +38,7 @@ export class UserMedia {
   currentAction: Action = Action.Traversing;
   id: string;
   userName: string;
+  loopback: Loopback;
 
   constructor(id: string, userName: string, isLocal: boolean) {
     this.id = id;
@@ -47,6 +49,7 @@ export class UserMedia {
     this.createVideoTag();
     if (!isLocal) {
       this.createAudioTag();
+      window.userMedia.push(this);
     }
   }
 
@@ -65,9 +68,10 @@ export class UserMedia {
   private createAudioTag() {
     // Set up audio tag
     const audio = new Audio();
+    audio.id = `tile-audio-${this.id}`;
     audio.autoplay = true;
     audio.classList.add("invisible");
-    (audio.muted = true), document.documentElement.appendChild(audio);
+    // document.documentElement.appendChild(audio);
     this.audioTag = audio;
   }
 
@@ -191,7 +195,7 @@ export class UserMedia {
     removeZonemate(this.id);
   }
 
-  private createAudioNodes(gainValue: number, panValue: number) {
+  private async createAudioNodes(gainValue: number, panValue: number) {
     const stream = new MediaStream([this.audioTrack]);
 
     this.gainNode = window.audioContext.createGain();
@@ -217,8 +221,16 @@ export class UserMedia {
     this.gainNode.connect(this.stereoPannerNode);
     this.stereoPannerNode.connect(compressor);
     compressor.connect(destination);
+
+    // This is a workaround for there being no noise cancellation
+    // when using Web Audio API in Chromium:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
+    this.loopback = new Loopback();
+    await this.loopback.start(destination.stream);
+    const loopbackStream = this.loopback.getLoopback();
+    console.log("loopback:", loopbackStream);
     this.audioTag.muted = false;
-    this.audioTag.srcObject = destination.stream;
+    this.audioTag.srcObject = loopbackStream;
     this.audioTag.play();
   }
 

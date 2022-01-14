@@ -12,7 +12,7 @@ import { clamp } from "../util/math";
 
 const minAlpha = 0.2;
 const inZoneAlpha = 0.5;
-const earshot = 350;
+const earshot = 400;
 const maxAlpha = 1;
 const baseSize = standardTileSize;
 const defaultSpeed = 4;
