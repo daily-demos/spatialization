@@ -173,7 +173,7 @@ export class World {
     const user = this.getUser(userId);
     if (!user) return;
 
-    // Update zone back to global to make sure 
+    // Update zone back to global to make sure
     // zone spots are freed up.
     user.updateZone(globalZoneID);
     user.destroy();

@@ -124,6 +124,88 @@ body {
   overflow: hidden;
 }
 
+#call #controls {
+  display: flex;
+  position: absolute;
+  z-index: 5;
+  flex-direction: row;
+  align-items: center;
+
+  height: 56px;
+
+  left: calc(50% - 265px / 2);
+  top: calc(100% - 60px);
+
+  background: rgb(230 234 239);
+  border: 0.5px solid rgba(0, 0, 0, 0.38);
+  box-sizing: border-box;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(36px);
+  border-radius: 5px;
+}
+
+#toggleCam,
+#toggleMic {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background-color: transparent;
+  border-radius: 5px;
+  size: 10px;
+}
+
+#leave {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 12px;
+  line-height: 16px;
+  color: #ffffff;
+  background: #f63135;
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  border: none;
+  width: 95px;
+  height: 32px;
+}
+
+#controls button {
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+#controls .cam-on {
+  background-image: url("./camera.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+#controls .cam-off {
+  background-image: url("./camera-off.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+#controls .mic-on {
+  background-image: url("./microphone.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+#controls .mic-off {
+  background-image: url("./microphone-off.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+#toggleCam:hover,
+#toggleMic:hover,
+#toggleBlur:hover {
+  background-color: rgba(245, 245, 245, 0.6);
+  border-radius: 5px;
+}
+
 #world {
   display: block;
   z-index: 1;
@@ -141,12 +223,6 @@ body {
 
 #entry label {
   width: 100px;
-}
-
-#controls {
-  display: flex;
-  position: absolute;
-  z-index: 5;
 }
 
 #focus {

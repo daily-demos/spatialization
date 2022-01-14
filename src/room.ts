@@ -11,7 +11,15 @@ import {
 } from "@daily-co/daily-js";
 import { globalZoneID, standardTileSize } from "./config";
 
-import { showJoinForm, showWorld } from "./util/nav";
+import {
+  registerCamBtnListener,
+  registerLeaveBtnListener,
+  registerMicBtnListener,
+  showJoinForm,
+  showWorld,
+  updateCamBtn,
+  updateMicBtn,
+} from "./util/nav";
 import { World } from "./world";
 import { Pos, ZoneData } from "./worldTypes";
 
@@ -23,6 +31,11 @@ type BroadcastData = {
   action: string;
   zoneData?: ZoneData;
   pos?: Pos;
+};
+
+type State = {
+  audio?: boolean;
+  video?: boolean;
 };
 
 enum BandwidthLevel {
@@ -38,6 +51,7 @@ export class Room {
   callObject: DailyCall;
   pendingAcks: { [key: string]: ReturnType<typeof setInterval> } = {};
   localBandwidthLevel = BandwidthLevel.Unknown;
+  localState: State = { audio: null, video: null };
 
   constructor(url: string, userName: string, isGlobal = false) {
     this.url = url;
@@ -75,27 +89,24 @@ export class Room {
         handleAppMessage(this, e);
       });
 
-    const camBtn = document.getElementById("toggleCam");
-    camBtn.onclick = () => {
+    registerCamBtnListener(() => {
       const current = this.callObject.participants().local.video;
       this.callObject.setLocalVideo(!current);
-    };
+    });
 
-    const micBtn = document.getElementById("toggleMic");
-    micBtn.onclick = () => {
+    registerMicBtnListener(() => {
       const current = this.callObject.participants().local.audio;
       console.log("toggling mic to:", !current);
       this.callObject.setLocalAudio(!current);
-    };
+    });
 
-    const leaveBtn = document.getElementById("leave");
-    leaveBtn.onclick = () => {
+    registerLeaveBtnListener(() => {
       this.callObject.leave();
       this.callObject.destroy();
       world.destroy();
       world = new World();
       showJoinForm();
-    };
+    });
   }
 
   async join() {
@@ -132,6 +143,17 @@ export class Room {
           trackConstraints: { width: 200, height: 200, frameRate: 30 },
         });
         break;
+    }
+  }
+
+  updateLocal(p: DailyParticipant) {
+    if (this.localState.audio != p.audio) {
+      this.localState.audio = p.audio;
+      updateMicBtn(this.localState.audio);
+    }
+    if (this.localState.video != p.video) {
+      this.localState.video = p.video;
+      updateCamBtn(this.localState.video);
     }
   }
 }
@@ -260,6 +282,9 @@ function handleParticipantUpdated(
   const p = event.participant;
   const tracks = getParticipantTracks(p);
   world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
+  if (p.session_id === room.callObject.participants().local.session_id) {
+    room.updateLocal(p);
+  }
 }
 
 function handleParticipantJoined(
