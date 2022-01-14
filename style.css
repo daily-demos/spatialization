@@ -160,25 +160,11 @@ body {
   left: 0px;
 }
 
-#broadcast {
-  width: 200px;
-  height: 160px;
-}
-
 #zonemates {
   display: flex;
   flex-direction: column;
   z-index: 10;
   width: 200px;
-}
-
-#zonemates .zonemateVid {
-  background-image: linear-gradient(45deg, #121a24, #2b3f56);
-  width: 200px;
-  height: 160px;
-}
-
-#broadcastVideo {
 }
 
 .invisible {
@@ -189,4 +175,45 @@ body {
   object-fit: cover;
   width: 100%;
   height: 100%;
+}
+
+#focus #broadcast {
+  display: flex;
+  visibility: hidden;
+  justify-content: center;
+}
+
+#focus .name {
+  color: rgb(53, 48, 48);
+  font-weight: 600;
+  background: #121a24;
+  font-size: large;
+  padding: 5px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  border-radius: 8px;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 16px;
+  color: #ffffff;
+  position: absolute;
+  top: 140px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+#focus .tile {
+  display: flex;
+  justify-content: center;
+  width: 200px;
+  height: 160px;
+  border-radius: 25px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(45deg, #121a24, #2b3f56);
+}
+
+video {
+  border-radius: 25px;
 }

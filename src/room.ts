@@ -103,6 +103,7 @@ export class Room {
       await this.callObject.join({ url: this.url, userName: this.userName });
     } catch (e) {
       console.error(e);
+      showJoinForm();
     }
   }
 
@@ -150,7 +151,7 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
 
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);
-    world.setUserTracks(p.session_id, tracks.video, tracks.audio);
+    world.updateUser(p.session_id, tracks.video, tracks.audio);
   };
 
   const subToTracks = (sessionID: string) => {
@@ -192,6 +193,7 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
   };
 
   if (room.isGlobal) {
+    const local = event.participants.local;
     showWorld();
     world.subToTracks = subToTracks;
     world.unsubFromTracks = unsubFromTracks;
@@ -200,7 +202,7 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
     world.onJoinZone = onJoinZone;
     world.onDataDump = onDataDump;
     world.start();
-    world.initLocalUser(event.participants.local.session_id);
+    world.initLocalUser(local.session_id);
   }
 }
 
@@ -221,10 +223,8 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
   const msgType = data.action;
   switch (msgType) {
     case "dump":
-      console.log("got full data dump:", event.fromId, data);
       const pendingAck = room.pendingAcks[event.fromId];
       if (pendingAck) {
-        console.log("clearing pending ack");
         clearInterval(pendingAck);
         delete room.pendingAcks[event.fromId];
         world.sendDataDumpToParticipant(event.fromId);
@@ -259,7 +259,7 @@ function handleParticipantUpdated(
 ) {
   const p = event.participant;
   const tracks = getParticipantTracks(p);
-  world.setUserTracks(p.session_id, tracks.video, tracks.audio);
+  world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
 }
 
 function handleParticipantJoined(

@@ -29,7 +29,8 @@ export class User extends Collider {
   isInVicinity = false;
   media: UserMedia;
   isLocal: boolean;
-  userName: string;
+
+  private userName: string;
 
   protected emoji: string = "😊";
   protected gradientTextureName: string = "user-gradient";
@@ -45,6 +46,7 @@ export class User extends Collider {
 
   constructor(
     id: string,
+    userName: string,
     x: number,
     y: number,
     isLocal = false,
@@ -53,7 +55,7 @@ export class User extends Collider {
     onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null
   ) {
     super();
-    this.media = new UserMedia(id, isLocal);
+    this.media = new UserMedia(id, userName, isLocal);
 
     this.speed = defaultSpeed;
     // How close another user needs to be to be seen/heard
@@ -64,6 +66,7 @@ export class User extends Collider {
     this.onJoinZone = onJoinZone;
     this.isLocal = isLocal;
     this.id = id;
+    this.userName = userName;
     // This field is on the Pixi base class. It is
     // differen from the userName and MUST match
     // the unique ID.
@@ -83,32 +86,6 @@ export class User extends Collider {
 
   destroy() {
     this.media.destroy();
-  }
-
-  private setVideoTexture() {
-    const videoTrack = this.media.getVideoTrack();
-    if (!videoTrack) return;
-
-    const settings = videoTrack.getSettings();
-    if (!settings.height) {
-      return;
-    }
-
-    this.textureType = TextureType.Video;
-
-    // I am not (yet) sure why this is needed, but without
-    // it we get inconsistent bounds and broken collision
-    // detection when switching textures.
-    this.getBounds(true);
-    let texture = new PIXI.BaseTexture(this.media.videoTag);
-    texture.setSize(baseSize, baseSize);
-    let textureMask: PIXI.Rectangle = null;
-    textureMask = new PIXI.Rectangle(0, 0, baseSize, baseSize);
-
-    this.texture = new PIXI.Texture(texture, textureMask);
-    this.texture.updateUvs();
-    this.width = baseSize;
-    this.height = baseSize;
   }
 
   // updateTracks sets the tracks, but does not
@@ -177,6 +154,12 @@ export class User extends Collider {
     if (!trial) this.tryUpdateListener();
   }
 
+  setUserName(newName: string) {
+    if (this.userName === newName) return;
+    this.userName = newName;
+    this.media.userName = newName;
+  }
+
   async processUsers(others: Array<DisplayObject>) {
     for (let other of others) {
       this.processUser(<User>other);
@@ -192,6 +175,32 @@ export class User extends Collider {
   }
 
   // Private methods below
+
+  private setVideoTexture() {
+    const videoTrack = this.media.getVideoTrack();
+    if (!videoTrack) return;
+
+    const settings = videoTrack.getSettings();
+    if (!settings.height) {
+      return;
+    }
+
+    this.textureType = TextureType.Video;
+
+    // I am not (yet) sure why this is needed, but without
+    // it we get inconsistent bounds and broken collision
+    // detection when switching textures.
+    this.getBounds(true);
+    let texture = new PIXI.BaseTexture(this.media.videoTag);
+    texture.setSize(baseSize, baseSize);
+    let textureMask: PIXI.Rectangle = null;
+    textureMask = new PIXI.Rectangle(0, 0, baseSize, baseSize);
+
+    this.texture = new PIXI.Texture(texture, textureMask);
+    this.texture.updateUvs();
+    this.width = baseSize;
+    this.height = baseSize;
+  }
 
   private tryUpdateListener() {
     if (!this.isLocal) return;

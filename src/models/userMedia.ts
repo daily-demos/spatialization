@@ -10,7 +10,6 @@ import {
   showZonemate,
   stopBroadcast,
 } from "../util/nav";
-import { Pos } from "../worldTypes";
 
 export const maxPannerDistance = 1000;
 
@@ -37,9 +36,14 @@ export class UserMedia {
 
   currentAction: Action = Action.Traversing;
   id: string;
+  userName: string;
 
-  constructor(id: string, isLocal: boolean) {
+  constructor(id: string, userName: string, isLocal: boolean) {
     this.id = id;
+    if (!userName) {
+      userName = id;
+    }
+    this.userName = userName;
     this.createVideoTag();
     if (!isLocal) {
       this.createAudioTag();
@@ -220,7 +224,7 @@ export class UserMedia {
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
     }
-    showZonemate(this.id, videoTrack, this.audioTrack);
+    showZonemate(this.id, this.userName, videoTrack, this.audioTrack);
   }
 
   showOrUpdateBroadcast() {
@@ -228,6 +232,6 @@ export class UserMedia {
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
     }
-    showBroadcast(videoTrack, this.audioTrack);
+    showBroadcast(this.userName, videoTrack, this.audioTrack);
   }
 }

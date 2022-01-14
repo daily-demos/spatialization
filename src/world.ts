@@ -43,14 +43,16 @@ export class World {
     this.init();
   }
 
-  setUserTracks(
+  updateUser(
     id: string,
+    name: string,
     video: MediaStreamTrack = null,
     audio: MediaStreamTrack = null
   ) {
     const user = this.getUser(id);
     if (user) {
       user.updateTracks(video, audio);
+      if (!user.isLocal) user.setUserName(name);
     }
   }
 
@@ -122,9 +124,9 @@ export class World {
     // update. If it already exists, just update the name
     let user = this.getUser(sessionID);
     if (!user) {
-      user = this.createUser(sessionID, -10000, -1000);
+      user = this.createUser(sessionID, -10000, -1000, userName);
     }
-    user.userName = userName;
+    user.setUserName(userName);
   }
 
   updateParticipantPos(sessionID: string, posX: number, posY: number) {
@@ -145,7 +147,7 @@ export class World {
       y: rand(worldCenter - 250, worldCenter + 250),
     };
 
-    const user = this.createUser(sessionID, p.x, p.y, true);
+    const user = this.createUser(sessionID, p.x, p.y, "You", true);
     this.app.render();
 
     this.getFinalLocalPos(user);
@@ -170,6 +172,10 @@ export class World {
   removeUser(userId: string): void {
     const user = this.getUser(userId);
     if (!user) return;
+
+    // Update zone back to global to make sure 
+    // zone spots are freed up.
+    user.updateZone(globalZoneID);
     user.destroy();
     this.usersContainer.removeChild(user);
     for (let i = 0; i < this.robots.length; i++) {
@@ -282,6 +288,7 @@ export class World {
     userID: string,
     x: number,
     y: number,
+    userName: string = null,
     isLocal = false
   ): User {
     let onEnterVicinity = null;
@@ -294,6 +301,7 @@ export class World {
     }
     const user = new User(
       userID,
+      userName,
       x,
       y,
       (isLocal = isLocal),

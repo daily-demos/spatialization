@@ -26,7 +26,7 @@ export class Robot extends User {
     maxY: number,
     role: RobotRole = RobotRole.World
   ) {
-    super(userID, 0, 0);
+    super(name, userID, 0, 0);
     this.targetPos = { x: 0, y: 0 };
     this.maxCoords = { x: maxX, y: maxY };
     this.role = role;

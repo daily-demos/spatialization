@@ -20,6 +20,11 @@ export default class KeyListener {
 }
 
 const joinForm = document.getElementById("enterCall");
+const broadcastDiv = <HTMLDivElement>document.getElementById("broadcast");
+const broadcastVideo = <HTMLVideoElement>(
+  document.getElementById("broadcastVideo")
+);
+const broadcastName = <HTMLDivElement>document.getElementById("broadcastName");
 
 export function registerJoinFormListener(f: Function) {
   joinForm.addEventListener("submit", (event) => {
@@ -57,6 +62,7 @@ export function showJoinForm() {
 }
 
 export function showBroadcast(
+  name: string,
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack
 ) {
@@ -64,19 +70,22 @@ export function showBroadcast(
   if (videoTrack) tracks.push(videoTrack);
   if (audioTrack) tracks.push(audioTrack);
   if (tracks.length > 0) {
-    const vid = <HTMLVideoElement>document.getElementById("broadcastVideo");
-    vid.srcObject = new MediaStream(tracks);
+    broadcastVideo.srcObject = new MediaStream(tracks);
   }
+  // Update name and show broadcast div
+  broadcastName.innerText = name;
+  broadcastDiv.style.visibility = "visible";
 }
 
 export function stopBroadcast() {
   console.log("Stopping broadcast");
-  const vid = <HTMLVideoElement>document.getElementById("broadcastVideo");
-  vid.srcObject = null;
+  broadcastDiv.style.visibility = "hidden";
+  broadcastVideo.srcObject = null;
 }
 
 export function showZonemate(
   sessionID: string,
+  name: string,
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack
 ) {
@@ -84,7 +93,7 @@ export function showZonemate(
     document.getElementById(getZonemateTagID(sessionID))
   );
   if (!zonemate) {
-    zonemate = createZonemate(sessionID);
+    zonemate = createZonemate(sessionID, name);
   }
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
@@ -97,27 +106,25 @@ export function showZonemate(
   vid.srcObject = new MediaStream(tracks);
 }
 
-function createZonemate(sessionID: string): HTMLDivElement {
+function createZonemate(sessionID: string, name: string): HTMLDivElement {
   const zonemates = document.getElementById("zonemates");
   const zID = getZonemateTagID(sessionID);
   let zonemate = document.createElement("div");
   zonemate.id = zID;
+  zonemate.className = "tile";
   zonemates.appendChild(zonemate);
 
   const nameTag = document.createElement("div");
-  nameTag.innerText = sessionID;
+  nameTag.innerText = name;
+  nameTag.className = "name";
   zonemate.appendChild(nameTag);
-
-  const zonemateTag = document.createElement("div");
-  zonemateTag.classList.add("zonemateVid");
-  zonemate.appendChild(zonemateTag);
 
   const vID = getVideoTagID(sessionID);
   const vid = document.createElement("video");
   vid.classList.add("fit");
   vid.autoplay = true;
   vid.id = vID;
-  zonemateTag.appendChild(vid);
+  zonemate.appendChild(vid);
   return zonemate;
 }
 
