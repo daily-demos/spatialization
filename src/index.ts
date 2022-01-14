@@ -4,6 +4,8 @@ import { registerJoinFormListener } from "./util/nav";
 // These imports are here to ensure they're bundled into
 // the final distribution.
 import "../style.css";
+import "./assets/daily.svg";
+import "./assets/github.png";
 import "./assets/camera-off.svg";
 import "./assets/camera.svg";
 import "./assets/microphone-off.svg";

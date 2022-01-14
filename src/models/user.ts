@@ -151,7 +151,6 @@ export class User extends Collider {
     this.x = Math.round(pos.x);
     this.y = Math.round(pos.y);
     this.getBounds();
-    if (!trial) this.tryUpdateListener();
   }
 
   setUserName(newName: string) {
@@ -200,19 +199,6 @@ export class User extends Collider {
     this.texture.updateUvs();
     this.width = baseSize;
     this.height = baseSize;
-  }
-
-  private tryUpdateListener() {
-    if (!this.isLocal) return;
-
-    const listener = window.audioContext.listener;
-    // Note that this only works through our use of `standardized-audio-context`
-    // With a vanilla AudioContext, this would need to conditionally use `setPosition()`
-    // depending on the browser. `setPosition()` is deprecated, but is the only way to
-    // update position in some browsers:
-    // https://developer.mozilla.org/en-US/docs/Web/API/AudioListener
-    listener.positionX.value = this.x;
-    listener.positionY.value = this.y;
   }
 
   private async processUser(o: User) {
@@ -385,9 +371,7 @@ export class User extends Collider {
     // User is in earshot
     if (this.inEarshot(distance)) {
       const pm = this.getAudioMod(distance, other.getPos());
-
       other.media.updateAudio(pm.gain, pm.pan);
-
       other.media.unmuteAudio();
       if (
         !other.media.cameraDisabled &&

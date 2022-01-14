@@ -200,6 +200,8 @@ export class UserMedia {
     this.stereoPannerNode = window.audioContext.createStereoPanner();
     this.stereoPannerNode.pan.value = panValue;
 
+    const compressor = window.audioContext.createDynamicsCompressor();
+
     const source = window.audioContext.createMediaStreamSource(stream);
     const destination = window.audioContext.createMediaStreamDestination();
 
@@ -213,7 +215,8 @@ export class UserMedia {
 
     source.connect(this.gainNode);
     this.gainNode.connect(this.stereoPannerNode);
-    this.stereoPannerNode.connect(destination);
+    this.stereoPannerNode.connect(compressor);
+    compressor.connect(destination);
     this.audioTag.muted = false;
     this.audioTag.srcObject = destination.stream;
     this.audioTag.play();
