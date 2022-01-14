@@ -298,7 +298,7 @@ export class User extends Collider {
       return;
     }
 
-    if (this.isLocal) {
+    if (this.isLocal && this.zoneData.zoneID === globalZoneID) {
       this.setVideoTexture();
     }
   }
