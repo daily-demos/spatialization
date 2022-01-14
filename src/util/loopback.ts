@@ -5,6 +5,9 @@ const offerOptions = {
   offerToReceiveVideo: false,
 };
 
+// This is used to create a loopback as a workaround for
+// the following Chromium issue:
+// https://bugs.chromium.org/p/chromium/issues/detail?id=687574
 export class Loopback {
   peer1: RTCPeerConnection;
   peer2: RTCPeerConnection;
@@ -16,10 +19,8 @@ export class Loopback {
     this.loopbackStream = new MediaStream();
     this.peer1 = new RTCPeerConnection();
     this.peer2 = new RTCPeerConnection();
-    this.peer1.onicecandidate = (e) =>
-      this.onIceCandidate(this.peer1, e);
-    this.peer2.onicecandidate = (e) =>
-      this.onIceCandidate(this.peer2, e);
+    this.peer1.onicecandidate = (e) => this.onIceCandidate(this.peer1, e);
+    this.peer2.onicecandidate = (e) => this.onIceCandidate(this.peer2, e);
 
     this.peer2.ontrack = (e) => {
       console.log("got track:", e);
@@ -63,8 +64,6 @@ export class Loopback {
   }
 
   private getOtherConn(conn: RTCPeerConnection): RTCPeerConnection {
-    return conn === this.peer1
-      ? this.peer2
-      : this.peer1;
+    return conn === this.peer1 ? this.peer2 : this.peer1;
   }
 }

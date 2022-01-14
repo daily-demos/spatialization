@@ -223,7 +223,7 @@ export class UserMedia {
     compressor.connect(destination);
 
     // This is a workaround for there being no noise cancellation
-    // when using Web Audio API in Chromium:
+    // when using Web Audio API in Chromium (another bug):
     // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
     this.loopback = new Loopback();
     await this.loopback.start(destination.stream);
