@@ -80,27 +80,20 @@ export function updateMicBtn(micOn: boolean) {
 
 export function showWorld() {
   const callDiv = document.getElementById("call");
-  //const worldDiv = document.getElementById("world");
   const entryDiv = document.getElementById("entry");
-  //  const controlsDiv = document.getElementById("controls");
   callDiv.style.display = "block";
-  //  worldDiv.style.display = "inline-block";
   entryDiv.style.display = "none";
-  // controlsDiv.style.display = "flex";
 }
 
 export function showJoinForm() {
   removeAllZonemates();
   stopBroadcast();
 
-  const worldDiv = document.getElementById("world");
   const entryDiv = document.getElementById("entry");
-  const controlsDiv = document.getElementById("controls");
-
-  worldDiv.style.display = "none";
+  const callDiv = document.getElementById("call");
+  callDiv.style.display = "none";
   entryDiv.style.display = "block";
   joinForm.style.display = "block";
-  controlsDiv.style.display = "none";
 }
 
 export function showBroadcast(

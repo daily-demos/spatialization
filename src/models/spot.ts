@@ -63,7 +63,7 @@ export class Spot extends Collider {
 
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0x2b3f56, 1);
-    graphics.lineStyle(1, 0xffffff, 1, 1);
+    graphics.lineStyle(2, 0xffffff, 1, 1);
     graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
     graphics.endFill();
     graphics.zIndex = 1;
@@ -88,68 +88,4 @@ export class Spot extends Collider {
 
     return texture;
   }
-
-  // https://github.com/pixijs/pixijs/issues/1333
-  private drawDashLine = function (
-    graphics: PIXI.Graphics,
-    rect: PIXI.Rectangle,
-    dash = 16,
-    gap = 8
-  ) {
-    const lastPosition = graphics.currentPath.points;
-    const currentPosition = {
-      x: lastPosition[lastPosition.length - 2] || 0,
-      y: lastPosition[lastPosition.length - 1] || 0,
-    };
-
-    const points = [
-      {
-        x: Math.abs(rect.x + rect.width),
-        y: Math.abs(rect.y),
-      },
-      {
-        x: Math.abs(rect.x + rect.width),
-        y: Math.abs(rect.y + rect.height),
-      },
-      {
-        x: Math.abs(rect.x),
-        y: Math.abs(rect.y + rect.height),
-      },
-      {
-        x: Math.abs(rect.x),
-        y: Math.abs(rect.y),
-      },
-    ];
-
-    for (const to of points) {
-      for (
-        ;
-        Math.abs(currentPosition.x) < to.x ||
-        Math.abs(currentPosition.y) < to.y;
-
-      ) {
-        currentPosition.x =
-          Math.abs(currentPosition.x + dash) < to.x
-            ? currentPosition.x + dash
-            : to.x;
-        currentPosition.y =
-          Math.abs(currentPosition.y + dash) < to.y
-            ? currentPosition.y + dash
-            : to.y;
-
-        graphics.lineTo(currentPosition.x, currentPosition.y);
-
-        currentPosition.x =
-          Math.abs(currentPosition.x + gap) < to.x
-            ? currentPosition.x + gap
-            : to.x;
-        currentPosition.y =
-          Math.abs(currentPosition.y + gap) < to.y
-            ? currentPosition.y + gap
-            : to.y;
-
-        graphics.moveTo(currentPosition.x, currentPosition.y);
-      }
-    }
-  };
 }
