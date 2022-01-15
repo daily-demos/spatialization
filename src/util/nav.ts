@@ -1,3 +1,5 @@
+import { setupDraggableElement } from "./drag";
+
 export default class KeyListener {
   pressedKeys: { [key: string]: boolean } = {};
 
@@ -24,6 +26,9 @@ const broadcastDiv = <HTMLDivElement>document.getElementById("broadcast");
 const broadcastVideo = <HTMLVideoElement>(
   document.getElementById("broadcastVideo")
 );
+
+setupDraggableElement(broadcastDiv);
+
 const broadcastName = <HTMLDivElement>document.getElementById("broadcastName");
 const toggleCamBtn = document.getElementById("toggleCam");
 const toggleMicBtn = document.getElementById("toggleMic");
@@ -112,12 +117,14 @@ export function showBroadcast(
   // Update name and show broadcast div
   broadcastName.innerText = name;
   broadcastDiv.style.visibility = "visible";
+  broadcastDiv.draggable = true;
 }
 
 export function stopBroadcast() {
   console.log("Stopping broadcast");
   broadcastDiv.style.visibility = "hidden";
   broadcastVideo.srcObject = null;
+  broadcastDiv.draggable = false;
 }
 
 export function showZonemate(
@@ -148,7 +155,8 @@ function createZonemate(sessionID: string, name: string): HTMLDivElement {
   const zID = getZonemateTagID(sessionID);
   let zonemate = document.createElement("div");
   zonemate.id = zID;
-  zonemate.className = "tile";
+  zonemate.classList.add("tile");
+  zonemate.classList.add("zonemate");
   zonemates.appendChild(zonemate);
 
   const nameTag = document.createElement("div");
@@ -162,6 +170,8 @@ function createZonemate(sessionID: string, name: string): HTMLDivElement {
   vid.autoplay = true;
   vid.id = vID;
   zonemate.appendChild(vid);
+  zonemate.draggable = true;
+  setupDraggableElement(zonemate);
   return zonemate;
 }
 

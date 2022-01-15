@@ -20,6 +20,10 @@ body {
   margin: 0px;
 }
 
+[draggable] {
+  cursor: grab;
+}
+
 .header {
   background-color: #fff;
   min-width: 100%;
@@ -226,9 +230,6 @@ body {
 }
 
 #focus {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
   position: absolute;
   width: 100%;
   height: 100%;
@@ -238,9 +239,14 @@ body {
 
 #zonemates {
   display: flex;
-  flex-direction: column;
+  position: absolute;
+  left: 0;
+  top: 0;
   z-index: 10;
-  width: 200px;
+  width: 100%;
+  flex-flow: column wrap;
+  align-content: flex-end;
+  height: calc(180px * 2);
 }
 
 .invisible {
@@ -262,6 +268,7 @@ body {
 #focus .name {
   color: rgb(53, 48, 48);
   font-weight: 600;
+  z-index: 2;
   background: #121a24;
   font-size: large;
   padding: 5px;
@@ -282,6 +289,8 @@ body {
 
 #focus .tile {
   display: flex;
+  z-index: 1;
+  margin-bottom: 18px;
   justify-content: center;
   width: 200px;
   height: 160px;
@@ -290,6 +299,11 @@ body {
   background-image: linear-gradient(45deg, #121a24, #2b3f56);
 }
 
-video {
+#focus .zonemate {
+  position: relative;
+}
+
+#focus video {
   border-radius: 25px;
+  height: 160px;
 }

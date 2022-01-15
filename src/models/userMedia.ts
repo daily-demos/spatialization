@@ -1,9 +1,9 @@
 import {
-  PannerNode,
   StereoPannerNode,
   AudioContext,
   GainNode,
 } from "standardized-audio-context";
+import { standardTileSize } from "../config";
 import { Loopback } from "../util/loopback";
 import {
   removeZonemate,
@@ -31,6 +31,7 @@ export class UserMedia {
 
   cameraDisabled: boolean;
   tileDisabled: boolean;
+  videoPlaying: boolean;
 
   gainNode: GainNode<AudioContext>;
   stereoPannerNode: StereoPannerNode<AudioContext>;
@@ -53,15 +54,25 @@ export class UserMedia {
     }
   }
 
+  public videoIsPlaying(): boolean {
+    const v = this.videoTag;
+    if (!v) return false;
+    return !!(v.currentTime > 0 && !v.paused && !v.ended && v.readyState > 2);
+  }
+
   private createVideoTag() {
     // Set up video tag
     const video = document.createElement("video");
     video.autoplay = true;
     video.classList.add("fit");
-    video.width = 75;
-    video.height = 75;
+    video.width = standardTileSize;
+    video.height = standardTileSize;
     video.classList.add("invisible");
     document.documentElement.appendChild(video);
+    video.oncanplay = () => {
+      video.play();
+    };
+
     this.videoTag = video;
   }
 
@@ -71,14 +82,12 @@ export class UserMedia {
     audio.id = `tile-audio-${this.id}`;
     audio.autoplay = true;
     audio.classList.add("invisible");
-    // document.documentElement.appendChild(audio);
     this.audioTag = audio;
   }
 
   updateVideoSource(newTrack: MediaStreamTrack) {
     if (!newTrack) {
       this.cameraDisabled = true;
-      this.videoTag.style.opacity = "0";
       if (this.currentAction === Action.InZone) {
         this.showOrUpdateZonemate();
         return;
@@ -89,7 +98,6 @@ export class UserMedia {
       return;
     }
     this.cameraDisabled = false;
-    this.videoTag.style.opacity = "1";
     if (newTrack.id !== this.videoTrack?.id) {
       this.videoTrack = newTrack;
       this.videoTag.srcObject = new MediaStream([newTrack]);
@@ -149,6 +157,16 @@ export class UserMedia {
     return this.audioTrack;
   }
 
+  enterZone() {
+    this.currentAction = Action.InZone;
+    this.showOrUpdateZonemate();
+  }
+
+  leaveZone() {
+    this.currentAction = Action.Traversing;
+    removeZonemate(this.id);
+  }
+
   enterBroadcast() {
     if (this.audioTag) this.muteAudio();
     this.currentAction = Action.Broadcasting;
@@ -192,7 +210,7 @@ export class UserMedia {
   }
 
   destroy() {
-    removeZonemate(this.id);
+    this.loopback?.destroy();
   }
 
   private async createAudioNodes(gainValue: number, panValue: number) {
@@ -210,7 +228,7 @@ export class UserMedia {
     const destination = window.audioContext.createMediaStreamDestination();
 
     // Apparently this is required due to a Chromium bug!
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
     // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
     const mutedAudio = new Audio();
     mutedAudio.muted = true;
@@ -228,7 +246,6 @@ export class UserMedia {
     this.loopback = new Loopback();
     await this.loopback.start(destination.stream);
     const loopbackStream = this.loopback.getLoopback();
-    console.log("loopback:", loopbackStream);
     this.audioTag.muted = false;
     this.audioTag.srcObject = loopbackStream;
     this.audioTag.play();

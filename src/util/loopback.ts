@@ -8,6 +8,8 @@ const offerOptions = {
 // This is used to create a loopback as a workaround for
 // the following Chromium issue:
 // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
+// Implementation based on https://gist.github.com/alexciarlillo/4b9f75516f93c10d7b39282d10cd17bc
+// as well as loopback examples here: https://webrtc.github.io/samples/
 export class Loopback {
   peer1: RTCPeerConnection;
   peer2: RTCPeerConnection;
@@ -27,7 +29,6 @@ export class Loopback {
       this.loopbackStream.addTrack(e.track);
     };
 
-    // setup the loopback
     stream.getAudioTracks().forEach((t) => {
       this.peer1.addTrack(t);
     });
@@ -45,6 +46,11 @@ export class Loopback {
 
   public getLoopback(): MediaStream {
     return this.loopbackStream;
+  }
+
+  public destroy() {
+    this.peer1.close();
+    this.peer2.close();
   }
 
   private onIceCandidate(

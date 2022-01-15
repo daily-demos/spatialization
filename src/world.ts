@@ -178,7 +178,7 @@ export class World {
 
     // Update zone back to global to make sure
     // zone spots are freed up.
-    user.updateZone(globalZoneID);
+    this.updateParticipantZone(userId, globalZoneID);
     user.destroy();
     this.usersContainer.removeChild(user);
     for (let i = 0; i < this.robots.length; i++) {

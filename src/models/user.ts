@@ -1,6 +1,6 @@
 import { Collider, ICollider } from "./collider";
 import * as PIXI from "pixi.js";
-import { DisplayObject } from "pixi.js";
+import { DisplayObject, MIPMAP_MODES, Texture } from "pixi.js";
 import { BroadcastZone } from "./broadcastZone";
 import { Action, maxPannerDistance, UserMedia } from "./userMedia";
 import { removeZonemate } from "../util/nav";
@@ -68,7 +68,7 @@ export class User extends Collider {
     this.id = id;
     this.userName = userName;
     // This field is on the Pixi base class. It is
-    // differen from the userName and MUST match
+    // different from the userName and MUST match
     // the unique ID.
     this.name = id;
     this.x = x;
@@ -85,6 +85,8 @@ export class User extends Collider {
   }
 
   destroy() {
+    this.media.leaveZone();
+    this.media.leaveBroadcast();
     this.media.destroy();
   }
 
@@ -109,30 +111,38 @@ export class User extends Collider {
     return { width: this.width, height: this.height };
   }
 
+  // updateZone updates the zone ID of the user
   updateZone(zoneID: number, spotID: number = -1) {
     const oldZoneID = this.zoneData.zoneID;
     const oldSpotID = this.zoneData.spotID;
+
     if (zoneID === oldZoneID && spotID === oldSpotID) return;
     this.zoneData.zoneID = zoneID;
     this.zoneData.spotID = spotID;
     if (oldZoneID === broadcastZoneID) {
       this.media.leaveBroadcast();
     }
+
     if (zoneID === broadcastZoneID) {
       this.alpha = maxAlpha;
       this.media.enterBroadcast();
     }
     if (this.isLocal) {
       this.localZoneMates = [];
-      if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
 
+      if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
       if (zoneID === globalZoneID) {
         this.setVideoTexture();
+        this.media.leaveZone();
         return;
+      }
+      if (zoneID !== globalZoneID && zoneID !== broadcastZoneID) {
+        this.media.enterZone();
       }
       this.setDefaultTexture();
       return;
     }
+    if (zoneID !== globalZoneID) this.setDefaultTexture();
   }
 
   getZoneData(): ZoneData {
@@ -179,8 +189,13 @@ export class User extends Collider {
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
-    const settings = videoTrack.getSettings();
-    if (!settings.height) {
+    if (!this.media.videoIsPlaying()) {
+      console.log("video not playing; will set texture when play starts");
+      this.setDefaultTexture();
+      this.media.videoTag.onplaying = () => {
+        console.log("video started playing - applying texture");
+        this.setVideoTexture();
+      };
       return;
     }
 
@@ -190,15 +205,23 @@ export class User extends Collider {
     // it we get inconsistent bounds and broken collision
     // detection when switching textures.
     this.getBounds(true);
-    let texture = new PIXI.BaseTexture(this.media.videoTag);
+
+    let texture = new PIXI.BaseTexture(this.media.videoTag, {
+      mipmap: MIPMAP_MODES.OFF,
+    });
+    texture.onError = (e) => this.textureError(e);
     texture.setSize(baseSize, baseSize);
     let textureMask: PIXI.Rectangle = null;
     textureMask = new PIXI.Rectangle(0, 0, baseSize, baseSize);
 
     this.texture = new PIXI.Texture(texture, textureMask);
-    this.texture.updateUvs();
+    this.texture.update();
     this.width = baseSize;
     this.height = baseSize;
+  }
+
+  private textureError(err: ErrorEvent) {
+    console.error("PIXI base texture error:", err);
   }
 
   private async processUser(o: User) {
@@ -234,7 +257,7 @@ export class User extends Collider {
           o.isInVicinity = true;
           if (this.onEnterVicinity) this.onEnterVicinity(o.id);
         }
-        o.media.currentAction = Action.InZone;
+        o.media.enterZone();
       }
       // Mute the other user's default audio, since we'll
       // be streaming via a zone.
@@ -266,8 +289,7 @@ export class User extends Collider {
       // Stop streaming to a zone if they are currently doing so,
       // Since the users are not in the same zone.
       if (o.media.currentAction === Action.InZone) {
-        o.media.currentAction = Action.Traversing;
-        removeZonemate(o.id);
+        o.media.leaveZone();
       }
 
       // Mute the other user's default audio
@@ -298,7 +320,7 @@ export class User extends Collider {
       return;
     }
 
-    if (this.isLocal && this.zoneData.zoneID === globalZoneID) {
+    if (this.isLocal) {
       this.setVideoTexture();
     }
   }

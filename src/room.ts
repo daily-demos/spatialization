@@ -173,7 +173,7 @@ function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
 
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);
-    world.updateUser(p.session_id, tracks.video, tracks.audio);
+    world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
   };
 
   const subToTracks = (sessionID: string) => {
