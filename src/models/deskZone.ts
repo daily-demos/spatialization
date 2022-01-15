@@ -7,7 +7,7 @@ import { Spot } from "./spot";
 import { User } from "./user";
 
 const spotSize = standardTileSize;
-const spotBuffer = 10;
+const spotBuffer = 20;
 
 // DeskZone is a location that holds spots, through which a user can
 // join other users in an isolated zone.

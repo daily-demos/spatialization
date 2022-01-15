@@ -72,6 +72,7 @@ export class World {
     const oldZoneID = priorZone.zoneID;
     const oldSpotID = priorZone.spotID;
     user.updateZone(zoneID, spotID);
+    this.localUser.updateStoredZonemates(user);
 
     if (user.isZonemate(this.localUser)) {
       // Send data back to make sure the newly joined participant knows exactly
@@ -204,7 +205,7 @@ export class World {
     this.furnitureContainer.addChild(spot);
     this.furniture.push(spot);
 
-    const yPos = defaultWorldSize / 2 + 275;
+    const yPos = defaultWorldSize / 2 + 325;
 
     const zone1 = new DeskZone(1, "Koala", 4, { x: 0, y: yPos });
     zone1.moveTo({
@@ -484,7 +485,7 @@ export class World {
     // only broadcast to them
     if (zID !== globalZoneID && zID !== broadcastZoneID) {
       const zonemates = lu.getZonemates();
-      for (let zm of zonemates) {
+      for (let zm in zonemates) {
         this.onMove(lu.getPos(), zm);
       }
       return;

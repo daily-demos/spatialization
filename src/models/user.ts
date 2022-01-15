@@ -42,7 +42,7 @@ export class User extends Collider {
   private onEnterVicinity: Function;
   private onLeaveVicinity: Function;
   private onJoinZone: (zoneData: ZoneData, recipient?: string) => void;
-  private localZoneMates: Array<string> = [];
+  private localZoneMates: { [key: string]: void } = {};
 
   constructor(
     id: string,
@@ -117,8 +117,10 @@ export class User extends Collider {
     const oldSpotID = this.zoneData.spotID;
 
     if (zoneID === oldZoneID && spotID === oldSpotID) return;
+
     this.zoneData.zoneID = zoneID;
     this.zoneData.spotID = spotID;
+
     if (oldZoneID === broadcastZoneID) {
       this.media.leaveBroadcast();
     }
@@ -127,9 +129,11 @@ export class User extends Collider {
       this.alpha = maxAlpha;
       this.media.enterBroadcast();
     }
-    if (this.isLocal) {
-      this.localZoneMates = [];
 
+    if (this.isLocal) {
+      if (oldZoneID !== globalZoneID) {
+        this.localZoneMates = {};
+      }
       if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
       if (zoneID === globalZoneID) {
         this.setVideoTexture();
@@ -149,11 +153,29 @@ export class User extends Collider {
     return this.zoneData;
   }
 
+  updateStoredZonemates(other: User) {
+    if (this.isZonemate(other)) {
+      if (this.zoneData.zoneID !== globalZoneID) {
+        this.doSaveZonemate(other.id);
+      }
+      return;
+    }
+    this.doForgetZonemate(other.id);
+  }
+
+  doSaveZonemate(id: string) {
+    this.localZoneMates[id] = null;
+  }
+
+  doForgetZonemate(id: string) {
+    delete this.localZoneMates[id];
+  }
+
   isZonemate(other: User) {
     return this.zoneData.zoneID === other.zoneData.zoneID;
   }
 
-  getZonemates(): Array<string> {
+  getZonemates(): { [key: string]: void } {
     return this.localZoneMates;
   }
 
@@ -247,9 +269,7 @@ export class User extends Collider {
     if (ozID > 0 && ozID === tzID) {
       // Store this in the localZoneMates array for more efficient
       // broadcasting later.
-      if (this.localZoneMates.indexOf(o.id) === -1) {
-        this.localZoneMates.push(o.id);
-      }
+      this.doSaveZonemate(o.id);
 
       if (o.media.currentAction !== Action.InZone) {
         if (!o.isInVicinity) {
@@ -320,7 +340,7 @@ export class User extends Collider {
       return;
     }
 
-    if (this.isLocal) {
+    if (this.isLocal && this.zoneData.zoneID === globalZoneID) {
       this.setVideoTexture();
     }
   }
