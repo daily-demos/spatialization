@@ -25,7 +25,6 @@ export class Loopback {
     this.peer2.onicecandidate = (e) => this.onIceCandidate(this.peer2, e);
 
     this.peer2.ontrack = (e) => {
-      console.log("got track:", e);
       this.loopbackStream.addTrack(e.track);
     };
 
@@ -41,7 +40,6 @@ export class Loopback {
     await this.peer2.setLocalDescription(answer);
 
     await this.peer1.setRemoteDescription(answer);
-    console.log("offer, answer", offer, answer);
   }
 
   public getLoopback(): MediaStream {

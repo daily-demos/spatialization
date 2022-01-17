@@ -8,6 +8,7 @@ import {
   DailyEventObjectNoPayload,
   DailyEventObjectCameraError,
   DailyEventObjectParticipants,
+  DailyEventObjectNetworkConnectionEvent,
 } from "@daily-co/daily-js";
 import { globalZoneID, standardTileSize } from "./config";
 
@@ -44,6 +45,12 @@ enum BandwidthLevel {
   Focus,
 }
 
+enum Topology {
+  Unknown = 0,
+  P2P,
+  SFU,
+}
+
 export class Room {
   url: string;
   userName: string;
@@ -52,6 +59,7 @@ export class Room {
   pendingAcks: { [key: string]: ReturnType<typeof setInterval> } = {};
   localBandwidthLevel = BandwidthLevel.Unknown;
   localState: State = { audio: null, video: null };
+  topology: Topology;
 
   constructor(url: string, userName: string, isGlobal = false) {
     this.url = url;
@@ -87,6 +95,9 @@ export class Room {
       })
       .on("app-message", (e) => {
         handleAppMessage(this, e);
+      })
+      .on("network-connection", (e) => {
+        handleNetworkConnectionChanged(this, e);
       });
 
     registerCamBtnListener(() => {
@@ -235,6 +246,10 @@ function subToUserTracks(room: Room, sessionID: string) {
 }
 
 function unsubFromUserTracks(room: Room, sessionID: string) {
+  // Unsubscriptions are not supported in peer-to-peer  mode. Attempting
+  // to unsubscribe in P2P mode will silently fail, so let's not even try.
+  if (room.topology !== Topology.SFU) return;
+
   room.callObject.updateParticipant(sessionID, {
     setSubscribedTracks: { audio: false, video: false, screenVideo: false },
   });
@@ -328,4 +343,20 @@ function getParticipantTracks(participant: DailyParticipant) {
 function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
   const up = event.participant;
   world.removeUser(up.session_id);
+}
+
+function handleNetworkConnectionChanged(
+  room: Room,
+  event: DailyEventObjectNetworkConnectionEvent
+) {
+  if (event.event !== "connected") return;
+  console.log("Network connection changed. Type:", event.type);
+  switch (event.type) {
+    case "peer-to-peer":
+      room.topology = Topology.P2P;
+      break;
+    case "sfu":
+      room.topology = Topology.SFU;
+      break;
+  }
 }
