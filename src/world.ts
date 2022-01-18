@@ -189,6 +189,9 @@ export class World {
   }
 
   start() {
+    this.app.ticker.add((deltaTime) => {
+      this.update(deltaTime);
+    });
     this.app.resize();
     // Container that will hold our room "furniture" elements,
     // like broadcast spots
@@ -345,7 +348,6 @@ export class World {
   }
 
   private init() {
-    //  PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
     const w = document.getElementById("world");
     this.app = new PIXI.Application({
       width: w.offsetWidth,
@@ -384,9 +386,6 @@ export class World {
 
     document.getElementById("world").appendChild(this.app.view);
     this.app.render();
-    this.app.ticker.add((deltaTime) => {
-      this.update(deltaTime);
-    });
   }
 
   private update(delta: number) {
