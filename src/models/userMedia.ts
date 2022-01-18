@@ -10,7 +10,7 @@ import {
   showBroadcast,
   showZonemate,
   stopBroadcast,
-} from "../util/nav";
+} from "../util/tile";
 
 export const maxPannerDistance = 1000;
 
