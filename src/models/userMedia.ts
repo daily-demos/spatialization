@@ -50,7 +50,6 @@ export class UserMedia {
     this.createVideoTag();
     if (!isLocal) {
       this.createAudioTag();
-      window.userMedia.push(this);
     }
   }
 
@@ -180,7 +179,6 @@ export class UserMedia {
 
   updateAudio(gainValue: number, panValue: number) {
     if (!this.audioTag || !this.audioTrack) return;
-
     if (!this.gainNode) {
       this.createAudioNodes(gainValue, panValue);
       return;
@@ -220,6 +218,7 @@ export class UserMedia {
     this.gainNode.gain.value = gainValue;
 
     this.stereoPannerNode = window.audioContext.createStereoPanner();
+
     this.stereoPannerNode.pan.value = panValue;
 
     const compressor = window.audioContext.createDynamicsCompressor();

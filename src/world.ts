@@ -12,12 +12,10 @@ import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
 import { DeskZone } from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
-import { UserMedia } from "./models/userMedia";
 
 declare global {
   interface Window {
     audioContext: IAudioContext;
-    userMedia: Array<UserMedia>;
   }
 }
 
@@ -42,7 +40,6 @@ export class World {
   private furniture: Array<ICollider> = [];
 
   constructor() {
-    window.userMedia = [];
     this.init();
   }
 

@@ -27,7 +27,6 @@ export class Loopback {
     this.peer2.ontrack = (e) => {
       this.loopbackStream.addTrack(e.track);
     };
-
     stream.getAudioTracks().forEach((t) => {
       this.peer1.addTrack(t);
     });

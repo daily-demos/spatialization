@@ -1,6 +1,22 @@
+document.body.innerHTML =
+  '<div id="focus">' +
+  '<div id="broadcast"></div>' +
+  '<div id="zonemates"></div>' +
+  "</div>";
+
 import { User } from "../user";
 import { AudioContext } from "standardized-audio-context-mock";
-import { IAudioContext, IAudioListener } from "standardized-audio-context";
+import {
+  IAudioContext,
+  IAudioListener,
+  IMediaStreamAudioDestinationNode,
+  IMediaStreamAudioSourceNode,
+  IStereoPannerNode,
+  StereoPannerNode,
+  TChannelCountMode,
+  TChannelInterpretation,
+} from "standardized-audio-context";
+import { globalZoneID } from "../../config";
 
 declare global {
   interface Window {
@@ -8,77 +24,141 @@ declare global {
   }
 }
 
-describe("User listener and panner tests", () => {
-  test("Listener position", () => {
-    const audioCtx = new MockAudioContext();
-    window.audioContext = audioCtx;
-    const user = new User("test", null, 100, 100, true);
+Object.defineProperty(window, "MediaStreamTrack", {
+  writable: true,
+  value: jest.fn().mockImplementation((query) => ({})),
+});
 
-    // This should update the listener
-    user.moveTo({ x: 150, y: 150 });
-    const l = window.audioContext.listener;
-    expect(l.positionX.value).toBe(user.position.x);
-    expect(l.positionY.value).toBe(user.position.y);
-  });
+Object.defineProperty(MediaStreamTrack, "isTypeSupported", {
+  writable: true,
+  value: () => true,
+});
 
+Object.defineProperty(window, "MediaStream", {
+  writable: true,
+  value: jest.fn().mockImplementation((query) => ({
+    start: jest.fn(),
+    getAudioTracks: jest.fn().mockReturnValue([]),
+  })),
+});
+
+Object.defineProperty(MediaStream, "isTypeSupported", {
+  writable: true,
+  value: () => true,
+});
+
+Object.defineProperty(global.window.HTMLMediaElement.prototype, "play", {
+  configurable: true,
+  get() {
+    setTimeout(() => this.onloadeddata && this.onloadeddata());
+    return () => {};
+  },
+});
+
+Object.defineProperty(window, "RTCPeerConnection", {
+  writable: true,
+  value: jest.fn().mockImplementation((query) => ({
+    start: jest.fn(),
+    createOffer: jest.fn(),
+    createAnswer: jest.fn(),
+    setLocalDescription: jest.fn(),
+    setRemoteDescription: jest.fn(),
+  })),
+});
+
+Object.defineProperty(RTCPeerConnection, "isTypeSupported", {
+  writable: true,
+  value: () => true,
+});
+
+describe("User panner tests", () => {
   test("Pan: speaker on the max right of listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const listener = new User("local", null, 100, 100, true);
-    listener["earshotDistance"] = 100;
+    const local = new User("local", null, 100, 100, true);
+    local["earshotDistance"] = 100;
+    local["zoneData"].zoneID = globalZoneID;
 
-    const speakerPos = { x: 200, y: 100 };
-    const pannerMod = listener["getAudioMod"](100, speakerPos);
-    expect(pannerMod.pan).toBe(1);
+    const remote = new User("remote", null, 200, 100);
+    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["zoneData"].zoneID = globalZoneID;
+
+    const wantPan = 1;
+    const pannerMod = local["getAudioMod"](100, remote.getPos());
+    expect(pannerMod.pan).toBe(wantPan);
+
+    local.processUsers([remote]);
+    expect(remote.media.stereoPannerNode.pan.value).toBe(wantPan);
   });
 
   test("Pan: speaker on the max left of listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const listener = new User("local", null, 100, 100, true);
-    listener["earshotDistance"] = 100;
+    const local = new User("local", null, 100, 100, true);
+    local["earshotDistance"] = 100;
 
-    const speakerPos = { x: 0, y: 100 };
-    const pannerMod = listener["getAudioMod"](100, speakerPos);
-    expect(pannerMod.pan).toBe(-1);
+    const remote = new User("remote", null, 0, 100);
+    remote.media["audioTrack"] = new MediaStreamTrack();
+
+    const wantPan = -1;
+    const pannerMod = local["getAudioMod"](100, remote.getPos());
+    expect(pannerMod.pan).toBe(wantPan);
+
+    local.processUsers([remote]);
+    expect(remote.media.stereoPannerNode.pan.value).toBe(wantPan);
   });
 
   test("Pan: speaker on the partial right of listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const listener = new User("local", null, 100, 100, true);
-    listener["earshotDistance"] = 100;
+    const local = new User("local", null, 100, 100, true);
+    local["earshotDistance"] = 100;
 
-    const speakerPos = { x: 150, y: 100 };
-    const pannerMod = listener["getAudioMod"](50, speakerPos);
+    const remote = new User("remote", null, 150, 100);
+    remote.media["audioTrack"] = new MediaStreamTrack();
+
+    const pannerMod = local["getAudioMod"](50, remote.getPos());
     expect(pannerMod.pan).toBe(0.5);
+
+    local.processUsers([remote]);
+    expect(remote.media.stereoPannerNode.pan.value).toBe(0.5);
   });
 
   test("Pan: speaker on the partial left of listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const listener = new User("local", null, 100, 100, true);
-    listener["earshotDistance"] = 100;
+    const local = new User("local", null, 100, 100, true);
+    local["earshotDistance"] = 100;
 
-    const speakerPos = { x: 50, y: 100 };
-    const pannerMod = listener["getAudioMod"](50, speakerPos);
+    const remote = new User("remote", null, 50, 100);
+    remote.media["audioTrack"] = new MediaStreamTrack();
+
+    const pannerMod = local["getAudioMod"](50, remote.getPos());
     expect(pannerMod.pan).toBe(-0.5);
+
+    local.processUsers([remote]);
+    expect(remote.media.stereoPannerNode.pan.value).toBe(-0.5);
   });
 
   test("Pan: speaker in the center of the listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const listener = new User("local", null, 100, 100, true);
-    listener["earshotDistance"] = 100;
+    const local = new User("local", null, 100, 100, true);
+    local["earshotDistance"] = 100;
 
-    const speakerPos = { x: 100, y: 200 };
-    const pannerMod = listener["getAudioMod"](100, speakerPos);
+    const remote = new User("remote", null, 100, 199);
+    remote.media["audioTrack"] = new MediaStreamTrack();
+
+    const pannerMod = local["getAudioMod"](100, remote.getPos());
     expect(pannerMod.pan).toBe(0);
+
+    local.processUsers([remote]);
+    expect(remote.media.stereoPannerNode.pan.value).toBe(0);
   });
 });
 
@@ -93,6 +173,7 @@ describe("Distance and earshot tests", () => {
 
   test("User earshot", () => {
     const u1 = new User("t", null, 100, 100, true);
+    u1["earshotDistance"] = 100;
     const ie1 = u1["inEarshot"](100);
     expect(ie1).toBe(true);
 
@@ -174,7 +255,39 @@ class MockAudioContext extends AudioContext {
     };
   }
 
-  get listener(): IAudioListener {
-    return this._listener;
+  createStereoPanner(): IStereoPannerNode<IAudioContext> {
+    return <StereoPannerNode<IAudioContext>>{
+      pan: <AudioParam>{
+        value: 0,
+      },
+      channelCount: 1,
+      channelCountMode: <TChannelCountMode>{},
+      channelInterpretation: <TChannelInterpretation>{},
+      context: <IAudioContext>{},
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      connect: () => {},
+      disconnect: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: (): boolean => {
+        return true;
+      },
+    };
+  }
+
+  createMediaStreamSource(): IMediaStreamAudioSourceNode<this> {
+    /*   return <IMediaStreamAudioSourceNode<this>> {
+      connect = () => {},
+    } */
+    const s = super.createMediaStreamSource();
+    s.connect = () => {};
+    return s;
+  }
+
+  createMediaStreamDestination(): IMediaStreamAudioDestinationNode<this> {
+    return <IMediaStreamAudioDestinationNode<this>>{
+      stream: new MediaStream(),
+    };
   }
 }

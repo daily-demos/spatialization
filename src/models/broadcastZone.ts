@@ -1,11 +1,11 @@
 import * as PIXI from "pixi.js";
 import { globalZoneID, standardTileSize } from "../config";
-import { Pos, Size } from "../worldTypes";
+import { Pos } from "../worldTypes";
 
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Spot } from "./spot";
 import { User } from "./user";
-import { default as Icon } from "../assets/megaphone.png";
+import Icon from "../assets/megaphone.png";
 
 const spotSize = standardTileSize;
 

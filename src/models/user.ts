@@ -1,6 +1,6 @@
 import { Collider, ICollider } from "./collider";
 import * as PIXI from "pixi.js";
-import { DisplayObject, MIPMAP_MODES, Texture } from "pixi.js";
+import { DisplayObject, MIPMAP_MODES } from "pixi.js";
 import { BroadcastZone } from "./broadcastZone";
 import { Action, UserMedia } from "./userMedia";
 import { Pos, Size, ZoneData } from "../worldTypes";
@@ -253,7 +253,6 @@ export class User extends Collider {
     const ozID = o.zoneData.zoneID;
 
     // Both users are in the default zone
-
     if (tzID === globalZoneID && ozID === globalZoneID) {
       this.proximityUpdate(o);
       return;
@@ -458,7 +457,7 @@ export class User extends Collider {
   }
 
   private inEarshot(distance: number) {
-    return distance < this.earshotDistance;
+    return distance <= this.earshotDistance;
   }
 
   private inVicinity(distance: number) {
