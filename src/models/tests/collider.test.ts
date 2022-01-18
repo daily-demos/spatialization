@@ -24,6 +24,7 @@ describe("Collider hit tests", () => {
   test("Not touching", () => {
     const s1 = new Sprite(10, 10, 0, 15);
     const s2 = new Sprite(10, 10, 0, 0);
+
     expect(s1.hits(s2)).toBe(false);
   });
 });
@@ -35,5 +36,6 @@ class Sprite extends Collider {
     this.height = height;
     this.x = x;
     this.y = y;
+    this.getBounds();
   }
 }
