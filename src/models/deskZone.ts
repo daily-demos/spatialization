@@ -216,7 +216,7 @@ export class DeskZone
       bounds.y - 10,
       bounds.width + 20,
       bounds.height + 20,
-      1
+      8
     );
     graphics.endFill();
 

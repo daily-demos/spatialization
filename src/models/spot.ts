@@ -64,7 +64,7 @@ export class Spot extends Collider {
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0x2b3f56, 1);
     graphics.lineStyle(2, 0xffffff, 1, 1);
-    graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
+    graphics.drawRoundedRect(0, 0, this.width, this.height, 8);
     graphics.endFill();
     graphics.zIndex = 1;
     cont.addChild(graphics);
