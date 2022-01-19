@@ -214,6 +214,7 @@ export class User extends Collider {
 
     if (this.videoTextureAttemptPending) {
       if (Date.now() > this.videoTextureAttemptPending + 1000) {
+        console.log("trying to play again", this.userName);
         this.media.videoTag.play();
         this.videoTextureAttemptPending = Date.now();
       }
@@ -221,11 +222,14 @@ export class User extends Collider {
     }
 
     if (!this.media.videoIsPlaying()) {
-      console.log("video not playing; will set texture when play starts");
+      console.log(
+        "video not playing; will set texture when play starts",
+        this.userName
+      );
       this.videoTextureAttemptPending = Date.now();
       this.setDefaultTexture();
       this.media.addVideoPlayHandler(() => {
-        console.log("video started playing - applying texture");
+        console.log("video started playing - applying texture", this.userName);
         this.media.resetVideoPlayHandler();
         this.videoTextureAttemptPending = null;
         this.setVideoTexture();
@@ -233,40 +237,40 @@ export class User extends Collider {
       return;
     }
     this.textureType = TextureType.Video;
-    try {
-      // I am not (yet) sure why this is needed, but without
-      // it we get inconsistent bounds and broken collision
-      // detection when switching textures.
-      this.getBounds(true);
 
-      let texture = new PIXI.BaseTexture(this.media.videoTag, {
-        mipmap: MIPMAP_MODES.OFF,
-      });
-      texture.onError = (e) => this.textureError(e);
+    // I am not (yet) sure why this is needed, but without
+    // it we get inconsistent bounds and broken collision
+    // detection when switching textures.
+    this.getBounds(true);
 
-      let textureMask: PIXI.Rectangle = null;
-      const resource = texture.resource;
-      let x = 0;
-      let y = 0;
-      let size = baseSize;
-      if (resource.width > resource.height) {
-        x = resource.height / 2;
-        size = resource.height;
-      } else if (resource.width < resource.height) {
-        y = resource.width / 2;
-        size = resource.width;
-      }
-      textureMask = new PIXI.Rectangle(x, y, size, size);
-
-      this.texture = new PIXI.Texture(texture, textureMask);
-      this.texture.update();
-      this.width = baseSize;
-      this.height = baseSize;
-    } catch (e) {
-      console.error("failed to set video texture", e);
-      this.textureType = TextureType.Unknown;
-      this.setDefaultTexture();
+    let texture = new PIXI.BaseTexture(this.media.videoTag, {
+      mipmap: MIPMAP_MODES.OFF,
+      resourceOptions: {
+        updateFPS: 0,
+      },
+    });
+    texture.onError = (e) => this.textureError(e);
+    let textureMask: PIXI.Rectangle = null;
+    const resource = texture.resource;
+    let x = 0;
+    let y = 0;
+    let size = baseSize;
+    if (resource.width > resource.height) {
+      x = resource.height / 2;
+      size = resource.height;
+    } else if (resource.width < resource.height) {
+      y = resource.width / 2;
+      size = resource.width;
+    } else {
+      console.log("setting real size", this.userName);
+      texture.setSize(baseSize, baseSize);
     }
+    textureMask = new PIXI.Rectangle(x, y, size, size);
+
+    this.texture = new PIXI.Texture(texture, textureMask);
+    this.texture.update();
+    this.width = baseSize;
+    this.height = baseSize;
   }
 
   private textureError(err: ErrorEvent) {

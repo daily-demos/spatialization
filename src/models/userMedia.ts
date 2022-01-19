@@ -54,7 +54,13 @@ export class UserMedia {
   }
 
   public videoIsPlaying(): boolean {
-    return this.videoPlaying;
+    return (
+      this.videoPlaying ||
+      (this.videoTag.currentTime > 0 &&
+        !this.videoTag.paused &&
+        !this.videoTag.ended &&
+        this.videoTag.readyState > 2)
+    );
   }
 
   public addVideoPlayHandler(f: Function) {
@@ -79,7 +85,7 @@ export class UserMedia {
     // Set up video tag
     const video = document.createElement("video");
     video.autoplay = true;
-    video.classList.add("fit");
+    video.classList.add("inWorldVideo");
     video.width = standardTileSize;
     video.height = standardTileSize;
     video.classList.add("invisible");

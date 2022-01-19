@@ -291,6 +291,12 @@ body {
   height: 100%;
 }
 
+.inWorldVideo {
+  object-fit: cover;
+  width: 94px;
+  height: 94px;
+}
+
 #focus #broadcast {
   display: flex;
   visibility: hidden;

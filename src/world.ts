@@ -508,6 +508,9 @@ export class World {
   }
 
   sendDataDumpToParticipant(sessionID: string) {
+    if (!this.localUser) return;
+    console.log("sending data dump to", sessionID);
+
     const la = this.localUser;
     const pd = la.getPos();
     const zd = la.getZoneData();

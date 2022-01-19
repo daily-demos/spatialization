@@ -136,21 +136,18 @@ export class Room {
   }
 
   setBandwidth(level: BandwidthLevel) {
-    if (this.localBandwidthLevel === level) {
-      return;
-    }
-
     switch (level) {
       case BandwidthLevel.Tile:
         console.log("setting bandwidth to tile");
         this.localBandwidthLevel = level;
+        const constraints = {
+          width: standardTileSize,
+          height: standardTileSize,
+          frameRate: 15,
+        };
+
         this.callObject.setBandwidth({
-          trackConstraints: {
-            width: 167,
-            height: standardTileSize,
-            aspectRatio: 1,
-            frameRate: 15,
-          },
+          trackConstraints: constraints,
         });
         break;
       case BandwidthLevel.Focus:
@@ -159,7 +156,7 @@ export class Room {
         this.callObject.setBandwidth({
           trackConstraints: {
             width: 200,
-            height: 113,
+            height: 200,
             frameRate: 30,
           },
         });
@@ -296,7 +293,13 @@ function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
   }
 }
 
-function handleLeftMeeting(room: Room, event: DailyEventObjectNoPayload) {}
+function handleLeftMeeting(room: Room, event: DailyEventObjectNoPayload) {
+  console.log("left meeting, reseting pending acks");
+  for (const ack in room.pendingAcks) {
+    clearInterval(room.pendingAcks[ack]);
+  }
+  room.pendingAcks = {};
+}
 
 function handleParticipantUpdated(
   room: Room,
@@ -305,7 +308,7 @@ function handleParticipantUpdated(
   const p = event.participant;
   const tracks = getParticipantTracks(p);
   world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
-  if (p.session_id === room.callObject.participants().local.session_id) {
+  if (p.session_id === room.callObject.participants()?.local?.session_id) {
     room.updateLocal(p);
   }
 }
@@ -322,7 +325,13 @@ function handleParticipantJoined(
   world.initRemoteParticpant(sID, event.participant.user_name);
   world.sendZoneDataToParticipant(sID);
   world.sendPosDataToParticipant(sID);
+
   room.pendingAcks[sID] = setInterval(() => {
+    if (!room.callObject.participants()[sID]) {
+      clearInterval(room.pendingAcks[sID]);
+      delete room.pendingAcks[sID];
+      return;
+    }
     world.sendDataDumpToParticipant(sID);
   }, 1000);
 }
@@ -350,6 +359,9 @@ function getParticipantTracks(participant: DailyParticipant) {
 
 function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
   const up = event.participant;
+  clearInterval(room.pendingAcks[up.session_id]);
+  delete room.pendingAcks[up.session_id];
+
   world.removeUser(up.session_id);
 }
 
