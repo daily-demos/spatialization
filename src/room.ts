@@ -100,6 +100,8 @@ export class Room {
         handleNetworkConnectionChanged(this, e);
       });
 
+    this.setBandwidth(BandwidthLevel.Tile);
+
     registerCamBtnListener(() => {
       const current = this.callObject.participants().local.video;
       this.callObject.setLocalVideo(!current);
@@ -137,21 +139,29 @@ export class Room {
     if (this.localBandwidthLevel === level) {
       return;
     }
+
     switch (level) {
       case BandwidthLevel.Tile:
+        console.log("setting bandwidth to tile");
         this.localBandwidthLevel = level;
         this.callObject.setBandwidth({
           trackConstraints: {
-            width: standardTileSize,
+            width: 167,
             height: standardTileSize,
+            aspectRatio: 1,
             frameRate: 15,
           },
         });
         break;
       case BandwidthLevel.Focus:
+        console.log("setting bandwidth to focus");
         this.localBandwidthLevel = level;
         this.callObject.setBandwidth({
-          trackConstraints: { width: 200, height: 200, frameRate: 30 },
+          trackConstraints: {
+            width: 200,
+            height: 113,
+            frameRate: 30,
+          },
         });
         break;
     }
@@ -180,8 +190,6 @@ function handleError(room: Room, event: DailyEventObjectFatalError) {
 function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
   const p = event.participants["local"];
   console.log("JOINED MEETING. session ID, pID", p.session_id, p.user_id);
-  room.setBandwidth(BandwidthLevel.Tile);
-
   const onCreateUser = () => {
     const tracks = getParticipantTracks(p);
     world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);

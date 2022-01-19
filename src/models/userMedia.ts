@@ -25,13 +25,13 @@ export enum Action {
 export class UserMedia {
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;
+  private videoPlaying = false;
 
   videoTag: HTMLVideoElement;
   audioTag: HTMLAudioElement;
 
   cameraDisabled: boolean;
   tileDisabled: boolean;
-  videoPlaying: boolean;
 
   gainNode: GainNode<AudioContext>;
   stereoPannerNode: StereoPannerNode<AudioContext>;
@@ -54,12 +54,28 @@ export class UserMedia {
   }
 
   public videoIsPlaying(): boolean {
-    const v = this.videoTag;
-    if (!v) return false;
-    return !!(v.currentTime > 0 && !v.paused && !v.ended && v.readyState > 2);
+    return this.videoPlaying;
   }
 
-  private createVideoTag() {
+  public addVideoPlayHandler(f: Function) {
+    this.videoTag.onplaying = async () => {
+      await this.registerPlay();
+      f();
+    };
+  }
+
+  public resetVideoPlayHandler() {
+    this.videoTag.onplaying = async () => {
+      await this.registerPlay();
+    };
+  }
+
+  private async registerPlay() {
+    await new Promise((r) => setTimeout(r, 1000));
+    this.videoPlaying = true;
+  }
+
+  private async createVideoTag() {
     // Set up video tag
     const video = document.createElement("video");
     video.autoplay = true;
@@ -68,11 +84,31 @@ export class UserMedia {
     video.height = standardTileSize;
     video.classList.add("invisible");
     document.documentElement.appendChild(video);
+    video.play().catch((err) => {
+      console.log("failed to play initial video: ", err);
+    });
+
     video.oncanplay = () => {
-      video.play();
+      console.log("can play", this.userName);
+      if (!this.videoIsPlaying()) {
+        video.play().catch((err) => {
+          console.log("failed to play after oncanplay event: ", err);
+        });
+      }
+    };
+
+    video.onpause = () => {
+      this.videoPlaying = false;
+      console.warn("video paused.");
+    };
+
+    video.onended = () => {
+      this.videoPlaying = false;
+      console.warn("video ended.");
     };
 
     this.videoTag = video;
+    this.resetVideoPlayHandler();
   }
 
   private createAudioTag() {
@@ -121,6 +157,7 @@ export class UserMedia {
       return;
     }
     this.audioTrack = newTrack;
+
     // Reset nodes
     this.gainNode = null;
     this.stereoPannerNode = null;
@@ -137,14 +174,12 @@ export class UserMedia {
   muteAudio() {
     if (!this.audioTag.muted) {
       this.audioTag.muted = true;
-      console.log("muted audio");
     }
   }
 
   unmuteAudio() {
     if (this.audioTag.muted) {
       this.audioTag.muted = false;
-      console.log("unmuted audio");
     }
   }
 

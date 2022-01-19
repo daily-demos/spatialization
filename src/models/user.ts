@@ -30,6 +30,7 @@ export class User extends Collider {
   isLocal: boolean;
 
   private userName: string;
+  private videoTextureAttemptPending: number = null;
 
   protected emoji: string = "😊";
   protected gradientTextureName: string = "user-gradient";
@@ -42,7 +43,6 @@ export class User extends Collider {
   private onLeaveVicinity: Function;
   private onJoinZone: (zoneData: ZoneData, recipient?: string) => void;
   private localZoneMates: { [key: string]: void } = {};
-
   constructor(
     id: string,
     userName: string,
@@ -185,7 +185,7 @@ export class User extends Collider {
   }
 
   setUserName(newName: string) {
-    if (this.userName === newName) return;
+    if (newName === null || this.userName === newName) return;
     this.userName = newName;
     this.media.userName = newName;
   }
@@ -207,38 +207,66 @@ export class User extends Collider {
   // Private methods below
 
   private setVideoTexture() {
+    if (this.textureType === TextureType.Video) return;
+
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
-    if (!this.media.videoIsPlaying()) {
-      console.log("video not playing; will set texture when play starts");
-      this.setDefaultTexture();
-      this.media.videoTag.onplaying = () => {
-        console.log("video started playing - applying texture");
-        this.setVideoTexture();
-      };
+    if (this.videoTextureAttemptPending) {
+      if (Date.now() > this.videoTextureAttemptPending + 1000) {
+        this.media.videoTag.play();
+        this.videoTextureAttemptPending = Date.now();
+      }
       return;
     }
 
+    if (!this.media.videoIsPlaying()) {
+      console.log("video not playing; will set texture when play starts");
+      this.videoTextureAttemptPending = Date.now();
+      this.setDefaultTexture();
+      this.media.addVideoPlayHandler(() => {
+        console.log("video started playing - applying texture");
+        this.media.resetVideoPlayHandler();
+        this.videoTextureAttemptPending = null;
+        this.setVideoTexture();
+      });
+      return;
+    }
     this.textureType = TextureType.Video;
+    try {
+      // I am not (yet) sure why this is needed, but without
+      // it we get inconsistent bounds and broken collision
+      // detection when switching textures.
+      this.getBounds(true);
 
-    // I am not (yet) sure why this is needed, but without
-    // it we get inconsistent bounds and broken collision
-    // detection when switching textures.
-    this.getBounds(true);
+      let texture = new PIXI.BaseTexture(this.media.videoTag, {
+        mipmap: MIPMAP_MODES.OFF,
+      });
+      texture.onError = (e) => this.textureError(e);
 
-    let texture = new PIXI.BaseTexture(this.media.videoTag, {
-      mipmap: MIPMAP_MODES.OFF,
-    });
-    texture.onError = (e) => this.textureError(e);
-    texture.setSize(baseSize, baseSize);
-    let textureMask: PIXI.Rectangle = null;
-    textureMask = new PIXI.Rectangle(0, 0, baseSize, baseSize);
+      let textureMask: PIXI.Rectangle = null;
+      const resource = texture.resource;
+      let x = 0;
+      let y = 0;
+      let size = baseSize;
+      if (resource.width > resource.height) {
+        x = resource.height / 2;
+        size = resource.height;
+      } else if (resource.width < resource.height) {
+        y = resource.width / 2;
+        size = resource.width;
+      }
+      textureMask = new PIXI.Rectangle(x, y, size, size);
 
-    this.texture = new PIXI.Texture(texture, textureMask);
-    this.texture.update();
-    this.width = baseSize;
-    this.height = baseSize;
+      this.texture = new PIXI.Texture(texture, textureMask);
+      this.texture.update();
+      this.width = baseSize;
+      this.height = baseSize;
+    } catch (e) {
+      console.error("failed to set video texture", e);
+      this.textureType = TextureType.Unknown;
+      this.setDefaultTexture();
+    }
   }
 
   private textureError(err: ErrorEvent) {
