@@ -133,7 +133,7 @@ body {
   overflow: hidden;
 }
 
-#call #controls {
+#controls {
   display: flex;
   position: absolute;
   z-index: 5;
