@@ -561,6 +561,11 @@ export class User extends Collider {
     return texture;
   }
 
+  // createNameGraphics creates a Text graphics object which
+  // shows the user's name at the bottom of their tile. 
+  // TODO: for Firefox users, the size and positioning of
+  // the text becomes offset. This is a known issue which
+  // we aim to produce a followup fix for.
   private createNameGraphics() {
     const name = "nameGraphics";
     const existing = this.getChildByName(name);
