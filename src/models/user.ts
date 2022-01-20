@@ -43,6 +43,10 @@ export class User extends Collider {
   private onLeaveVicinity: Function;
   private onJoinZone: (zoneData: ZoneData, recipient?: string) => void;
   private localZoneMates: { [key: string]: void } = {};
+
+  private nameGraphics: PIXI.Text;
+  private staticBounds: PIXI.Rectangle;
+
   constructor(
     id: string,
     userName: string,
@@ -55,6 +59,9 @@ export class User extends Collider {
   ) {
     super();
     this.media = new UserMedia(id, userName, isLocal);
+    this.media.addVideoResizeHandler((e: UIEvent) => {
+      this.videoTextureResized(e);
+    });
 
     this.speed = defaultSpeed;
     // How close another user needs to be to be seen/heard
@@ -80,7 +87,15 @@ export class User extends Collider {
       this.alpha = maxAlpha;
     }
 
+    // We create this because PIXI Bounds are subject to change, and likely will as child
+    // textures may be generated post-construction.
+    this.staticBounds = new PIXI.Rectangle(0, 0, baseSize, baseSize);
+    if (this.userName) {
+      this.createNameGraphics();
+    }
+
     this.setDefaultTexture();
+    this.sortableChildren = true;
   }
 
   destroy() {
@@ -188,6 +203,11 @@ export class User extends Collider {
     if (newName === null || this.userName === newName) return;
     this.userName = newName;
     this.media.userName = newName;
+    if (this.nameGraphics) {
+      this.nameGraphics.text = newName;
+      return;
+    }
+    this.createNameGraphics();
   }
 
   async processUsers(others: Array<DisplayObject>) {
@@ -206,31 +226,28 @@ export class User extends Collider {
 
   // Private methods below
 
-  private setVideoTexture() {
-    if (this.textureType === TextureType.Video) return;
+  private setVideoTexture(forceReset = false) {
+    if (this.textureType === TextureType.Video && !forceReset) {
+      return;
+    }
 
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
     if (this.videoTextureAttemptPending) {
-      if (Date.now() > this.videoTextureAttemptPending + 1000) {
-        console.log("trying to play again", this.userName);
-        this.media.videoTag.play();
-        this.videoTextureAttemptPending = Date.now();
-      }
       return;
     }
 
-    if (!this.media.videoIsPlaying()) {
+    if (!this.media.videoPlaying) {
       console.log(
         "video not playing; will set texture when play starts",
         this.userName
       );
       this.videoTextureAttemptPending = Date.now();
       this.setDefaultTexture();
-      this.media.addVideoPlayHandler(() => {
+      this.media.setDelayedVideoPlayHandler(() => {
         console.log("video started playing - applying texture", this.userName);
-        this.media.resetVideoPlayHandler();
+        this.media.setDelayedVideoPlayHandler(null);
         this.videoTextureAttemptPending = null;
         this.setVideoTexture();
       });
@@ -246,7 +263,7 @@ export class User extends Collider {
     let texture = new PIXI.BaseTexture(this.media.videoTag, {
       mipmap: MIPMAP_MODES.OFF,
       resourceOptions: {
-        updateFPS: 0,
+        updateFPS: 15,
       },
     });
     texture.onError = (e) => this.textureError(e);
@@ -255,14 +272,16 @@ export class User extends Collider {
     let x = 0;
     let y = 0;
     let size = baseSize;
-    if (resource.width > resource.height) {
-      x = resource.height / 2;
+    let height = baseSize;
+    const aspect = resource.width / resource.height;
+    if (aspect > 1) {
+      x = resource.width / 2 - resource.height / 2;
       size = resource.height;
-    } else if (resource.width < resource.height) {
-      y = resource.width / 2;
+    } else if (aspect > 1) {
+      const hh = resource.height / 2;
+      y = resource.height / 2 - resource.width / 2;
       size = resource.width;
     } else {
-      console.log("setting real size", this.userName);
       texture.setSize(baseSize, baseSize);
     }
     textureMask = new PIXI.Rectangle(x, y, size, size);
@@ -463,6 +482,14 @@ export class User extends Collider {
     other.setDefaultTexture();
   }
 
+  // If the video is resized, we will need to recalcualte
+  // the texture dimensions and mask.
+  private videoTextureResized(e: UIEvent) {
+    if (this.textureType === TextureType.Video) {
+      this.setVideoTexture(true);
+    }
+  }
+
   private getAudioMod(
     distance: number,
     otherPos: Pos
@@ -532,5 +559,38 @@ export class User extends Collider {
 
     const texture = renderer.generateTexture(cont);
     return texture;
+  }
+
+  private createNameGraphics() {
+    const name = "nameGraphics";
+    const existing = this.getChildByName(name);
+    if (existing) {
+      this.removeChild(existing);
+    }
+
+    console.log(
+      "this:",
+      this.position,
+      this.width,
+      this.height,
+      this.getBounds()
+    );
+
+    const bounds = this.staticBounds;
+    const t = this.userName;
+    const txt = new PIXI.Text(t, {
+      fontFamily: "Arial",
+      fontSize: 12,
+      fill: 0xffffff,
+      align: "center",
+      strokeThickness: 2,
+    });
+    txt.zIndex = 100;
+    txt.anchor.set(0.5);
+    txt.position.x = bounds.x + bounds.width / 2;
+    txt.position.y = bounds.y + bounds.height - 8;
+
+    this.addChild(txt);
+    this.nameGraphics = txt;
   }
 }

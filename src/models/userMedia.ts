@@ -25,10 +25,12 @@ export enum Action {
 export class UserMedia {
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;
-  private videoPlaying = false;
+  private _videoPlaying = false;
 
   videoTag: HTMLVideoElement;
   audioTag: HTMLAudioElement;
+
+  videoDelayedPlayHandler: () => void;
 
   cameraDisabled: boolean;
   tileDisabled: boolean;
@@ -53,68 +55,89 @@ export class UserMedia {
     }
   }
 
-  public videoIsPlaying(): boolean {
-    return (
-      this.videoPlaying ||
-      (this.videoTag.currentTime > 0 &&
-        !this.videoTag.paused &&
-        !this.videoTag.ended &&
-        this.videoTag.readyState > 2)
-    );
+  // This is called a "delayed" video play handler, because
+  // it is intended specifically for not just the video "onpaying"
+  // event firing, but the video ALSO having been playing for at
+  // > 0s. Reasoning being that if video.currentTime is at 0,
+  // the Sprite video texture amy freeze.
+  public setDelayedVideoPlayHandler(f: () => void) {
+    this.videoDelayedPlayHandler = f;
   }
 
-  public addVideoPlayHandler(f: Function) {
-    this.videoTag.onplaying = async () => {
-      await this.registerPlay();
-      f();
+  public addVideoResizeHandler(f: (e: UIEvent) => void) {
+    this.videoTag.onresize = (e) => {
+      this.videoPlaying = false;
+      this.registerPlay();
+      f(e);
     };
   }
 
-  public resetVideoPlayHandler() {
-    this.videoTag.onplaying = async () => {
-      await this.registerPlay();
+  public resetVideoResizeHandler() {
+    this.videoTag.onresize = (e) => {
+      // After resizing, video goes back to currentTime 0
+      // Which for our purposes is NOT PLAYING.
+      // So set bool to false and register play again.
+      this.videoPlaying = false;
+      this.registerPlay();
     };
+  }
+
+  public get videoPlaying(): boolean {
+    return this._videoPlaying;
+  }
+
+  public set videoPlaying(value: boolean) {
+    this._videoPlaying = value;
+    if (value === true && this.videoDelayedPlayHandler) {
+      this.videoDelayedPlayHandler();
+    }
   }
 
   private async registerPlay() {
-    await new Promise((r) => setTimeout(r, 1000));
+    while (this.videoTag.currentTime === 0) {
+      console.log("still waiting for timestamp: ", this.videoTag.currentTime);
+      await new Promise((r) => setTimeout(r, 10));
+    }
     this.videoPlaying = true;
   }
 
   private async createVideoTag() {
     // Set up video tag
     const video = document.createElement("video");
-    video.autoplay = true;
-    video.classList.add("inWorldVideo");
-    video.width = standardTileSize;
-    video.height = standardTileSize;
-    video.classList.add("invisible");
-    document.documentElement.appendChild(video);
-    video.play().catch((err) => {
-      console.log("failed to play initial video: ", err);
-    });
 
     video.oncanplay = () => {
       console.log("can play", this.userName);
-      if (!this.videoIsPlaying()) {
+      if (!this.videoPlaying) {
         video.play().catch((err) => {
           console.log("failed to play after oncanplay event: ", err);
         });
       }
     };
 
+    video.autoplay = true;
+    video.classList.add("inWorldVideo");
+    video.width = standardTileSize;
+    video.height = standardTileSize;
+    video.classList.add("invisible");
+    document.documentElement.appendChild(video);
+
+    video.onplaying = async () => {
+      await this.registerPlay();
+    };
+
     video.onpause = () => {
       this.videoPlaying = false;
-      console.warn("video paused.");
+      console.warn("video paused.", this.userName);
     };
 
     video.onended = () => {
       this.videoPlaying = false;
-      console.warn("video ended.");
+      console.warn("video ended.", this.userName);
     };
 
     this.videoTag = video;
-    this.resetVideoPlayHandler();
+
+    this.resetVideoResizeHandler();
   }
 
   private createAudioTag() {

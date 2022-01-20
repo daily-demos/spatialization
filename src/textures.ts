@@ -32,6 +32,9 @@ export class Textures {
 
   public static destroy() {
     const i = Textures.get();
+    for (let t in i.catalog) {
+      i.catalog[t].destroy(true);
+    }
     i.queue = [];
     i.catalog = {};
   }
