@@ -208,7 +208,6 @@ export class DeskZone
 
   private createZoneMarker() {
     const graphics = new PIXI.Graphics();
-    //   graphics.beginFill(0xfddddd);
     graphics.lineStyle(2, 0x1bebb9, 1);
     const bounds = this.staticBounds;
     graphics.drawRoundedRect(

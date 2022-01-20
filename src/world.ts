@@ -136,7 +136,6 @@ export class World {
       user = this.createUser(sessionID, posX, posY);
     }
     user.moveTo({ x: posX, y: posY });
-    //  user.checkFurnitures(this.furniture);
   }
 
   initLocalUser(sessionID: string): void {
