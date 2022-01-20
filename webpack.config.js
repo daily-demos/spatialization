@@ -18,7 +18,7 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /\.(css|png|svg|jpg|jpeg|gif)$/,
+        test: /\.(css|png|svg|jpg|jpeg|gif|ico)$/,
         loader: "file-loader",
         options: {
           name: "[name].[ext]",
