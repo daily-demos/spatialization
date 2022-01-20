@@ -279,7 +279,11 @@ export class User extends Collider {
 
   private async processUser(o: User) {
     // If this is the local user, skip
-    if (o.id === this.id) return;
+    if (o.id === this.id) {
+      if (this.textureType === TextureType.Unknown) {
+        this.setDefaultTexture();
+      }
+    }
 
     const tzID = this.zoneData.zoneID;
     const ozID = o.zoneData.zoneID;

@@ -14,7 +14,7 @@ export class Spot extends Collider {
   occupantID: string;
   private staticBounds: PIXI.Rectangle;
 
-  constructor(id: number, pos: Pos, size: Size, icon: string = null) {
+  constructor(id: number, pos: Pos, size: Size, emoji: string = null) {
     super(false);
 
     this.id = id;
@@ -33,8 +33,8 @@ export class Spot extends Collider {
     const t = Textures.get();
 
     let textureName = spotTextureName;
-    if (icon) {
-      textureName += `${icon}`;
+    if (emoji) {
+      textureName += `${emoji}`;
     }
     const texture = t.catalog[textureName];
     if (!texture) {
@@ -42,7 +42,7 @@ export class Spot extends Collider {
         this,
         textureName,
         (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
-          return this.generateTexture(renderer, icon);
+          return this.generateTexture(renderer, emoji);
         }
       );
       return;
@@ -53,7 +53,7 @@ export class Spot extends Collider {
 
   generateTexture(
     renderer: PIXI.Renderer | PIXI.AbstractRenderer,
-    icon: string = null
+    emoji: string = null
   ): PIXI.Texture {
     const cont = new PIXI.Container();
     cont.x = 0;
@@ -69,8 +69,8 @@ export class Spot extends Collider {
     graphics.zIndex = 1;
     cont.addChild(graphics);
 
-    if (icon) {
-      const txt = new PIXI.Text("📣", {
+    if (emoji) {
+      const txt = new PIXI.Text(emoji, {
         fontFamily: "Arial",
         fontSize: 24,
         fill: 0xff1010,

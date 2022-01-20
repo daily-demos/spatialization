@@ -4,9 +4,19 @@ This demo shows one way to implement a video and audio call application with gam
 
 ![Spatial video demo showing 2D world elements](./screenshot.png)
 
-## Prerequisites
+## Getting set up with Daily
 
-- [Sign up for a Daily account](https://dashboard.daily.co/signup).
+To use this demo, you will need a Daily room to join.
+
+To get a Daily room URL, [create a Daily account](https://dashboard.daily.co/signup)
+
+Once you have an account and are logged into the [Daily Dashboard](https://dashboard.daily.co/), you can [create a new Daily room](https://dashboard.daily.co/rooms/create).
+
+Copy the new room's URL. You can use this in the form on the home page.
+
+The room URL will be in the following format:
+
+`https://<your-daily-domain>.daily.co/<room-name>`
 
 ## How the demo works
 

@@ -5,7 +5,6 @@ import { Pos } from "../worldTypes";
 import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
 import { Spot } from "./spot";
 import { User } from "./user";
-import Icon from "../assets/megaphone.png";
 
 const spotSize = standardTileSize;
 
@@ -35,7 +34,7 @@ export class BroadcastZone
       0,
       { x: 0, y: 0 },
       { width: spotSize, height: spotSize },
-      Icon
+      "📣"
     );
     this.addChild(this.spot);
     this.createLabel();

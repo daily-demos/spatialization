@@ -72,33 +72,15 @@ export class Room {
         camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
       },
     })
-      .on("camera-error", (e) => {
-        handleCameraError(this, e);
-      })
-      .on("joined-meeting", (e) => {
-        handleJoinedMeeting(this, e);
-      })
-      .on("left-meeting", (e) => {
-        handleLeftMeeting(this, e);
-      })
-      .on("error", (e) => {
-        handleError(this, e);
-      })
-      .on("participant-updated", (e) => {
-        handleParticipantUpdated(this, e);
-      })
-      .on("participant-joined", (e) => {
-        handleParticipantJoined(this, e);
-      })
-      .on("participant-left", (e) => {
-        handleParticipantLeft(this, e);
-      })
-      .on("app-message", (e) => {
-        handleAppMessage(this, e);
-      })
-      .on("network-connection", (e) => {
-        handleNetworkConnectionChanged(this, e);
-      });
+      .on("camera-error", (e) => this.handleCameraError(e))
+      .on("joined-meeting", (e) => this.handleJoinedMeeting(e))
+      .on("left-meeting", (e) => this.handleLeftMeeting(e))
+      .on("error", (e) => this.handleError(e))
+      .on("participant-updated", (e) => this.handleParticipantUpdated(e))
+      .on("participant-joined", (e) => this.handleParticipantJoined(e))
+      .on("participant-left", (e) => this.handleParticipantLeft(e))
+      .on("app-message", (e) => this.handleAppMessage(e))
+      .on("network-connection", (e) => this.handleNetworkConnectionChanged(e));
 
     this.setBandwidth(BandwidthLevel.Tile);
 
@@ -135,7 +117,19 @@ export class Room {
     this.callObject.sendAppMessage(data, recipientSessionID);
   }
 
-  setBandwidth(level: BandwidthLevel) {
+  private resetPendingAcks() {
+    for (const ack in this.pendingAcks) {
+      clearInterval(this.pendingAcks[ack]);
+    }
+    this.pendingAcks = {};
+  }
+
+  private clearPendingAck(sessionID: string) {
+    clearInterval(this.pendingAcks[sessionID]);
+    delete this.pendingAcks[sessionID];
+  }
+
+  private setBandwidth(level: BandwidthLevel) {
     switch (level) {
       case BandwidthLevel.Tile:
         console.log("setting bandwidth to tile");
@@ -161,10 +155,14 @@ export class Room {
           },
         });
         break;
+      default:
+        console.warn(
+          `setBandwidth called with unrecognized level (${level}). Not modifying any constraints.`
+        );
     }
   }
 
-  updateLocal(p: DailyParticipant) {
+  private updateLocal(p: DailyParticipant) {
     if (this.localState.audio != p.audio) {
       this.localState.audio = p.audio;
       updateMicBtn(this.localState.audio);
@@ -174,209 +172,202 @@ export class Room {
       updateCamBtn(this.localState.video);
     }
   }
-}
 
-function handleCameraError(room: Room, event: DailyEventObjectCameraError) {
-  console.error(`camera error in room ${room.url}": ${event}`);
-}
+  private handleCameraError(event: DailyEventObjectCameraError) {
+    console.error(`camera error in room ${this.url}": ${event}`);
+  }
 
-function handleError(room: Room, event: DailyEventObjectFatalError) {
-  console.error(`error in room ${room.url}": ${event}`);
-}
+  private handleError(event: DailyEventObjectFatalError) {
+    console.error(`error in room ${this.url}": ${event}`);
+  }
 
-function handleJoinedMeeting(room: Room, event: DailyEventObjectParticipants) {
-  const p = event.participants["local"];
-  console.log("JOINED MEETING. session ID, pID", p.session_id, p.user_id);
-  const onCreateUser = () => {
-    const tracks = getParticipantTracks(p);
-    world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
-  };
-
-  const subToTracks = (sessionID: string) => {
-    subToUserTracks(room, sessionID);
-  };
-
-  const unsubFromTracks = (sessionID: string) => {
-    unsubFromUserTracks(room, sessionID);
-  };
-
-  const onMove = (pos: Pos, recipient: string = "*") => {
-    const data = {
-      action: "posChange",
-      pos: pos,
+  private handleJoinedMeeting(event: DailyEventObjectParticipants) {
+    const p = event.participants["local"];
+    console.log(
+      "JOINED MEETING. session ID, pID",
+      p.session_id,
+      p.user_id,
+      this
+    );
+    const onCreateUser = () => {
+      const tracks = this.getParticipantTracks(p);
+      world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
     };
-    room.broadcast(data, recipient);
-  };
 
-  const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
-    if (zoneData.zoneID === 0) {
-      room.setBandwidth(BandwidthLevel.Tile);
-    } else {
-      room.setBandwidth(BandwidthLevel.Focus);
+    const subToTracks = (sessionID: string) => {
+      this.subToUserTracks(sessionID);
+    };
+
+    const unsubFromTracks = (sessionID: string) => {
+      this.unsubFromUserTracks(sessionID);
+    };
+
+    const onMove = (pos: Pos, recipient: string = "*") => {
+      const data = {
+        action: "posChange",
+        pos: pos,
+      };
+      this.broadcast(data, recipient);
+    };
+
+    const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
+      if (zoneData.zoneID === 0) {
+        this.setBandwidth(BandwidthLevel.Tile);
+      } else {
+        this.setBandwidth(BandwidthLevel.Focus);
+      }
+      const data = {
+        action: "zoneChange",
+        zoneData: zoneData,
+      };
+      this.broadcast(data, recipient);
+    };
+
+    const onDataDump = (zoneData: ZoneData, posData: Pos, recipient: "*") => {
+      const data = {
+        action: "dump",
+        pos: posData,
+        zoneData: zoneData,
+      };
+      this.broadcast(data, recipient);
+    };
+
+    if (this.isGlobal) {
+      const local = event.participants.local;
+      showWorld();
+      world.subToTracks = subToTracks;
+      world.unsubFromTracks = unsubFromTracks;
+      world.onCreateUser = onCreateUser;
+      world.onMove = onMove;
+      world.onJoinZone = onJoinZone;
+      world.onDataDump = onDataDump;
+      world.start();
+      world.initLocalUser(local.session_id);
     }
-    const data = {
-      action: "zoneChange",
-      zoneData: zoneData,
-    };
-    room.broadcast(data, recipient);
-  };
-
-  const onDataDump = (zoneData: ZoneData, posData: Pos, recipient: "*") => {
-    const data = {
-      action: "dump",
-      pos: posData,
-      zoneData: zoneData,
-    };
-    room.broadcast(data, recipient);
-  };
-
-  if (room.isGlobal) {
-    const local = event.participants.local;
-    showWorld();
-    world.subToTracks = subToTracks;
-    world.unsubFromTracks = unsubFromTracks;
-    world.onCreateUser = onCreateUser;
-    world.onMove = onMove;
-    world.onJoinZone = onJoinZone;
-    world.onDataDump = onDataDump;
-    world.start();
-    world.initLocalUser(local.session_id);
   }
-}
 
-function subToUserTracks(room: Room, sessionID: string) {
-  room.callObject.updateParticipant(sessionID, {
-    setSubscribedTracks: { audio: true, video: true, screenVideo: false },
-  });
-}
+  private subToUserTracks(sessionID: string) {
+    this.callObject.updateParticipant(sessionID, {
+      setSubscribedTracks: { audio: true, video: true, screenVideo: false },
+    });
+  }
 
-function unsubFromUserTracks(room: Room, sessionID: string) {
-  // Unsubscriptions are not supported in peer-to-peer  mode. Attempting
-  // to unsubscribe in P2P mode will silently fail, so let's not even try.
-  if (room.topology !== Topology.SFU) return;
+  private unsubFromUserTracks(sessionID: string) {
+    // Unsubscriptions are not supported in peer-to-peer  mode. Attempting
+    // to unsubscribe in P2P mode will silently fail, so let's not even try.
+    if (this.topology !== Topology.SFU) return;
 
-  room.callObject.updateParticipant(sessionID, {
-    setSubscribedTracks: { audio: false, video: false, screenVideo: false },
-  });
-}
+    this.callObject.updateParticipant(sessionID, {
+      setSubscribedTracks: { audio: false, video: false, screenVideo: false },
+    });
+  }
 
-function handleAppMessage(room: Room, event: DailyEventObjectAppMessage) {
-  const data = <BroadcastData>event.data;
-  const msgType = data.action;
-  switch (msgType) {
-    case "dump":
-      const pendingAck = room.pendingAcks[event.fromId];
-      if (pendingAck) {
-        clearInterval(pendingAck);
-        delete room.pendingAcks[event.fromId];
-        world.sendDataDumpToParticipant(event.fromId);
-      }
-      world.updateParticipantZone(
-        event.fromId,
-        data.zoneData.zoneID,
-        data.zoneData.spotID
-      );
-      if (data.zoneData.zoneID === globalZoneID) {
+  private handleAppMessage(event: DailyEventObjectAppMessage) {
+    const data = <BroadcastData>event.data;
+    const msgType = data.action;
+    switch (msgType) {
+      case "dump":
+        const pendingAck = this.pendingAcks[event.fromId];
+        if (pendingAck) {
+          this.clearPendingAck(event.fromId);
+          world.sendDataDumpToParticipant(event.fromId);
+        }
+        world.updateParticipantZone(
+          event.fromId,
+          data.zoneData.zoneID,
+          data.zoneData.spotID
+        );
+        if (data.zoneData.zoneID === globalZoneID) {
+          world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+        }
+        break;
+      case "zoneChange":
+        world.updateParticipantZone(
+          event.fromId,
+          data.zoneData.zoneID,
+          data.zoneData.spotID
+        );
+        break;
+      case "posChange":
         world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
-      }
-      break;
-    case "zoneChange":
-      world.updateParticipantZone(
-        event.fromId,
-        data.zoneData.zoneID,
-        data.zoneData.spotID
-      );
-      break;
-    case "posChange":
-      world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
-      break;
+        break;
+    }
   }
-}
 
-function handleLeftMeeting(room: Room, event: DailyEventObjectNoPayload) {
-  console.log("left meeting, reseting pending acks");
-  for (const ack in room.pendingAcks) {
-    clearInterval(room.pendingAcks[ack]);
+  private handleLeftMeeting(event: DailyEventObjectNoPayload) {
+    console.log("left meeting, reseting pending acks");
+    this.resetPendingAcks();
   }
-  room.pendingAcks = {};
-}
 
-function handleParticipantUpdated(
-  room: Room,
-  event: DailyEventObjectParticipant
-) {
-  const p = event.participant;
-  const tracks = getParticipantTracks(p);
-  world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
-  if (p.session_id === room.callObject.participants()?.local?.session_id) {
-    room.updateLocal(p);
+  private handleParticipantUpdated(event: DailyEventObjectParticipant) {
+    const p = event.participant;
+    const tracks = this.getParticipantTracks(p);
+    world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
+    if (p.session_id === this.callObject.participants()?.local?.session_id) {
+      this.updateLocal(p);
+    }
   }
-}
 
-function handleParticipantJoined(
-  room: Room,
-  event: DailyEventObjectParticipant
-) {
-  const sID = event.participant.session_id;
-  if (isRobot(event.participant.user_name)) {
-    world.createRobot(sID);
-    return;
-  }
-  world.initRemoteParticpant(sID, event.participant.user_name);
-  world.sendZoneDataToParticipant(sID);
-  world.sendPosDataToParticipant(sID);
-
-  room.pendingAcks[sID] = setInterval(() => {
-    if (!room.callObject.participants()[sID]) {
-      clearInterval(room.pendingAcks[sID]);
-      delete room.pendingAcks[sID];
+  private handleParticipantJoined(event: DailyEventObjectParticipant) {
+    const sID = event.participant.session_id;
+    if (this.isRobot(event.participant.user_name)) {
+      world.createRobot(sID);
       return;
     }
-    world.sendDataDumpToParticipant(sID);
-  }, 1000);
-}
+    world.initRemoteParticpant(sID, event.participant.user_name);
+    world.sendZoneDataToParticipant(sID);
+    world.sendPosDataToParticipant(sID);
 
-function isRobot(userName: string): Boolean {
-  return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
-    userName
-  );
-}
+    this.pendingAcks[sID] = setInterval(() => {
+      if (!this.callObject.participants()[sID]) {
+        this.clearPendingAck(sID);
+        return;
+      }
+      world.sendDataDumpToParticipant(sID);
+    }, 1000);
+  }
 
-function getParticipantTracks(participant: DailyParticipant) {
-  const tracks = participant?.tracks;
-  if (!tracks) return { video: null, audio: null };
+  private isRobot(userName: string): Boolean {
+    return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+      userName
+    );
+  }
 
-  const vt = <{ [key: string]: any }>tracks.video;
-  const at = <{ [key: string]: any }>tracks.audio;
+  private getParticipantTracks(participant: DailyParticipant) {
+    const tracks = participant?.tracks;
+    if (!tracks) return { video: null, audio: null };
 
-  const videoTrack = vt?.state === playableState ? vt["persistentTrack"] : null;
-  const audioTrack = at?.state === playableState ? at["persistentTrack"] : null;
-  return {
-    video: videoTrack,
-    audio: audioTrack,
-  };
-}
+    const vt = <{ [key: string]: any }>tracks.video;
+    const at = <{ [key: string]: any }>tracks.audio;
 
-function handleParticipantLeft(room: Room, event: DailyEventObjectParticipant) {
-  const up = event.participant;
-  clearInterval(room.pendingAcks[up.session_id]);
-  delete room.pendingAcks[up.session_id];
+    const videoTrack =
+      vt?.state === playableState ? vt["persistentTrack"] : null;
+    const audioTrack =
+      at?.state === playableState ? at["persistentTrack"] : null;
+    return {
+      video: videoTrack,
+      audio: audioTrack,
+    };
+  }
 
-  world.removeUser(up.session_id);
-}
+  private handleParticipantLeft(event: DailyEventObjectParticipant) {
+    const up = event.participant;
+    this.clearPendingAck(up.session_id);
+    world.removeUser(up.session_id);
+  }
 
-function handleNetworkConnectionChanged(
-  room: Room,
-  event: DailyEventObjectNetworkConnectionEvent
-) {
-  if (event.event !== "connected") return;
-  console.log("Network connection changed. Type:", event.type);
-  switch (event.type) {
-    case "peer-to-peer":
-      room.topology = Topology.P2P;
-      break;
-    case "sfu":
-      room.topology = Topology.SFU;
-      break;
+  private handleNetworkConnectionChanged(
+    event: DailyEventObjectNetworkConnectionEvent
+  ) {
+    if (event.event !== "connected") return;
+    console.log("Network connection changed. Type:", event.type);
+    switch (event.type) {
+      case "peer-to-peer":
+        this.topology = Topology.P2P;
+        break;
+      case "sfu":
+        this.topology = Topology.SFU;
+        break;
+    }
   }
 }
