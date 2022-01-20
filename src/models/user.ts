@@ -283,6 +283,7 @@ export class User extends Collider {
       if (this.textureType === TextureType.Unknown) {
         this.setDefaultTexture();
       }
+      return;
     }
 
     const tzID = this.zoneData.zoneID;
