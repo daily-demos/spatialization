@@ -22,7 +22,9 @@ The room URL will be in the following format:
 
 This demo uses Daily's `app-message` events to broadcast each user's position to other users in a 2D top-down world. Users navigate by using arrow keys or WASD.
 
-When traversing the world, users hear and see each other as they get closer. The world contains a "broadcast" spot which allows a user to display their audio and video to everyone in the room regardless of their proximity. It also contains desks with limited seating spots which users can occupy to gather in smaller groups within the same call.
+When traversing the world, users hear and see each other as they get closer. The world contains a "broadcast" spot which allows a user to display their audio and video to everyone in the room regardless of their proximity. 
+
+The world also contains desks with limited seating spots which users can occupy to gather in smaller groups within the same call. When sitting at a desk, zonemates' video feeds are shown inside larger, draggable video elements on the page.
 
 The demo prompts the user to enter the URL of the Daily room they want to join, and the name they'd like to use.
 
