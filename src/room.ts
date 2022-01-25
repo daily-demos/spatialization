@@ -74,7 +74,6 @@ export class Room {
     })
       .on("camera-error", (e) => this.handleCameraError(e))
       .on("joined-meeting", (e) => this.handleJoinedMeeting(e))
-      .on("left-meeting", (e) => this.handleLeftMeeting(e))
       .on("error", (e) => this.handleError(e))
       .on("participant-updated", (e) => this.handleParticipantUpdated(e))
       .on("participant-joined", (e) => this.handleParticipantJoined(e))
@@ -96,6 +95,7 @@ export class Room {
     });
 
     registerLeaveBtnListener(() => {
+      this.resetPendingAcks();
       this.callObject.leave();
       this.callObject.destroy();
       world.destroy();
@@ -134,14 +134,12 @@ export class Room {
       case BandwidthLevel.Tile:
         console.log("setting bandwidth to tile");
         this.localBandwidthLevel = level;
-        const constraints = {
-          width: standardTileSize,
-          height: standardTileSize,
-          frameRate: 15,
-        };
-
         this.callObject.setBandwidth({
-          trackConstraints: constraints,
+          trackConstraints: {
+            width: standardTileSize,
+            height: standardTileSize,
+            frameRate: 15,
+          },
         });
         break;
       case BandwidthLevel.Focus:
@@ -182,6 +180,11 @@ export class Room {
   }
 
   private handleJoinedMeeting(event: DailyEventObjectParticipants) {
+    // The world setup is only relevant for the global room,
+    // since we can only have one world and one global room.
+    if (!this.isGlobal) return;
+
+    // Get the local participant
     const p = event.participants["local"];
     console.log(
       "JOINED MEETING. session ID, pID",
@@ -189,19 +192,24 @@ export class Room {
       p.user_id,
       this
     );
-    const onCreateUser = () => {
-      const tracks = this.getParticipantTracks(p);
-      world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
-    };
 
+    // Retrieve the video and audio tracks of this participant
+    const tracks = this.getParticipantTracks(p);
+
+    // The function World will use to instruct the room to
+    // subscribe to another user's track.
     const subToTracks = (sessionID: string) => {
       this.subToUserTracks(sessionID);
     };
 
+    // The function World will use to instruct the room to
+    // unsubscribe from another user's track.
     const unsubFromTracks = (sessionID: string) => {
       this.unsubFromUserTracks(sessionID);
     };
 
+    // The function World will call when the local user moves.
+    // This will broadcast their new position to other participants.
     const onMove = (pos: Pos, recipient: string = "*") => {
       const data = {
         action: "posChange",
@@ -210,8 +218,11 @@ export class Room {
       this.broadcast(data, recipient);
     };
 
+    // The function World will call when the local user changes zone.
+    // This will update their bandwidth and broadcast their new zone
+    // to other participants.
     const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
-      if (zoneData.zoneID === 0) {
+      if (zoneData.zoneID === globalZoneID) {
         this.setBandwidth(BandwidthLevel.Tile);
       } else {
         this.setBandwidth(BandwidthLevel.Focus);
@@ -223,6 +234,8 @@ export class Room {
       this.broadcast(data, recipient);
     };
 
+    // The function World will call to send a full data dump (position and zone)
+    // to another participant. Happens when a new user first joins.
     const onDataDump = (zoneData: ZoneData, posData: Pos, recipient: "*") => {
       const data = {
         action: "dump",
@@ -232,18 +245,21 @@ export class Room {
       this.broadcast(data, recipient);
     };
 
-    if (this.isGlobal) {
-      const local = event.participants.local;
-      showWorld();
-      world.subToTracks = subToTracks;
-      world.unsubFromTracks = unsubFromTracks;
-      world.onCreateUser = onCreateUser;
-      world.onMove = onMove;
-      world.onJoinZone = onJoinZone;
-      world.onDataDump = onDataDump;
-      world.start();
-      world.initLocalUser(local.session_id);
-    }
+    // Dispay the world DOM element.
+    showWorld();
+
+    // Configure the world with the callbacks we defined above
+    world.subToTracks = subToTracks;
+    world.unsubFromTracks = unsubFromTracks;
+    world.onMove = onMove;
+    world.onJoinZone = onJoinZone;
+    world.onDataDump = onDataDump;
+
+    // Start the world (begins update loop)
+    world.start();
+
+    // Create and initialize the local user.
+    world.initLocalUser(p.session_id, tracks.video);
   }
 
   private subToUserTracks(sessionID: string) {
@@ -266,12 +282,19 @@ export class Room {
     const data = <BroadcastData>event.data;
     const msgType = data.action;
     switch (msgType) {
+      case "posChange":
+        world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+        break;
+      case "zoneChange":
+        world.updateParticipantZone(
+          event.fromId,
+          data.zoneData.zoneID,
+          data.zoneData.spotID
+        );
+        break;
       case "dump":
-        const pendingAck = this.pendingAcks[event.fromId];
-        if (pendingAck) {
-          this.clearPendingAck(event.fromId);
-          world.sendDataDumpToParticipant(event.fromId);
-        }
+        this.broadcast({ action: "ack" }, event.fromId);
+
         world.updateParticipantZone(
           event.fromId,
           data.zoneData.zoneID,
@@ -281,22 +304,14 @@ export class Room {
           world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
         }
         break;
-      case "zoneChange":
-        world.updateParticipantZone(
-          event.fromId,
-          data.zoneData.zoneID,
-          data.zoneData.spotID
-        );
-        break;
-      case "posChange":
-        world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
+      case "ack":
+        console.log(`Received acknowledgement from ${event.fromId}`);
+        const pendingAck = this.pendingAcks[event.fromId];
+        if (pendingAck) {
+          this.clearPendingAck(event.fromId);
+        }
         break;
     }
-  }
-
-  private handleLeftMeeting(event: DailyEventObjectNoPayload) {
-    console.log("left meeting, reseting pending acks");
-    this.resetPendingAcks();
   }
 
   private handleParticipantUpdated(event: DailyEventObjectParticipant) {
@@ -315,8 +330,6 @@ export class Room {
       return;
     }
     world.initRemoteParticpant(sID, event.participant.user_name);
-    world.sendZoneDataToParticipant(sID);
-    world.sendPosDataToParticipant(sID);
 
     this.pendingAcks[sID] = setInterval(() => {
       if (!this.callObject.participants()[sID]) {

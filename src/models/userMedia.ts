@@ -273,6 +273,7 @@ export class UserMedia {
 
   destroy() {
     this.loopback?.destroy();
+    delete this.loopback;
   }
 
   private async createAudioNodes(gainValue: number, panValue: number) {

@@ -22,7 +22,6 @@ declare global {
 export class World {
   subToTracks: (sessionID: string) => void = null;
   unsubFromTracks: (sessionID: string) => void = null;
-  onCreateUser: () => void = null;
   onMove: (pos: Pos, recipient?: string) => void = null;
   onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null;
   onDataDump: (zoneData: ZoneData, posData: Pos, recipient?: string) => void =
@@ -138,7 +137,7 @@ export class World {
     user.moveTo({ x: posX, y: posY });
   }
 
-  initLocalUser(sessionID: string): void {
+  initLocalUser(sessionID: string, videoTrack: MediaStreamTrack): void {
     this.initAudioContext();
 
     const worldCenter = defaultWorldSize / 2;
@@ -161,9 +160,8 @@ export class World {
       this.app.view.width / 2 - finalPos.x - this.localUser.width / 2;
     this.worldContainer.position.y =
       this.app.view.height / 2 - finalPos.y - this.localUser.height / 2;
-    if (this.onCreateUser) {
-      this.onCreateUser();
-    }
+
+    user.updateTracks(videoTrack, null);
     this.sendZoneData();
     this.sendPosData();
     this.keyListener.listenKeys();

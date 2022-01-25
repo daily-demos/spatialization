@@ -1,4 +1,3 @@
-import { setupDraggableElement } from "./drag";
 import { removeAllZonemates, stopBroadcast } from "./tile";
 
 export default class KeyListener {
@@ -23,7 +22,6 @@ export default class KeyListener {
 }
 
 const joinForm = document.getElementById("enterCall");
-
 const toggleCamBtn = document.getElementById("toggleCam");
 const toggleMicBtn = document.getElementById("toggleMic");
 
@@ -40,7 +38,9 @@ export function registerLeaveBtnListener(f: () => void) {
   leaveBtn.addEventListener("click", f);
 }
 
-export function registerJoinFormListener(f: Function) {
+export function registerJoinFormListener(
+  f: (name: string, url: string) => void
+) {
   joinForm.addEventListener("submit", (event) => {
     event.preventDefault();
     joinForm.style.display = "none";

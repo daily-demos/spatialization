@@ -102,6 +102,9 @@ export class User extends Collider {
     this.media.leaveZone();
     this.media.leaveBroadcast();
     this.media.destroy();
+    delete this.media;
+
+    super.destroy(true);
   }
 
   // updateTracks sets the tracks, but does not
@@ -572,14 +575,6 @@ export class User extends Collider {
     if (existing) {
       this.removeChild(existing);
     }
-
-    console.log(
-      "this:",
-      this.position,
-      this.width,
-      this.height,
-      this.getBounds()
-    );
 
     const bounds = this.staticBounds;
     const t = this.userName;
