@@ -104,8 +104,20 @@ export class User extends Collider {
     this.media.leaveBroadcast();
     this.media.destroy();
     delete this.media;
-
-    super.destroy(true);
+    // If this is a local user or current texture is video,
+    // destroy texture and all children.
+    if (this.isLocal || this.textureType === TextureType.Video) {
+      super.destroy(true);
+      return;
+    }
+    // If the current texture is the default texture,
+    // do not destroy it. It will be needed by other
+    // users.
+    super.destroy({
+      children: true,
+      texture: false,
+      baseTexture: false,
+    });
   }
 
   // updateTracks sets the tracks, but does not
@@ -428,7 +440,7 @@ export class User extends Collider {
       );
       return;
     }
-
+    console.log("got texture", texture, this.gradientTextureName, t.catalog);
     this.texture = texture;
     this.textureType = TextureType.Default;
   }
