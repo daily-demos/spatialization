@@ -46,6 +46,9 @@ export class Loopback {
   }
 
   public destroy() {
+    this.peer1.ontrack = null;
+    this.peer1.onicecandidate = null;
+    this.peer2.ontrack = null;
     this.peer1.close();
     this.peer2.close();
   }

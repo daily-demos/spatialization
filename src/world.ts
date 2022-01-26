@@ -516,6 +516,7 @@ export class World {
 
   destroy() {
     Textures.destroy();
+    this.localUser = null;
     this.furniture = [];
     this.robots = [];
     this.app.destroy(true, true);

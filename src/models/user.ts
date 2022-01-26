@@ -99,6 +99,7 @@ export class User extends Collider {
   }
 
   destroy() {
+    console.log("destroying user", this.id);
     this.media.leaveZone();
     this.media.leaveBroadcast();
     this.media.destroy();
@@ -488,6 +489,7 @@ export class User extends Collider {
   // If the video is resized, we will need to recalcualte
   // the texture dimensions and mask.
   private videoTextureResized(e: UIEvent) {
+    console.log("resized");
     if (this.textureType === TextureType.Video) {
       this.setVideoTexture(true);
     }

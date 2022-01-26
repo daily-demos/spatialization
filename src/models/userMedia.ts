@@ -272,8 +272,16 @@ export class UserMedia {
   }
 
   destroy() {
+    console.log("destroying media", this.id);
     this.loopback?.destroy();
     delete this.loopback;
+    this.audioTag?.remove();
+    this.videoTag.oncanplay = null;
+    this.videoTag.onresize = null;
+    this.videoTag.onplaying = null;
+    this.videoTag.onended = null;
+    this.videoTag.onpause = null;
+    this.videoTag.remove();
   }
 
   private async createAudioNodes(gainValue: number, panValue: number) {
