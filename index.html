@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; frame-src 'self' https://*.daily.co; script-src 'self' https://unpkg.com/@daily-co/daily-js 'unsafe-eval'; connect-src https://*.daily.co https://*.pluot.blue wss:; worker-src 'self' blob:; style-src 'self' https://fonts.googleapis.com/css2; font-src 'self' https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu72xKKTU1Kvnz.woff2 https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2 https://*.gstatic.com"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="./dist/style.css" />
+    <link rel="shortcut icon" href="./dist/favicon.ico" />
+
+    <title>Daily Spatial Audio/Video Demo</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="left-header">
+        <img
+          src="./dist/daily.svg"
+          class="daily-logo"
+          alt="Daily logo reads Daily"
+        />
+        <strong>
+          <p class="header-title">Daily spatialization demo</p>
+        </strong>
+      </div>
+      <div class="right-header">
+        <a href="https://docs.daily.co/reference" target="_blank" class="link">
+          <button class="button docs-button white-button">API docs</button>
+        </a>
+        <span class="divider"></span>
+        <a href="https://github.com/daily-demos/spatial-video" target="_blank">
+          <img
+            class="octocat"
+            src="./dist/github.png"
+            alt="GitHub logo Octocat"
+          />
+        </a>
+      </div>
+    </header>
+    <div class="wrapper">
+      <div id="entry">
+        <h1 class="title">Spatialization demo</h1>
+        <p class="prompt">A spatialization app built with Daily</p>
+        <form id="enterCall">
+          <input
+            type="text"
+            id="userName"
+            placeholder="Enter a name..."
+            required
+          />
+          <input
+            type="url"
+            id="roomURL"
+            placeholder="Enter room URL..."
+            required
+          />
+          <button type="submit">Start demo</button>
+        </form>
+      </div>
+
+      <div id="call">
+        <div id="controls">
+          <button id="toggleCam"></button>
+          <button id="toggleMic"></button>
+          <button id="leave">Leave Call</button>
+        </div>
+        <div id="world"></div>
+        <div id="focus">
+          <div id="broadcast" class="tile">
+            <video id="broadcastVideo" class="fit" autoplay></video>
+            <div id="broadcastName" class="name"></div>
+          </div>
+          <div id="zonemates"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="module" src="./dist/bundle.js" charset="utf-8" defer></script>
+</html>
