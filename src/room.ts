@@ -5,7 +5,6 @@ import {
   DailyEventObjectParticipant,
   DailyParticipant,
   DailyEventObjectFatalError,
-  DailyEventObjectNoPayload,
   DailyEventObjectCameraError,
   DailyEventObjectParticipants,
   DailyEventObjectNetworkConnectionEvent,

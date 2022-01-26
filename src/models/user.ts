@@ -440,7 +440,6 @@ export class User extends Collider {
       );
       return;
     }
-    console.log("got texture", texture, this.gradientTextureName, t.catalog);
     this.texture = texture;
     this.textureType = TextureType.Default;
   }
