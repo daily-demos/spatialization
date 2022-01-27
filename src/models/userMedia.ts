@@ -191,8 +191,8 @@ export class UserMedia {
 
     // Reset nodes
     console.log("resetting audio nodes");
-    const gain = this.gainNode.gain.value;
-    const pan = this.stereoPannerNode.pan.value;
+    const gain = this.gainNode?.gain?.value;
+    const pan = this.stereoPannerNode?.pan?.value;
   
     this.gainNode = null;
     this.stereoPannerNode = null;
@@ -200,7 +200,9 @@ export class UserMedia {
     this.loopback = null;
 
     // Recreate audio nodes with previous gain and pan
-    this.createAudioNodes(gain, pan);
+    if (gain && pan) {
+      this.createAudioNodes(gain, pan);
+    }
 
     if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
