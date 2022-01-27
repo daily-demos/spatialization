@@ -193,7 +193,7 @@ export class UserMedia {
     console.log("resetting audio nodes");
     const gain = this.gainNode?.gain?.value;
     const pan = this.stereoPannerNode?.pan?.value;
-  
+
     this.gainNode = null;
     this.stereoPannerNode = null;
     this.loopback?.destroy();
