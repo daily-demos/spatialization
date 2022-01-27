@@ -20,6 +20,9 @@ export enum Action {
   Broadcasting,
 }
 
+const isChrome: boolean = !!(navigator.userAgent.indexOf("Chrome") !== -1);
+console.log("IsChrome", isChrome);
+
 // UserMedia holds all audio and video related tags,
 // streams, and panners for a user.
 export class UserMedia {
@@ -312,14 +315,21 @@ export class UserMedia {
     this.stereoPannerNode.connect(compressor);
     compressor.connect(destination);
 
+    let srcStream: MediaStream;
+
     // This is a workaround for there being no noise cancellation
-    // when using Web Audio API in Chromium (another bug):
+    // when using Web Audio API in Chrome (another bug):
     // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
-    this.loopback = new Loopback();
-    await this.loopback.start(destination.stream);
-    const loopbackStream = this.loopback.getLoopback();
+    if (isChrome) {
+      this.loopback = new Loopback();
+      await this.loopback.start(destination.stream);
+      srcStream = this.loopback.getLoopback();
+    } else {
+      srcStream = destination.stream;
+    }
+
     this.audioTag.muted = false;
-    this.audioTag.srcObject = loopbackStream;
+    this.audioTag.srcObject = srcStream;
     this.audioTag.play();
   }
 
