@@ -109,7 +109,6 @@ export class UserMedia {
     const video = document.createElement("video");
 
     video.oncanplay = () => {
-      console.log("can play", this.userName);
       if (!this.videoPlaying) {
         video.play().catch((err) => {
           console.log("failed to play after oncanplay event: ", err);
@@ -191,8 +190,17 @@ export class UserMedia {
     this.audioTrack = newTrack;
 
     // Reset nodes
+    console.log("resetting audio nodes");
+    const gain = this.gainNode.gain.value;
+    const pan = this.stereoPannerNode.pan.value;
+  
     this.gainNode = null;
     this.stereoPannerNode = null;
+    this.loopback?.destroy();
+    this.loopback = null;
+
+    // Recreate audio nodes with previous gain and pan
+    this.createAudioNodes(gain, pan);
 
     if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
