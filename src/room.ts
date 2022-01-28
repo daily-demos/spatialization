@@ -131,7 +131,6 @@ export class Room {
   private setBandwidth(level: BandwidthLevel) {
     switch (level) {
       case BandwidthLevel.Tile:
-        console.log("setting bandwidth to tile");
         this.localBandwidthLevel = level;
         this.callObject.setBandwidth({
           trackConstraints: {
@@ -142,7 +141,6 @@ export class Room {
         });
         break;
       case BandwidthLevel.Focus:
-        console.log("setting bandwidth to focus");
         this.localBandwidthLevel = level;
         this.callObject.setBandwidth({
           trackConstraints: {

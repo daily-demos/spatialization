@@ -156,6 +156,9 @@ export class User extends Collider {
     }
 
     if (zoneID === broadcastZoneID) {
+      if (this.media.currentAction === Action.InZone) {
+        this.media.leaveZone();
+      }
       this.alpha = maxAlpha;
       this.media.enterBroadcast();
     }
@@ -209,7 +212,7 @@ export class User extends Collider {
     return this.localZoneMates;
   }
 
-  moveTo(pos: Pos, trial = false) {
+  moveTo(pos: Pos) {
     this.x = Math.round(pos.x);
     this.y = Math.round(pos.y);
     this.getBounds();

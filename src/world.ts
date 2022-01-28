@@ -39,7 +39,54 @@ export class World {
   private furniture: Array<ICollider> = [];
 
   constructor() {
-    this.init();
+    const w = document.getElementById("world");
+
+    // Create PixiJS Application and set its size to
+    // our "world" div.
+    this.app = new PIXI.Application({
+      width: w.offsetWidth,
+      height: w.offsetHeight,
+      resizeTo: w,
+      backgroundColor: 0x121a24,
+      resolution: 1,
+    });
+    this.app.ticker.maxFPS = 30;
+
+    // Create window frame
+    let frame = new PIXI.Graphics();
+    frame.beginFill(0x121a24);
+    frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
+    frame.position.set(0, 0);
+    this.app.stage.addChild(frame);
+
+    // Main world container, which will hold user
+    // and furniture containers.
+    this.worldContainer = new PIXI.Container();
+    this.worldContainer.width = defaultWorldSize;
+    this.worldContainer.height = defaultWorldSize;
+    this.worldContainer.sortableChildren = true;
+
+    const floor = new Floor(defaultWorldSize, defaultWorldSize);
+    this.worldContainer.addChild(floor);
+
+    frame.addChild(this.worldContainer);
+
+    // Container that will hold our users
+    this.usersContainer = new PIXI.Container();
+    this.usersContainer.width = this.worldContainer.width;
+    this.usersContainer.height = this.worldContainer.height;
+    this.usersContainer.zIndex = 100;
+    this.worldContainer.addChild(this.usersContainer);
+
+    // Container that will hold our room "furniture" elements,
+    // like broadcast spots
+    this.furnitureContainer = new PIXI.Container();
+    this.furnitureContainer.zIndex = 90;
+    this.furnitureContainer.width = this.worldContainer.width;
+    this.furnitureContainer.height = this.worldContainer.height;
+    this.worldContainer.addChild(this.furnitureContainer);
+
+    document.getElementById("world").appendChild(this.app.view);
   }
 
   updateUser(
@@ -138,19 +185,26 @@ export class World {
   }
 
   initLocalUser(sessionID: string, videoTrack: MediaStreamTrack): void {
-    this.initAudioContext();
+    window.audioContext = new AudioContext();
 
     const worldCenter = defaultWorldSize / 2;
+
+    // These position constraints are largely arbitrary;
+    // I just felt with what spawning area "feels" right.
     const p = {
       x: rand(worldCenter - 300, worldCenter + 300),
       y: rand(worldCenter - 250, worldCenter + 250),
     };
 
     const user = this.createUser(sessionID, p.x, p.y, "You", true);
+    // This will render the world and allow us to cross
+    // check collision, to make sure the local user is not
+    // colliding with furniture.
     this.app.render();
 
+    // Make sure we aren't colliding with any furniture,
+    // reposition if so.
     this.getFinalLocalPos(user);
-    user.moveTo(user.getPos());
 
     this.localUser = user;
     const finalPos = this.localUser.getPos();
@@ -189,36 +243,37 @@ export class World {
     this.app.ticker.add((deltaTime) => {
       this.update(deltaTime);
     });
+
+    // Ensure our world is correctly sized
     this.app.resize();
-    // Container that will hold our room "furniture" elements,
-    // like broadcast spots
-    this.furnitureContainer = new PIXI.Container();
-    this.furnitureContainer.zIndex = 90;
-    this.furnitureContainer.width = this.worldContainer.width;
-    this.furnitureContainer.height = this.worldContainer.height;
+
     // Create a single broadcast spot
-    const spot = new BroadcastZone(broadcastZoneID, 0, defaultWorldSize / 2);
-    spot.moveTo({ x: defaultWorldSize / 2 - spot.width / 2, y: spot.y });
-    this.furnitureContainer.addChild(spot);
-    this.furniture.push(spot);
+    const zoneBroadcast = new BroadcastZone(
+      broadcastZoneID,
+      0,
+      defaultWorldSize / 2
+    );
+    zoneBroadcast.moveTo({
+      x: defaultWorldSize / 2 - zoneBroadcast.width / 2,
+      y: zoneBroadcast.y,
+    });
+    this.furnitureContainer.addChild(zoneBroadcast);
+    this.furniture.push(zoneBroadcast);
 
+    // Create two desk zones
     const yPos = defaultWorldSize / 2 + 325;
-
     const zone1 = new DeskZone(1, "Koala", 4, { x: 0, y: yPos });
     zone1.moveTo({
-      x: defaultWorldSize / 2 - zone1.width - spot.width,
+      x: defaultWorldSize / 2 - zone1.width - zoneBroadcast.width,
       y: zone1.y,
     });
     this.furnitureContainer.addChild(zone1);
     this.furniture.push(zone1);
 
     const zone2 = new DeskZone(2, "Kangaroo", 4, { x: 0, y: yPos });
-    zone2.moveTo({ x: defaultWorldSize / 2 + spot.width, y: zone2.y });
+    zone2.moveTo({ x: defaultWorldSize / 2 + zoneBroadcast.width, y: zone2.y });
     this.furnitureContainer.addChild(zone2);
     this.furniture.push(zone2);
-
-    // Add furniture container to the world
-    this.worldContainer.addChild(this.furnitureContainer);
   }
 
   createRobot(userID: string) {
@@ -339,50 +394,9 @@ export class World {
         x: rand(worldCenter - 500, worldCenter + 500),
         y: rand(worldCenter - 500, worldCenter + 500),
       };
-      user.moveTo(np, true);
+      user.moveTo(np);
       return this.getFinalLocalPos(user);
     }
-  }
-
-  private init() {
-    const w = document.getElementById("world");
-    this.app = new PIXI.Application({
-      width: w.offsetWidth,
-      height: w.offsetHeight,
-      resizeTo: w,
-      backgroundColor: 0x121a24,
-      resolution: 1,
-    });
-
-    this.app.ticker.maxFPS = 30;
-
-    // Create window frame
-    let frame = new PIXI.Graphics();
-    frame.beginFill(0x121a24);
-    frame.lineStyle({ color: 0xffffff, width: 4, alignment: 0 });
-    frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
-    frame.position.set(0, 0);
-    this.app.stage.addChild(frame);
-
-    this.worldContainer = new PIXI.Container();
-    this.worldContainer.width = defaultWorldSize;
-    this.worldContainer.height = defaultWorldSize;
-    this.worldContainer.sortableChildren = true;
-
-    const floor = new Floor(defaultWorldSize, defaultWorldSize);
-    this.worldContainer.addChild(floor);
-
-    frame.addChild(this.worldContainer);
-
-    // Add container that will hold our users
-    this.usersContainer = new PIXI.Container();
-    this.usersContainer.width = this.worldContainer.width;
-    this.usersContainer.height = this.worldContainer.height;
-    this.usersContainer.zIndex = 100;
-    this.worldContainer.addChild(this.usersContainer);
-
-    document.getElementById("world").appendChild(this.app.view);
-    this.app.render();
   }
 
   private update(delta: number) {
@@ -404,12 +418,21 @@ export class World {
   }
 
   private checkNavigation(delta: number) {
+    // Figure out what our real speed should be.
+    // Using the local user's default speed and
+    // the delta since the last tick.
     const s = delta * this.localUser.speed;
 
-    let newX = this.localUser.x;
-    let newY = this.localUser.y;
+    // Get the user's current position, and set
+    // their new coordinates to the same
+    // x and y values.
     const currentPos = this.localUser.getPos();
+    let newX = currentPos.x;
+    let newY = currentPos.y;
 
+    // If arrow keys or WASD are pressed, update
+    // the new x and y values using the speed
+    // we calculated above.
     this.keyListener.on("w", () => {
       newY -= s;
     });
@@ -442,27 +465,35 @@ export class World {
       newX += s;
     });
 
+    // If no keys were pressed, the coordintates remain
+    // identical. Early out, nothing more to do.
     if (newX === currentPos.x && newY === currentPos.y) {
       return;
     }
+    // If the user moved, move them to the new coordinates.
+    this.localUser.moveTo({ x: newX, y: newY });
 
-    this.localUser.moveTo({ x: newX, y: newY }, true);
-
+    // Iterate over all furniture and, if the new position
+    // results in them colliding with an object that has
+    // physics enabled, reset their pos to their previous
+    // position and return.
     for (let o of this.furniture) {
       if (o.physics && o.hits(this.localUser)) {
-        this.localUser.moveTo(currentPos, true);
+        this.localUser.moveTo(currentPos);
         return;
       }
     }
 
-    this.localUser.moveTo({ x: newX, y: newY }, false);
+    // Get the final new position of the user.
     const newPos = this.localUser.getPos();
-    // Center world container on local user
+
+    // Center world container on local user.
     this.worldContainer.position.x =
       this.app.view.width / 2 - newPos.x - this.localUser.width / 2;
     this.worldContainer.position.y =
       this.app.view.height / 2 - newPos.y - this.localUser.height / 2;
 
+    // Send their new position data to other participants.
     this.sendPosData();
   }
 
@@ -474,17 +505,19 @@ export class World {
     const lu = this.localUser;
     const zd = lu.getZoneData();
     const zID = zd.zoneID;
-    // If we are in an isolated zone and have zonemates,
-    // only broadcast to them
-    if (zID !== globalZoneID && zID !== broadcastZoneID) {
-      const zonemates = lu.getZonemates();
-      for (let zm in zonemates) {
-        this.onMove(lu.getPos(), zm);
-      }
+
+    // If we're in the global zone, broadcast to everyone
+    if (zID === globalZoneID) {
+      this.onMove(lu.getPos());
       return;
     }
-    // If we're in the global zone, broadcast to everyone
-    this.onMove(lu.getPos());
+
+    // If we are in an isolated zone and have zonemates,
+    // only broadcast to them
+    const zonemates = lu.getZonemates();
+    for (let zm in zonemates) {
+      this.onMove(lu.getPos(), zm);
+    }
   }
 
   private async sendZoneData() {
@@ -520,17 +553,5 @@ export class World {
     this.furniture = [];
     this.robots = [];
     this.app.destroy(true, true);
-  }
-
-  private initAudioContext() {
-    window.audioContext = new AudioContext();
-    const listener = window.audioContext.listener;
-    listener.positionZ.value = 300 - 5;
-    listener.forwardX.value = 0;
-    listener.forwardY.value = 0;
-    listener.forwardZ.value = -1;
-    listener.upX.value = 0;
-    listener.upY.value = 1;
-    listener.upZ.value = 0;
   }
 }
