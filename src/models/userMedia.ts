@@ -20,6 +20,9 @@ export enum Action {
   Broadcasting,
 }
 
+const isChrome: boolean = !!(navigator.userAgent.indexOf("Chrome") !== -1);
+console.log("IsChrome", isChrome);
+
 // UserMedia holds all audio and video related tags,
 // streams, and panners for a user.
 export class UserMedia {
@@ -106,7 +109,6 @@ export class UserMedia {
     const video = document.createElement("video");
 
     video.oncanplay = () => {
-      console.log("can play", this.userName);
       if (!this.videoPlaying) {
         video.play().catch((err) => {
           console.log("failed to play after oncanplay event: ", err);
@@ -188,8 +190,19 @@ export class UserMedia {
     this.audioTrack = newTrack;
 
     // Reset nodes
+    console.log("resetting audio nodes");
+    const gain = this.gainNode?.gain?.value;
+    const pan = this.stereoPannerNode?.pan?.value;
+
     this.gainNode = null;
     this.stereoPannerNode = null;
+    this.loopback?.destroy();
+    this.loopback = null;
+
+    // Recreate audio nodes with previous gain and pan
+    if (gain && pan) {
+      this.createAudioNodes(gain, pan);
+    }
 
     if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
@@ -272,8 +285,16 @@ export class UserMedia {
   }
 
   destroy() {
+    console.log("destroying media", this.id);
     this.loopback?.destroy();
     delete this.loopback;
+    this.audioTag?.remove();
+    this.videoTag.oncanplay = null;
+    this.videoTag.onresize = null;
+    this.videoTag.onplaying = null;
+    this.videoTag.onended = null;
+    this.videoTag.onpause = null;
+    this.videoTag.remove();
   }
 
   private async createAudioNodes(gainValue: number, panValue: number) {
@@ -304,14 +325,21 @@ export class UserMedia {
     this.stereoPannerNode.connect(compressor);
     compressor.connect(destination);
 
+    let srcStream: MediaStream;
+
     // This is a workaround for there being no noise cancellation
-    // when using Web Audio API in Chromium (another bug):
+    // when using Web Audio API in Chrome (another bug):
     // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
-    this.loopback = new Loopback();
-    await this.loopback.start(destination.stream);
-    const loopbackStream = this.loopback.getLoopback();
+    if (isChrome) {
+      this.loopback = new Loopback();
+      await this.loopback.start(destination.stream);
+      srcStream = this.loopback.getLoopback();
+    } else {
+      srcStream = destination.stream;
+    }
+
     this.audioTag.muted = false;
-    this.audioTag.srcObject = loopbackStream;
+    this.audioTag.srcObject = srcStream;
     this.audioTag.play();
   }
 

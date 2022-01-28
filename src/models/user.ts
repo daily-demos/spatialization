@@ -99,12 +99,25 @@ export class User extends Collider {
   }
 
   destroy() {
+    console.log("destroying user", this.id);
     this.media.leaveZone();
     this.media.leaveBroadcast();
     this.media.destroy();
     delete this.media;
-
-    super.destroy(true);
+    // If this is a local user or current texture is video,
+    // destroy texture and all children.
+    if (this.isLocal || this.textureType === TextureType.Video) {
+      super.destroy(true);
+      return;
+    }
+    // If the current texture is the default texture,
+    // do not destroy it. It will be needed by other
+    // users.
+    super.destroy({
+      children: true,
+      texture: false,
+      baseTexture: false,
+    });
   }
 
   // updateTracks sets the tracks, but does not
@@ -270,29 +283,27 @@ export class User extends Collider {
       },
     });
     texture.onError = (e) => this.textureError(e);
+
     let textureMask: PIXI.Rectangle = null;
     const resource = texture.resource;
+
     let x = 0;
     let y = 0;
     let size = baseSize;
-    let height = baseSize;
     const aspect = resource.width / resource.height;
     if (aspect > 1) {
       x = resource.width / 2 - resource.height / 2;
       size = resource.height;
     } else if (aspect > 1) {
-      const hh = resource.height / 2;
       y = resource.height / 2 - resource.width / 2;
       size = resource.width;
     } else {
       texture.setSize(baseSize, baseSize);
     }
     textureMask = new PIXI.Rectangle(x, y, size, size);
-
     this.texture = new PIXI.Texture(texture, textureMask);
     this.texture.update();
-    this.width = baseSize;
-    this.height = baseSize;
+    this.tryUpdateNameGraphics();
   }
 
   private textureError(err: ErrorEvent) {
@@ -427,9 +438,9 @@ export class User extends Collider {
       );
       return;
     }
-
     this.texture = texture;
     this.textureType = TextureType.Default;
+    this.tryUpdateNameGraphics();
   }
 
   private async proximityUpdate(other: User) {
@@ -566,9 +577,6 @@ export class User extends Collider {
 
   // createNameGraphics creates a Text graphics object which
   // shows the user's name at the bottom of their tile.
-  // TODO: for Firefox users, the size and positioning of
-  // the text becomes offset. This is a known issue which
-  // we aim to produce a followup fix for.
   private createNameGraphics() {
     const name = "nameGraphics";
     const existing = this.getChildByName(name);
@@ -592,5 +600,16 @@ export class User extends Collider {
 
     this.addChild(txt);
     this.nameGraphics = txt;
+  }
+
+  private tryUpdateNameGraphics() {
+    if (!this.nameGraphics) return;
+
+    const sx = 1 * (1 / this.scale.x);
+    const sy = 1 * (1 / this.scale.y);
+    const bounds = this.staticBounds;
+    this.nameGraphics.position.x = (bounds.x + bounds.width / 2) * sx;
+    this.nameGraphics.position.y = (bounds.y + bounds.height - 8) * sy;
+    this.nameGraphics.scale.set(sx, sy);
   }
 }
