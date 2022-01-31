@@ -318,8 +318,6 @@ export class UserMedia {
     }
   }
 
-  destroyNodeChain() {}
-
   muteAudio() {
     if (!this.audioTag.muted) {
       this.audioTag.muted = true;
