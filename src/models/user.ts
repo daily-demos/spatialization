@@ -246,17 +246,24 @@ export class User extends Collider {
   // Private methods below
 
   private setVideoTexture(forceReset = false) {
+    // If the user already has a video texture set and we didn't
+    // specify a force reset, early out.
     if (this.textureType === TextureType.Video && !forceReset) {
       return;
     }
 
+    // If the user has no video track, early out.
     const videoTrack = this.media.getVideoTrack();
     if (!videoTrack) return;
 
+    // If we're already waiting for a video texture to be set,
+    // early out.
     if (this.videoTextureAttemptPending) {
       return;
     }
 
+    // If the video tag we'll be using to create this texture is
+    // not yet playing, create a pending attempt.
     if (!this.media.videoPlaying) {
       console.log(
         "video not playing; will set texture when play starts",
@@ -272,13 +279,11 @@ export class User extends Collider {
       });
       return;
     }
+
     this.textureType = TextureType.Video;
 
-    // I am not (yet) sure why this is needed, but without
-    // it we get inconsistent bounds and broken collision
-    // detection when switching textures.
-    this.getBounds(true);
-
+    // Create a base texture using our video tag as the
+    // backing resource.
     let texture = new PIXI.BaseTexture(this.media.videoTag, {
       mipmap: MIPMAP_MODES.OFF,
       resourceOptions: {
@@ -288,6 +293,10 @@ export class User extends Collider {
     texture.onError = (e) => this.textureError(e);
 
     let textureMask: PIXI.Rectangle = null;
+
+    // Set our texture mask to ensure correct dimensions
+    // and aspect ratio based on the size of the backing
+    // video track resource.
     const resource = texture.resource;
 
     let x = 0;
@@ -304,8 +313,12 @@ export class User extends Collider {
       texture.setSize(baseSize, baseSize);
     }
     textureMask = new PIXI.Rectangle(x, y, size, size);
+
+    // Create and set our video texture!
     this.texture = new PIXI.Texture(texture, textureMask);
-    this.texture.update();
+
+    // Ensure our name label is of the right size and position
+    // for the new texture.
     this.tryUpdateNameGraphics();
   }
 
@@ -422,6 +435,11 @@ export class User extends Collider {
 
   private setDefaultTexture() {
     if (this.textureType === TextureType.Default) return;
+
+    if (this.textureType === TextureType.Video) {
+      this.texture.destroy();
+    }
+
     // I am not (yet) sure why this is needed, but without
     // it we get inconsistent bounds and broken collision
     // detection when switching textures.

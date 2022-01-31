@@ -171,9 +171,8 @@ export class World {
     // update. If it already exists, just update the name
     let user = this.getUser(sessionID);
     if (!user) {
-      user = this.createUser(sessionID, -10000, -1000, userName);
+      user = this.createUser(sessionID, -10000, -10000, userName);
     }
-    user.setUserName(userName);
   }
 
   updateParticipantPos(sessionID: string, posX: number, posY: number) {
@@ -360,9 +359,9 @@ export class World {
       userName,
       x,
       y,
-      (isLocal = isLocal),
-      (onEnterVicinity = onEnterVicinity),
-      (onLeaveVicinity = onLeaveVicinity),
+      isLocal,
+      onEnterVicinity,
+      onLeaveVicinity,
       onJoinZone
     );
     this.usersContainer.addChild(user);
