@@ -169,7 +169,9 @@ export class User extends Collider {
       }
       if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
       if (zoneID === globalZoneID) {
-        this.setVideoTexture();
+        if (!this.media.cameraDisabled) {
+          this.setVideoTexture();
+        }
         this.media.leaveZone();
         return;
       }
@@ -439,11 +441,6 @@ export class User extends Collider {
     if (this.textureType === TextureType.Video) {
       this.texture.destroy();
     }
-
-    // I am not (yet) sure why this is needed, but without
-    // it we get inconsistent bounds and broken collision
-    // detection when switching textures.
-    this.getBounds(true);
 
     const t = Textures.get();
     const texture = t.catalog[this.gradientTextureName];
