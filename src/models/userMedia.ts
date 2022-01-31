@@ -38,6 +38,15 @@ class NodeChain {
   private stereoPanner: IStereoPannerNode<AudioContext>;
   private compressor: IDynamicsCompressorNode<AudioContext>;
   private loopback: Loopback;
+  // Apparently this is required due to a Chromium bug!
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+  // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
+  private mutedAudio: HTMLAudioElement;
+
+  constructor() {
+    this.mutedAudio = new Audio();
+    this.mutedAudio.muted = true;
+  }
 
   getGain(): number {
     return this.gain?.gain.value;
@@ -71,19 +80,14 @@ class NodeChain {
   async init(track: MediaStreamTrack): Promise<MediaStream> {
     const stream = new MediaStream([track]);
 
+    this.mutedAudio.srcObject = stream;
+    this.mutedAudio.play();
+
     this.gain = window.audioContext.createGain();
     this.stereoPanner = window.audioContext.createStereoPanner();
     this.compressor = window.audioContext.createDynamicsCompressor();
     this.source = window.audioContext.createMediaStreamSource(stream);
     this.destination = window.audioContext.createMediaStreamDestination();
-
-    // Apparently this is required due to a Chromium bug!
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
-    // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
-    const mutedAudio = new Audio();
-    mutedAudio.muted = true;
-    mutedAudio.srcObject = stream;
-    mutedAudio.play();
 
     this.source.connect(this.gain);
     this.gain.connect(this.stereoPanner);
@@ -121,6 +125,8 @@ class NodeChain {
     this.stereoPanner = null;
     this.compressor = null;
     this.loopback = null;
+    this.mutedAudio.pause();
+    this.mutedAudio.srcObject = null;
   }
 }
 
@@ -134,11 +140,10 @@ export class UserMedia {
   userName: string;
   videoDelayedPlayHandler: () => void;
 
-
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;
   private _videoPlaying = false;
-  private nodeChain: NodeChain = new NodeChain();
+  private nodeChain = new NodeChain();
   private id: string;
 
   constructor(id: string, userName: string, isLocal: boolean) {
@@ -296,9 +301,10 @@ export class UserMedia {
     const gain = this.nodeChain?.getGain();
     const pan = this.nodeChain?.getPan();
 
+    // Destroy the current node chain.
     this.nodeChain.destroy();
 
-    // Recreate audio nodes with previous gain and pan
+    // Recreate audio nodes with previous gain and pan.
     if (gain && pan) {
       this.createAudioNodes(gain, pan);
     }

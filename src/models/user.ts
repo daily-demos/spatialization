@@ -327,7 +327,7 @@ export class User extends Collider {
   }
 
   private async processUser(o: User) {
-    // If this is the local user, skip
+    // If this is the local user verify texture and skip
     if (o.id === this.id) {
       if (this.textureType === TextureType.Unknown) {
         this.setDefaultTexture();

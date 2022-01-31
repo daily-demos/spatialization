@@ -168,7 +168,7 @@ export class World {
 
   initRemoteParticpant(sessionID: string, userName: string) {
     // User may have been created as part of an out of order
-    // update. If it already exists, just update the name
+    // update.
     let user = this.getUser(sessionID);
     if (!user) {
       user = this.createUser(sessionID, -10000, -10000, userName);
@@ -189,7 +189,7 @@ export class World {
     const worldCenter = defaultWorldSize / 2;
 
     // These position constraints are largely arbitrary;
-    // I just felt with what spawning area "feels" right.
+    // I just went with what spawning area "feels" right.
     const p = {
       x: rand(worldCenter - 300, worldCenter + 300),
       y: rand(worldCenter - 250, worldCenter + 250),
