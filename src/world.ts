@@ -464,7 +464,7 @@ export class World {
       newX += s;
     });
 
-    // If no keys were pressed, the coordintates remain
+    // If no keys were pressed, the coordinates remain
     // identical. Early out, nothing more to do.
     if (newX === currentPos.x && newY === currentPos.y) {
       return;
