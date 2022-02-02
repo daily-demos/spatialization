@@ -2,6 +2,8 @@
 
 This demo shows one way to implement a video and audio call application with gamified spatialization elements using [Daily's call object](https://docs.daily.co/guides/products/call-object).
 
+You can find a [tutorial series based on this demo](https://www.daily.co/blog/tag/spatialization/) on the Daily blog.
+
 ![Spatial video demo showing 2D world elements](./screenshot.png)
 
 ## Getting set up with Daily

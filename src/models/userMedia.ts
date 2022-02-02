@@ -1,7 +1,11 @@
+import { TilingSprite } from "pixi.js";
 import {
-  StereoPannerNode,
   AudioContext,
-  GainNode,
+  IMediaStreamAudioDestinationNode,
+  IGainNode,
+  IStereoPannerNode,
+  IDynamicsCompressorNode,
+  IMediaStreamAudioSourceNode,
 } from "standardized-audio-context";
 import { standardTileSize } from "../config";
 import { Loopback } from "../util/loopback";
@@ -23,28 +27,124 @@ export enum Action {
 const isChrome: boolean = !!(navigator.userAgent.indexOf("Chrome") !== -1);
 console.log("IsChrome", isChrome);
 
+// NodeChain is responsible for creating, destroying, and connecting our
+// Web Audio API nodes.
+class NodeChain {
+  initialized: boolean;
+
+  private source: IMediaStreamAudioSourceNode<AudioContext>;
+  private destination: IMediaStreamAudioDestinationNode<AudioContext>;
+  private gain: IGainNode<AudioContext>;
+  private stereoPanner: IStereoPannerNode<AudioContext>;
+  private compressor: IDynamicsCompressorNode<AudioContext>;
+  private loopback: Loopback;
+  // Apparently this is required due to a Chromium bug!
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+  // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
+  private mutedAudio: HTMLAudioElement;
+
+  constructor() {
+    this.mutedAudio = new Audio();
+    this.mutedAudio.muted = true;
+  }
+
+  getGain(): number {
+    return this.gain?.gain.value;
+  }
+
+  updateGain(val: number) {
+    if (this.gain.gain.value === val) return;
+    try {
+      this.gain.gain.setValueAtTime(val, window.audioContext.currentTime);
+    } catch (e) {
+      console.error(`failed to update gain: ${e} (gain value: ${val})`);
+    }
+  }
+
+  getPan(): number {
+    return this.stereoPanner?.pan.value;
+  }
+
+  updatePan(val: number) {
+    if (this.stereoPanner.pan.value === val) return;
+    try {
+      this.stereoPanner.pan.setValueAtTime(
+        val,
+        window.audioContext.currentTime
+      );
+    } catch (e) {
+      console.error(`failed to update pan: ${e} (pan value: ${val})`);
+    }
+  }
+
+  async init(track: MediaStreamTrack): Promise<MediaStream> {
+    const stream = new MediaStream([track]);
+
+    this.mutedAudio.srcObject = stream;
+    this.mutedAudio.play();
+
+    this.gain = window.audioContext.createGain();
+    this.stereoPanner = window.audioContext.createStereoPanner();
+    this.compressor = window.audioContext.createDynamicsCompressor();
+    this.source = window.audioContext.createMediaStreamSource(stream);
+    this.destination = window.audioContext.createMediaStreamDestination();
+
+    this.source.connect(this.gain);
+    this.gain.connect(this.stereoPanner);
+    this.stereoPanner.connect(this.compressor);
+    this.compressor.connect(this.destination);
+
+    let srcStream: MediaStream;
+
+    // This is a workaround for there being no noise cancellation
+    // when using Web Audio API in Chrome (another bug):
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
+    if (isChrome) {
+      this.loopback = new Loopback();
+      await this.loopback.start(this.destination.stream);
+      srcStream = this.loopback.getLoopback();
+    } else {
+      srcStream = this.destination.stream;
+    }
+    this.initialized = true;
+    return srcStream;
+  }
+
+  destroy() {
+    if (!this.initialized) return;
+    this.initialized = false;
+    this.source.disconnect();
+    this.destination.disconnect();
+    this.gain.disconnect();
+    this.stereoPanner.disconnect();
+    this.compressor.disconnect();
+    this.loopback?.destroy();
+    this.source = null;
+    this.destination = null;
+    this.gain = null;
+    this.stereoPanner = null;
+    this.compressor = null;
+    this.loopback = null;
+    this.mutedAudio.pause();
+    this.mutedAudio.srcObject = null;
+  }
+}
+
 // UserMedia holds all audio and video related tags,
 // streams, and panners for a user.
 export class UserMedia {
+  videoTag: HTMLVideoElement;
+  audioTag: HTMLAudioElement;
+  cameraDisabled: boolean;
+  currentAction: Action = Action.Traversing;
+  userName: string;
+  videoDelayedPlayHandler: () => void;
+
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;
   private _videoPlaying = false;
-
-  videoTag: HTMLVideoElement;
-  audioTag: HTMLAudioElement;
-
-  videoDelayedPlayHandler: () => void;
-
-  cameraDisabled: boolean;
-  tileDisabled: boolean;
-
-  gainNode: GainNode<AudioContext>;
-  stereoPannerNode: StereoPannerNode<AudioContext>;
-
-  currentAction: Action = Action.Traversing;
-  id: string;
-  userName: string;
-  loopback: Loopback;
+  private nodeChain = new NodeChain();
+  private id: string;
 
   constructor(id: string, userName: string, isLocal: boolean) {
     this.id = id;
@@ -98,7 +198,6 @@ export class UserMedia {
 
   private async registerPlay() {
     while (this.videoTag.currentTime === 0) {
-      console.log("still waiting for timestamp: ", this.videoTag.currentTime);
       await new Promise((r) => setTimeout(r, 10));
     }
     this.videoPlaying = true;
@@ -153,6 +252,10 @@ export class UserMedia {
 
   updateVideoSource(newTrack: MediaStreamTrack) {
     if (!newTrack) {
+      // If the update was called with no valid video track,
+      // we take that as the camera being disabled. If the user
+      // is in a focus zone or broadcasting, update their
+      // focus tiles accordingly.
       this.cameraDisabled = true;
       if (this.currentAction === Action.InZone) {
         this.showOrUpdateZonemate();
@@ -163,12 +266,17 @@ export class UserMedia {
       }
       return;
     }
+    // If there is a valid video track, we know the camera
+    // is not disabled.
     this.cameraDisabled = false;
+    // Only replace the track if the track ID has changed.
     if (newTrack.id !== this.videoTrack?.id) {
       this.videoTrack = newTrack;
       this.videoTag.srcObject = new MediaStream([newTrack]);
     }
 
+    // If the user is in a focus zone or broadcasting,
+    // update their focus tiles accordingly.
     if (this.currentAction === Action.InZone) {
       this.showOrUpdateZonemate();
       return;
@@ -179,27 +287,24 @@ export class UserMedia {
   }
 
   updateAudioSource(newTrack: MediaStreamTrack) {
-    if (!this.audioTag) return;
-    if (!newTrack) {
-      return;
-    }
+    if (!this.audioTag || !newTrack) return;
 
     if (newTrack.id === this.audioTrack?.id) {
       return;
     }
+
     this.audioTrack = newTrack;
 
-    // Reset nodes
-    console.log("resetting audio nodes");
-    const gain = this.gainNode?.gain?.value;
-    const pan = this.stereoPannerNode?.pan?.value;
+    // The track has changed, so reset the nodes.
 
-    this.gainNode = null;
-    this.stereoPannerNode = null;
-    this.loopback?.destroy();
-    this.loopback = null;
+    // Save current gain and pan values, if any.
+    const gain = this.nodeChain?.getGain();
+    const pan = this.nodeChain?.getPan();
 
-    // Recreate audio nodes with previous gain and pan
+    // Destroy the current node chain.
+    this.nodeChain.destroy();
+
+    // Recreate audio nodes with previous gain and pan.
     if (gain && pan) {
       this.createAudioNodes(gain, pan);
     }
@@ -256,38 +361,18 @@ export class UserMedia {
 
   updateAudio(gainValue: number, panValue: number) {
     if (!this.audioTag || !this.audioTrack) return;
-    if (!this.gainNode) {
+
+    if (!this.nodeChain.initialized) {
       this.createAudioNodes(gainValue, panValue);
-      return;
     }
 
-    if (this.gainNode.gain.value != gainValue) {
-      try {
-        this.gainNode.gain.setValueAtTime(
-          gainValue,
-          window.audioContext.currentTime
-        );
-      } catch (e) {
-        console.error(`failed to update gain: ${e} (gain value: ${gainValue})`);
-      }
-    }
-
-    if (this.stereoPannerNode.pan.value != panValue) {
-      try {
-        this.stereoPannerNode.pan.setValueAtTime(
-          panValue,
-          window.audioContext.currentTime
-        );
-      } catch (e) {
-        console.error(`failed to update pan: ${e} (pan value: ${panValue})`);
-      }
-    }
+    this.nodeChain.updateGain(gainValue);
+    this.nodeChain.updatePan(panValue);
   }
 
   destroy() {
     console.log("destroying media", this.id);
-    this.loopback?.destroy();
-    delete this.loopback;
+    this.nodeChain.destroy();
     this.audioTag?.remove();
     this.videoTag.oncanplay = null;
     this.videoTag.onresize = null;
@@ -298,48 +383,12 @@ export class UserMedia {
   }
 
   private async createAudioNodes(gainValue: number, panValue: number) {
-    const stream = new MediaStream([this.audioTrack]);
-
-    this.gainNode = window.audioContext.createGain();
-    this.gainNode.gain.value = gainValue;
-
-    this.stereoPannerNode = window.audioContext.createStereoPanner();
-
-    this.stereoPannerNode.pan.value = panValue;
-
-    const compressor = window.audioContext.createDynamicsCompressor();
-
-    const source = window.audioContext.createMediaStreamSource(stream);
-    const destination = window.audioContext.createMediaStreamDestination();
-
-    // Apparently this is required due to a Chromium bug!
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
-    // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
-    const mutedAudio = new Audio();
-    mutedAudio.muted = true;
-    mutedAudio.srcObject = stream;
-    mutedAudio.play();
-
-    source.connect(this.gainNode);
-    this.gainNode.connect(this.stereoPannerNode);
-    this.stereoPannerNode.connect(compressor);
-    compressor.connect(destination);
-
-    let srcStream: MediaStream;
-
-    // This is a workaround for there being no noise cancellation
-    // when using Web Audio API in Chrome (another bug):
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
-    if (isChrome) {
-      this.loopback = new Loopback();
-      await this.loopback.start(destination.stream);
-      srcStream = this.loopback.getLoopback();
-    } else {
-      srcStream = destination.stream;
-    }
+    const stream = await this.nodeChain.init(this.audioTrack);
+    this.nodeChain.updateGain(gainValue);
+    this.nodeChain.updatePan(panValue);
 
     this.audioTag.muted = false;
-    this.audioTag.srcObject = srcStream;
+    this.audioTag.srcObject = stream;
     this.audioTag.play();
   }
 

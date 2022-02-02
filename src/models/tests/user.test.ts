@@ -89,7 +89,9 @@ describe("User panner tests", () => {
     expect(pannerMod.pan).toBe(wantPan);
 
     local.processUsers([remote]);
-    expect(remote.media.stereoPannerNode.pan.value).toBe(wantPan);
+
+    const nodeChain = remote.media["nodeChain"];
+    expect(nodeChain.getPan()).toBe(wantPan);
   });
 
   test("Pan: speaker on the max left of listener", () => {
@@ -107,7 +109,9 @@ describe("User panner tests", () => {
     expect(pannerMod.pan).toBe(wantPan);
 
     local.processUsers([remote]);
-    expect(remote.media.stereoPannerNode.pan.value).toBe(wantPan);
+
+    const nodeChain = remote.media["nodeChain"];
+    expect(nodeChain.getPan()).toBe(wantPan);
   });
 
   test("Pan: speaker on the partial right of listener", () => {
@@ -124,7 +128,8 @@ describe("User panner tests", () => {
     expect(pannerMod.pan).toBe(0.5);
 
     local.processUsers([remote]);
-    expect(remote.media.stereoPannerNode.pan.value).toBe(0.5);
+    const nodeChain = remote.media["nodeChain"];
+    expect(nodeChain.getPan()).toBe(0.5);
   });
 
   test("Pan: speaker on the partial left of listener", () => {
@@ -141,7 +146,8 @@ describe("User panner tests", () => {
     expect(pannerMod.pan).toBe(-0.5);
 
     local.processUsers([remote]);
-    expect(remote.media.stereoPannerNode.pan.value).toBe(-0.5);
+    const nodeChain = remote.media["nodeChain"];
+    expect(nodeChain.getPan()).toBe(-0.5);
   });
 
   test("Pan: speaker in the center of the listener", () => {
@@ -158,7 +164,8 @@ describe("User panner tests", () => {
     expect(pannerMod.pan).toBe(0);
 
     local.processUsers([remote]);
-    expect(remote.media.stereoPannerNode.pan.value).toBe(0);
+    const nodeChain = remote.media["nodeChain"];
+    expect(nodeChain.getPan()).toBe(0);
   });
 });
 
