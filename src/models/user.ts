@@ -308,7 +308,7 @@ export class User extends Collider {
     if (aspect > 1) {
       x = resource.width / 2 - resource.height / 2;
       size = resource.height;
-    } else if (aspect > 1) {
+    } else if (aspect < 1) {
       y = resource.height / 2 - resource.width / 2;
       size = resource.width;
     } else {
