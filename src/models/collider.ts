@@ -7,7 +7,7 @@ export interface ICollider {
   hits: (other: ICollider) => boolean;
 }
 
-export interface IInteractable {
+export interface IInteractable extends ICollider {
   tryInteract: (user: User) => void;
 }
 

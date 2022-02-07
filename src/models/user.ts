@@ -1,11 +1,10 @@
-import { Collider, ICollider } from "./collider";
+import { Collider, ICollider, IInteractable } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject, MIPMAP_MODES } from "pixi.js";
 import { BroadcastZone } from "./broadcastZone";
 import { Action, UserMedia } from "./userMedia";
 import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
-import { DeskZone } from "./deskZone";
 import { broadcastZoneID, globalZoneID, standardTileSize } from "../config";
 import { clamp } from "../util/math";
 
@@ -239,7 +238,7 @@ export class User extends Collider {
 
   // "Furniture" can be any non-user colliders in the world.
   // Eg: desks or broadcast spots
-  checkFurnitures(others: Array<ICollider>) {
+  checkFurnitures(others: Array<IInteractable>) {
     for (let other of others) {
       this.checkFurniture(other);
     }
@@ -404,17 +403,8 @@ export class User extends Collider {
     }
   }
 
-  private async checkFurniture(other: ICollider) {
-    if (other instanceof BroadcastZone) {
-      const o = <BroadcastZone>other;
-      if (o) o.tryInteract(this);
-      return;
-    }
-
-    if (other instanceof DeskZone) {
-      const o = <DeskZone>other;
-      if (o) o.tryInteract(this);
-    }
+  private async checkFurniture(other: IInteractable) {
+    other.tryInteract(this);
   }
 
   private streamVideo(newTrack: MediaStreamTrack) {
@@ -439,7 +429,7 @@ export class User extends Collider {
     if (this.textureType === TextureType.Default) return;
 
     if (this.textureType === TextureType.Video) {
-      this.texture.destroy();
+      this.texture?.baseTexture?.destroy();
     }
 
     const t = Textures.get();
@@ -514,7 +504,7 @@ export class User extends Collider {
     other.setDefaultTexture();
   }
 
-  // If the video is resized, we will need to recalcualte
+  // If the video is resized, we will need to recalculate
   // the texture dimensions and mask.
   private videoTextureResized(e: UIEvent) {
     if (this.textureType === TextureType.Video) {
@@ -566,14 +556,14 @@ export class User extends Collider {
     const cont = new PIXI.Container();
     cont.x = 0;
     cont.y = 0;
-    cont.width = this.width;
-    cont.height = this.height;
+    cont.width = baseSize;
+    cont.height = baseSize;
 
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0x1f2d3d, 1);
     graphics.lineStyle(1, 0x121a24, 1);
 
-    graphics.drawRoundedRect(0, 0, this.width, this.height, 3);
+    graphics.drawRoundedRect(0, 0, baseSize, baseSize, 3);
     graphics.endFill();
     cont.addChild(graphics);
 
