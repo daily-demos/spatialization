@@ -6,7 +6,7 @@ import { rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastZone } from "./models/broadcastZone";
 import { IAudioContext, AudioContext } from "standardized-audio-context";
-import { ICollider } from "./models/collider";
+import { ICollider, IInteractable } from "./models/collider";
 import { Robot, RobotRole } from "./models/robot";
 import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
@@ -36,7 +36,7 @@ export class World {
   private furnitureContainer: PIXI.Container = null;
 
   private robots: Array<Robot> = [];
-  private furniture: Array<ICollider> = [];
+  private furniture: Array<IInteractable> = [];
 
   constructor() {
     const w = document.getElementById("world");
