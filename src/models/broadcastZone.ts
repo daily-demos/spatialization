@@ -11,10 +11,7 @@ const spotSize = standardTileSize;
 // BroadcastZone is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastZone
-  extends PIXI.Container
-  implements ICollider, IInteractable
-{
+export class BroadcastZone extends PIXI.Container implements IInteractable {
   id: number;
   name: string;
   physics: false;
@@ -79,14 +76,11 @@ export class BroadcastZone
   public tryInteract(other: User) {
     if (this.hits(other) && !this.spot.occupantID) {
       this.spot.occupantID = other.id;
-      other.media.enterBroadcast();
-      other.isInVicinity = false;
       other.updateZone(this.id);
       return;
     }
     if (other.id === this.spot.occupantID && !this.hits(other)) {
       this.spot.occupantID = null;
-      other.media.leaveBroadcast();
       other.updateZone(globalZoneID);
     }
   }

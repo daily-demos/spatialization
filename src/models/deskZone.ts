@@ -143,13 +143,15 @@ export class DeskZone
       // If the user is already registered in this spot...
       if (spot.occupantID === user.id) {
         // ...and is still in the spot, do nothing
-        if (spot.hits(user)) return;
+        if (spot.hits(user) && !hasNewSpot) return;
         // User is no longer in the spot - clear the spot
         spot.occupantID = null;
         hadPriorSpot = true;
         continue;
       }
 
+      // If this spot has no occupant but the user
+      // hits it, occupy it.
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
         user.updateZone(this.id, spot.id);
@@ -159,6 +161,8 @@ export class DeskZone
       }
     }
 
+    // If the user has just left a spot and has not
+    // joined a new one, go back to the global zone.
     if (hadPriorSpot && !hasNewSpot) {
       this.freeSeats++;
       user.updateZone(globalZoneID);
@@ -167,6 +171,7 @@ export class DeskZone
       this.freeSeats--;
     }
 
+    // Update the label text if needed.
     if (oldFreeSeats !== this.freeSeats) {
       this.updateLabel();
     }
