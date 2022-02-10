@@ -1,6 +1,6 @@
 import { rand } from "../util/math";
 import { Pos } from "../worldTypes";
-import { IInteractable } from "./collider";
+import { IZone } from "./zone";
 import { User } from "./user";
 
 export enum RobotRole {
@@ -49,10 +49,9 @@ export class Robot extends User {
     this.stepToTarget();
   }
 
-  // "Furniture" can be any non-user colliders in the world.
-  // Eg: desks or broadcast spots. This overrides the user
-  // furniture check.
-  checkFurnitures(others: Array<IInteractable>) {
+  // Focus zones include desks or broadcast spots.
+  // This overrides the user focus zone check.
+  checkFocusZones(others: Array<IZone>) {
     for (let other of others) {
       other.tryInteract(this);
     }

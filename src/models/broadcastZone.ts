@@ -2,20 +2,22 @@ import * as PIXI from "pixi.js";
 import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
 
-import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
+import { Collider, doesCollide } from "./collider";
 import { Spot } from "./spot";
 import { User } from "./user";
+import { IZone } from "./zone";
 
 const spotSize = standardTileSize;
 
 // BroadcastZone is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastZone extends PIXI.Container implements IInteractable {
-  id: number;
+export class BroadcastZone extends PIXI.Container implements IZone {
   name: string;
   physics: false;
-  spot: Spot;
+
+  private id: number;
+  private spot: Spot;
 
   constructor(id: number, x: number, y: number) {
     super();
@@ -38,12 +40,16 @@ export class BroadcastZone extends PIXI.Container implements IInteractable {
     this.sortableChildren = true;
   }
 
+  public getID(): number {
+    return this.id;
+  }
+
   public moveTo(pos: Pos) {
     this.x = pos.x;
     this.y = pos.y;
   }
 
-  public tryPlace(user: User) {
+  public tryPlace(user: User, spotID: number) {
     if (!this.spot.occupantID) {
       this.spot.occupantID = user.id;
       const np = {
@@ -54,7 +60,7 @@ export class BroadcastZone extends PIXI.Container implements IInteractable {
     }
   }
 
-  public tryUnplace(userID: string) {
+  public tryUnplace(userID: string, spotID: number = -1) {
     if (this.spot.occupantID === userID) {
       this.spot.occupantID = null;
     }

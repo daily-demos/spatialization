@@ -1,29 +1,25 @@
 import * as PIXI from "pixi.js";
 import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
-import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
+import { Collider, doesCollide } from "./collider";
 import { Desk } from "./desk";
 import { Spot } from "./spot";
 import { User } from "./user";
+import { IZone } from "./zone";
 
 const spotSize = standardTileSize;
 const spotBuffer = 20;
 
 // DeskZone is a location that holds spots, through which a user can
 // join other users in an isolated zone.
-export class DeskZone
-  extends PIXI.Container
-  implements ICollider, IInteractable
-{
+export class DeskZone extends PIXI.Container implements IZone {
   physics = true;
-  id: number;
 
+  private id: number;
   private desk: Desk;
   private spots: Array<Spot> = [];
   private freeSeats: number;
-
-  staticBounds: PIXI.Rectangle;
-
+  private staticBounds: PIXI.Rectangle;
   private zoneMarker: PIXI.Graphics;
   private labelGraphics: PIXI.Text;
 
@@ -74,6 +70,10 @@ export class DeskZone
     this.createZoneMarker();
     this.createLabel();
     this.sortableChildren = true;
+  }
+
+  public getID(): number {
+    return this.id;
   }
 
   public getSpots(): Array<Spot> {

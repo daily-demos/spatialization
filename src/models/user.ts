@@ -1,12 +1,12 @@
-import { Collider, ICollider, IInteractable } from "./collider";
+import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject, MIPMAP_MODES } from "pixi.js";
-import { BroadcastZone } from "./broadcastZone";
 import { Action, UserMedia } from "./userMedia";
 import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
 import { broadcastZoneID, globalZoneID, standardTileSize } from "../config";
 import { clamp } from "../util/math";
+import { IZone } from "./zone";
 
 const minAlpha = 0.2;
 const inZoneAlpha = 0.5;
@@ -259,11 +259,10 @@ export class User extends Collider {
     }
   }
 
-  // "Furniture" can be any non-user colliders in the world.
-  // Eg: desks or broadcast spots
-  checkFurnitures(others: Array<IInteractable>) {
+  // "Focus zones" can be anything that implements IZone
+  checkFocusZones(others: Array<IZone>) {
     for (let other of others) {
-      this.checkFurniture(other);
+      other.tryInteract(this);
     }
   }
 
@@ -424,10 +423,6 @@ export class User extends Collider {
       o.media.muteAudio();
       return;
     }
-  }
-
-  private async checkFurniture(other: IInteractable) {
-    other.tryInteract(this);
   }
 
   private streamVideo(newTrack: MediaStreamTrack) {
