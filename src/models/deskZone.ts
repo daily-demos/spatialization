@@ -26,8 +26,8 @@ export class DeskZone extends PIXI.Container implements IZone {
   constructor(id: number, name: string, numSpots: number, pos: Pos) {
     super();
 
-    if (this.id === 0) {
-      throw new Error("ID 0 is a reserved default zone ID");
+    if (id === globalZoneID) {
+      throw new Error(`ID ${id} is a reserved default zone ID`);
     }
     this.id = id;
     this.name = name;
@@ -139,6 +139,7 @@ export class DeskZone extends PIXI.Container implements IZone {
     let hadPriorSpot: boolean;
     let hasNewSpot: boolean;
     const oldFreeSeats = this.freeSeats;
+
     for (let spot of this.spots) {
       // If the user is already registered in this spot...
       if (spot.occupantID === user.id) {

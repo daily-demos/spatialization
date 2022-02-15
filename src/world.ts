@@ -127,15 +127,15 @@ export class World {
     // communicated zone and spot as needed. "Placement" does not impact
     // user behavior itself (that is done via `user.updateZone()` above).
     // Placement affects zone spot occupation status and remote positioning.
-    for (let item of this.focusZones) {
-      if (oldZoneID === item.getID()) {
-        item.tryUnplace(user.id, oldSpotID);
+    for (let zone of this.focusZones) {
+      if (oldZoneID === zone.getID()) {
+        zone.tryUnplace(user.id, oldSpotID);
         // If the new zone is the global zone, don't bother
         // checking for any further placement.
         if (zoneID === globalZoneID) return;
       }
-      if (zoneID === item.getID()) {
-        item.tryPlace(user, spotID);
+      if (zoneID === zone.getID()) {
+        zone.tryPlace(user, spotID);
       }
     }
   }

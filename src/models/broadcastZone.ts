@@ -49,7 +49,7 @@ export class BroadcastZone extends PIXI.Container implements IZone {
     this.y = pos.y;
   }
 
-  public tryPlace(user: User, spotID: number) {
+  public tryPlace(user: User, _: number) {
     if (!this.spot.occupantID) {
       this.spot.occupantID = user.id;
       const np = {
@@ -60,7 +60,7 @@ export class BroadcastZone extends PIXI.Container implements IZone {
     }
   }
 
-  public tryUnplace(userID: string, spotID: number = -1) {
+  public tryUnplace(userID: string, _: number = -1) {
     if (this.spot.occupantID === userID) {
       this.spot.occupantID = null;
     }
