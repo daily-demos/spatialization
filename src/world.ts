@@ -6,7 +6,7 @@ import { rand } from "./util/math";
 import Floor from "./models/floor";
 import { BroadcastZone } from "./models/broadcastZone";
 import { IAudioContext, AudioContext } from "standardized-audio-context";
-import { ICollider, IInteractable } from "./models/collider";
+import { IZone } from "./models/zone";
 import { Robot, RobotRole } from "./models/robot";
 import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
@@ -33,10 +33,10 @@ export class World {
   private app: PIXI.Application = null;
   private worldContainer: PIXI.Container = null;
   private usersContainer: PIXI.Container = null;
-  private furnitureContainer: PIXI.Container = null;
+  private focusZonesContainer: PIXI.Container = null;
 
   private robots: Array<Robot> = [];
-  private furniture: Array<IInteractable> = [];
+  private focusZones: Array<IZone> = [];
 
   constructor() {
     const w = document.getElementById("world");
@@ -60,7 +60,7 @@ export class World {
     this.app.stage.addChild(frame);
 
     // Main world container, which will hold user
-    // and furniture containers.
+    // and focus zones containers.
     this.worldContainer = new PIXI.Container();
     this.worldContainer.width = defaultWorldSize;
     this.worldContainer.height = defaultWorldSize;
@@ -78,13 +78,13 @@ export class World {
     this.usersContainer.zIndex = 100;
     this.worldContainer.addChild(this.usersContainer);
 
-    // Container that will hold our room "furniture" elements,
+    // Container that will hold our room focus zone elements,
     // like broadcast spots
-    this.furnitureContainer = new PIXI.Container();
-    this.furnitureContainer.zIndex = 90;
-    this.furnitureContainer.width = this.worldContainer.width;
-    this.furnitureContainer.height = this.worldContainer.height;
-    this.worldContainer.addChild(this.furnitureContainer);
+    this.focusZonesContainer = new PIXI.Container();
+    this.focusZonesContainer.zIndex = 90;
+    this.focusZonesContainer.width = this.worldContainer.width;
+    this.focusZonesContainer.height = this.worldContainer.height;
+    this.worldContainer.addChild(this.focusZonesContainer);
 
     document.getElementById("world").appendChild(this.app.view);
   }
@@ -123,45 +123,19 @@ export class World {
       this.sendPosDataToParticipant(sessionID);
     }
 
-    let handledOldPlacement = false;
-    let handledNewPlacement = false;
-
-    // Iterate through all furniture and try to place/unplace user in
+    // Iterate through all focus zones and try to place/unplace user in
     // communicated zone and spot as needed. "Placement" does not impact
     // user behavior itself (that is done via `user.updateZone()` above).
     // Placement affects zone spot occupation status and remote positioning.
-    if (zoneID === broadcastZoneID) {
-      for (let item of this.furniture) {
-        if (item instanceof BroadcastZone) {
-          item.tryPlace(user);
-        }
+    for (let zone of this.focusZones) {
+      if (oldZoneID === zone.getID()) {
+        zone.tryUnplace(user.id, oldSpotID);
+        // If the new zone is the global zone, don't bother
+        // checking for any further placement.
+        if (zoneID === globalZoneID) return;
       }
-    } else if (oldZoneID === broadcastZoneID) {
-      for (let item of this.furniture) {
-        if (item instanceof BroadcastZone) {
-          item.tryUnplace(user.id);
-        }
-      }
-    }
-
-    for (let item of this.furniture) {
-      if (item instanceof DeskZone) {
-        if (item.id === oldZoneID) {
-          item.tryUnplace(user.id, oldSpotID);
-          // If the remote user has moved to the global zone, just
-          // unplace them from previous zone and return
-          if (zoneID === globalZoneID) return;
-          handledOldPlacement = true;
-        }
-        if (
-          zoneID !== globalZoneID &&
-          !handledNewPlacement &&
-          item.id === zoneID
-        ) {
-          item.tryPlace(user, spotID);
-          if (handledOldPlacement || oldZoneID === globalZoneID) return;
-          handledNewPlacement = true;
-        }
+      if (zoneID === zone.getID()) {
+        zone.tryPlace(user, spotID);
       }
     }
   }
@@ -198,10 +172,10 @@ export class World {
     const user = this.createUser(sessionID, p.x, p.y, "You", true);
     // This will render the world and allow us to cross
     // check collision, to make sure the local user is not
-    // colliding with furniture.
+    // colliding with focus zones.
     this.app.render();
 
-    // Make sure we aren't colliding with any furniture,
+    // Make sure we aren't colliding with any focus zones,
     // reposition if so.
     this.getFinalLocalPos(user);
 
@@ -256,8 +230,8 @@ export class World {
       x: defaultWorldSize / 2 - zoneBroadcast.width / 2,
       y: zoneBroadcast.y,
     });
-    this.furnitureContainer.addChild(zoneBroadcast);
-    this.furniture.push(zoneBroadcast);
+    this.focusZonesContainer.addChild(zoneBroadcast);
+    this.focusZones.push(zoneBroadcast);
 
     // Create two desk zones
     const yPos = defaultWorldSize / 2 + 325;
@@ -266,13 +240,13 @@ export class World {
       x: defaultWorldSize / 2 - zone1.width - zoneBroadcast.width,
       y: zone1.y,
     });
-    this.furnitureContainer.addChild(zone1);
-    this.furniture.push(zone1);
+    this.focusZonesContainer.addChild(zone1);
+    this.focusZones.push(zone1);
 
     const zone2 = new DeskZone(2, "Kangaroo", 4, { x: 0, y: yPos });
     zone2.moveTo({ x: defaultWorldSize / 2 + zoneBroadcast.width, y: zone2.y });
-    this.furnitureContainer.addChild(zone2);
-    this.furniture.push(zone2);
+    this.focusZonesContainer.addChild(zone2);
+    this.focusZones.push(zone2);
   }
 
   createRobot(userID: string) {
@@ -298,7 +272,7 @@ export class World {
     if (!foundDesk) {
       role = RobotRole.Desk;
       // Find a desk position
-      for (let item of this.furnitureContainer.children) {
+      for (let item of this.focusZonesContainer.children) {
         if (item instanceof DeskZone) {
           const desk = <DeskZone>item;
 
@@ -312,7 +286,7 @@ export class World {
     if (!foundBroadcast) {
       role = RobotRole.Broadcast;
       // Find a broadcast position
-      for (let item of this.furnitureContainer.children) {
+      for (let item of this.focusZonesContainer.children) {
         if (item instanceof BroadcastZone) {
           const spot = <BroadcastZone>item;
           persistentPos = { x: spot.x, y: spot.y };
@@ -369,7 +343,7 @@ export class World {
   }
 
   private getFinalLocalPos(user: User): void {
-    for (let item of this.furniture) {
+    for (let item of this.focusZones) {
       let doesHit = false;
       if (item instanceof DeskZone) {
         const z = <DeskZone>item;
@@ -384,7 +358,7 @@ export class World {
       if (!doesHit) continue;
 
       console.log(
-        "User will hit furniture; finding new position:",
+        "User will hit focus zone; finding new position:",
         user.getPos()
       );
 
@@ -408,11 +382,11 @@ export class World {
     // Update all robots
     for (let robot of this.robots) {
       robot.update();
-      robot.checkFurnitures(this.furniture);
+      robot.checkFocusZones(this.focusZones);
     }
 
     this.localUser.processUsers(this.usersContainer.children);
-    this.localUser.checkFurnitures(this.furniture);
+    this.localUser.checkFocusZones(this.focusZones);
     this.checkNavigation(delta);
   }
 
@@ -472,11 +446,11 @@ export class World {
     // If the user moved, move them to the new coordinates.
     this.localUser.moveTo({ x: newX, y: newY });
 
-    // Iterate over all furniture and, if the new position
+    // Iterate over all focus zones and, if the new position
     // results in them colliding with an object that has
     // physics enabled, reset their pos to their previous
     // position and return.
-    for (let o of this.furniture) {
+    for (let o of this.focusZones) {
       if (o.physics && o.hits(this.localUser)) {
         this.localUser.moveTo(currentPos);
         return;
@@ -549,7 +523,7 @@ export class World {
   destroy() {
     Textures.destroy();
     this.localUser = null;
-    this.furniture = [];
+    this.focusZones = [];
     this.robots = [];
     this.app.destroy(true, true);
   }
