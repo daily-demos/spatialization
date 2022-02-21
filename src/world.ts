@@ -252,14 +252,12 @@ export class World {
   createRobot(userID: string) {
     console.log("Creating Robot", userID);
 
-    // Check if there is aleady a desk robot
-    let role = RobotRole.Desk;
     let foundDesk = false;
     let foundBroadcast = false;
-    let persistentPos: Pos;
+
+    // Check if we already have a desk and broadcast robot
     for (let robot of this.robots) {
       if (robot.role === RobotRole.Desk) {
-        // Desk robot already exist - revert to world
         foundDesk = true;
         continue;
       }
@@ -269,13 +267,19 @@ export class World {
       }
     }
 
+    // World traversal is the default robot role
+    let role = RobotRole.World;
+
+    // A persistent position that this robot will keep
+    // coming back to.
+    let persistentPos: Pos;
+
+    // Try to find a desk to assign this robot to
     if (!foundDesk) {
-      role = RobotRole.Desk;
-      // Find a desk position
       for (let item of this.focusZonesContainer.children) {
         if (item instanceof DeskZone) {
           const desk = <DeskZone>item;
-
+          role = RobotRole.Desk;
           const spot = desk.getSpots()[0];
           persistentPos = { x: desk.x + spot.x, y: desk.y + spot.y };
           break;
@@ -283,11 +287,12 @@ export class World {
       }
     }
 
-    if (!foundBroadcast) {
-      role = RobotRole.Broadcast;
+    // Try to find a broadcast spot to assign this robot to
+    if (!foundBroadcast && !persistentPos) {
       // Find a broadcast position
       for (let item of this.focusZonesContainer.children) {
         if (item instanceof BroadcastZone) {
+          role = RobotRole.Broadcast;
           const spot = <BroadcastZone>item;
           persistentPos = { x: spot.x, y: spot.y };
           break;
@@ -295,21 +300,17 @@ export class World {
       }
     }
 
-    if (!persistentPos) {
-      role = RobotRole.World;
-    }
+    // Instantiate the robot with its ID, the size of the world,
+    // and its role.
+    const robot = new Robot(userID, defaultWorldSize, defaultWorldSize, role);
 
-    const robot = new Robot(
-      userID,
-      userID,
-      defaultWorldSize,
-      defaultWorldSize,
-      role
-    );
     if (persistentPos) {
       robot.persistentPos = persistentPos;
     }
     this.robots.push(robot);
+
+    // Robot are just an extension of User, so
+    // we add them to the same display container.
     this.usersContainer.addChild(robot);
   }
 
