@@ -54,7 +54,9 @@ export class User extends Collider {
     isLocal = false,
     onEnterVicinity: Function = null,
     onLeaveVicinity: Function = null,
-    onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null
+    onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null,
+    emoji: string = null,
+    gradientTextureName: string = null
   ) {
     super();
     this.media = new UserMedia(id, userName, isLocal);
@@ -91,6 +93,13 @@ export class User extends Collider {
     this.staticBounds = new PIXI.Rectangle(0, 0, baseSize, baseSize);
     if (this.userName) {
       this.createNameGraphics();
+    }
+
+    if (emoji) {
+      this.emoji = emoji;
+    }
+    if (gradientTextureName) {
+      this.gradientTextureName = gradientTextureName;
     }
 
     this.setDefaultTexture();
