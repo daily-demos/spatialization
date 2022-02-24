@@ -23,18 +23,15 @@ export class Robot extends User {
     maxY: number,
     role: RobotRole = RobotRole.World
   ) {
-    super(
-      userID,
-      userID,
-      0,
-      0,
-      false,
-      null,
-      null,
-      null,
-      "🤖",
-      "robot-gradient"
-    );
+    const args = {
+      id: userID,
+      userName: userID,
+      x: 0,
+      y: 0,
+      emoji: "🤖",
+      gradientTextureName: "robot-gradient",
+    };
+    super(args);
     this.targetPos = { x: 0, y: 0 };
     this.maxCoords = { x: maxX, y: maxY };
     this.role = role;

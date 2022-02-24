@@ -9,11 +9,11 @@ describe("User panner tests", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const local = new User("local", null, 100, 100, true);
+    const local = new User({ id: "local", x: 100, y: 100, isLocal: true });
     local["earshotDistance"] = 100;
     local["zoneData"].zoneID = globalZoneID;
 
-    const remote = new User("remote", null, 200, 100);
+    const remote = new User({ id: "remote", x: 200, y: 100 });
     remote.media["audioTrack"] = new MediaStreamTrack();
     remote["zoneData"].zoneID = globalZoneID;
 
@@ -31,10 +31,10 @@ describe("User panner tests", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const local = new User("local", null, 100, 100, true);
+    const local = new User({ id: "local", x: 100, y: 100, isLocal: true });
     local["earshotDistance"] = 100;
 
-    const remote = new User("remote", null, 0, 100);
+    const remote = new User({ id: "remote", x: 0, y: 100 });
     remote.media["audioTrack"] = new MediaStreamTrack();
 
     const wantPan = -1;
@@ -51,10 +51,10 @@ describe("User panner tests", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const local = new User("local", null, 100, 100, true);
+    const local = new User({ id: "local", x: 100, y: 100, isLocal: true });
     local["earshotDistance"] = 100;
 
-    const remote = new User("remote", null, 150, 100);
+    const remote = new User({ id: "remote", x: 150, y: 100 });
     remote.media["audioTrack"] = new MediaStreamTrack();
 
     const pannerMod = local["getAudioMod"](50, remote.getPos());
@@ -69,10 +69,10 @@ describe("User panner tests", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const local = new User("local", null, 100, 100, true);
+    const local = new User({ id: "local", x: 100, y: 100, isLocal: true });
     local["earshotDistance"] = 100;
 
-    const remote = new User("remote", null, 50, 100);
+    const remote = new User({ id: "remote", x: 50, y: 100 });
     remote.media["audioTrack"] = new MediaStreamTrack();
 
     const pannerMod = local["getAudioMod"](50, remote.getPos());
@@ -87,10 +87,10 @@ describe("User panner tests", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
 
-    const local = new User("local", null, 100, 100, true);
+    const local = new User({ id: "local", x: 100, y: 100, isLocal: true });
     local["earshotDistance"] = 100;
 
-    const remote = new User("remote", null, 100, 199);
+    const remote = new User({ id: "remote", x: 100, y: 199 });
     remote.media["audioTrack"] = new MediaStreamTrack();
 
     const pannerMod = local["getAudioMod"](100, remote.getPos());

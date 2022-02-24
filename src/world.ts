@@ -329,16 +329,17 @@ export class World {
       onLeaveVicinity = this.unsubFromTracks;
       onJoinZone = this.onJoinZone;
     }
-    const user = new User(
-      userID,
-      userName,
-      x,
-      y,
-      isLocal,
-      onEnterVicinity,
-      onLeaveVicinity,
-      onJoinZone
-    );
+    const args = {
+      id: userID,
+      userName: userName,
+      x: x,
+      y: y,
+      isLocal: isLocal,
+      onEnterVicinity: onEnterVicinity,
+      onLeaveVicinity: onLeaveVicinity,
+      onJoinZone: onJoinZone,
+    };
+    const user = new User(args);
     this.usersContainer.addChild(user);
     return user;
   }

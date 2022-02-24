@@ -5,10 +5,20 @@ import { User } from "../user";
 
 describe("User zone tests", () => {
   test("Users enter and leave proximity", () => {
-    const lu = new User("local", null, 100, 100, true);
+    const lu = new User({
+      id: "local",
+      x: 100,
+      y: 100,
+      isLocal: true,
+    });
     lu["earshotDistance"] = 300;
 
-    const ru = new User("remote", null, 200, 200, false);
+    const ru = new User({
+      id: "remote",
+      x: 200,
+      y: 200,
+      isLocal: false,
+    });
     // Right now, both users are in the same zone and within
     // earshot distance. So they should be in the same vicinity
     // and earshot.
@@ -24,10 +34,16 @@ describe("User zone tests", () => {
   });
 
   test("Remote user leaves default zone", () => {
-    const lu = new User("local", null, 100, 100, true);
+    const lu = new User({
+      id: "local",
+      userName: null,
+      x: 100,
+      y: 100,
+      isLocal: true,
+    });
     lu["earshotDistance"] = 300;
 
-    const ru = new User("remote", null, 200, 200, false);
+    const ru = new User({ id: "remote", userName: null, x: 200, y: 200 });
 
     ru.updateZone(1);
     expect(ru.getZoneData().zoneID).toBe(1);
@@ -41,10 +57,16 @@ describe("User zone tests", () => {
   });
 
   test("Local user joins non-default zone", () => {
-    const lu = new User("local", null, 100, 100, true);
+    const lu = new User({
+      id: "local",
+      userName: null,
+      x: 100,
+      y: 100,
+      isLocal: true,
+    });
     lu["earshotDistance"] = 300;
 
-    const ru = new User("remote", null, 1000, 1000, false);
+    const ru = new User({ id: "remote", userName: null, x: 1000, y: 1000 });
     ru.updateZone(2);
     lu.updateZone(2);
 
