@@ -309,7 +309,7 @@ export class World {
     }
     this.robots.push(robot);
 
-    // Robot are just an extension of User, so
+    // Robot is just an extension of User, so
     // we add them to the same display container.
     this.usersContainer.addChild(robot);
   }
