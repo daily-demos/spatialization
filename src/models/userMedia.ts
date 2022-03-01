@@ -1,4 +1,3 @@
-import { TilingSprite } from "pixi.js";
 import {
   AudioContext,
   IMediaStreamAudioDestinationNode,
@@ -25,7 +24,6 @@ export enum Action {
 }
 
 const isChrome: boolean = !!(navigator.userAgent.indexOf("Chrome") !== -1);
-console.log("IsChrome", isChrome);
 
 // NodeChain is responsible for creating, destroying, and connecting our
 // Web Audio API nodes.

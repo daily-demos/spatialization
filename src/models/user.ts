@@ -20,6 +20,19 @@ enum TextureType {
   Video,
 }
 
+export type UserArgs = {
+  id: string;
+  userName?: string;
+  x: number;
+  y: number;
+  isLocal?: boolean;
+  onEnterVicinity?: Function;
+  onLeaveVicinity?: Function;
+  onJoinZone?: (zoneData: ZoneData, recipient?: string) => void;
+  emoji?: string;
+  gradientTextureName?: string;
+};
+
 // User is a participant in the world (and the call)
 export class User extends Collider {
   id: string;
@@ -46,18 +59,9 @@ export class User extends Collider {
   private nameGraphics: PIXI.Text;
   private staticBounds: PIXI.Rectangle;
 
-  constructor(
-    id: string,
-    userName: string,
-    x: number,
-    y: number,
-    isLocal = false,
-    onEnterVicinity: Function = null,
-    onLeaveVicinity: Function = null,
-    onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null
-  ) {
+  constructor(args: UserArgs) {
     super();
-    this.media = new UserMedia(id, userName, isLocal);
+    this.media = new UserMedia(args.id, args.userName, args.isLocal);
     this.media.addVideoResizeHandler((e: UIEvent) => {
       this.videoTextureResized(e);
     });
@@ -66,21 +70,21 @@ export class User extends Collider {
     // How close another user needs to be to be seen/heard
     // by this user
     this.earshotDistance = earshot;
-    this.onEnterVicinity = onEnterVicinity;
-    this.onLeaveVicinity = onLeaveVicinity;
-    this.onJoinZone = onJoinZone;
-    this.isLocal = isLocal;
-    this.id = id;
-    this.userName = userName;
+    this.onEnterVicinity = args.onEnterVicinity;
+    this.onLeaveVicinity = args.onLeaveVicinity;
+    this.onJoinZone = args.onJoinZone;
+    this.isLocal = args.isLocal ?? false;
+    this.id = args.id;
+    this.userName = args.userName;
     // This field is on the Pixi base class. It is
     // different from the userName and MUST match
     // the unique ID.
-    this.name = id;
-    this.x = x;
-    this.y = y;
+    this.name = args.id;
+    this.x = args.x;
+    this.y = args.y;
     this.height = baseSize;
     this.width = baseSize;
-    if (!isLocal) {
+    if (!args.isLocal) {
       this.alpha = minAlpha;
     } else {
       this.alpha = maxAlpha;
@@ -91,6 +95,13 @@ export class User extends Collider {
     this.staticBounds = new PIXI.Rectangle(0, 0, baseSize, baseSize);
     if (this.userName) {
       this.createNameGraphics();
+    }
+
+    if (args.emoji) {
+      this.emoji = args.emoji;
+    }
+    if (args.gradientTextureName) {
+      this.gradientTextureName = args.gradientTextureName;
     }
 
     this.setDefaultTexture();
