@@ -93,18 +93,15 @@ export class Room {
 
     registerMicBtnListener(() => {
       const current = this.callObject.participants().local.audio;
-      console.log("toggling mic to:", !current);
       this.callObject.setLocalAudio(!current);
     });
 
     registerScreenShareBtnListener(() => {
       const isSharing = this.callObject.participants().local.screen;
       if (!isSharing) {
-        console.log("starting screen share");
         this.startScreenShare();
         return;
       }
-      console.log("stopping screen share");
       this.stopScreenShare();
     });
 
@@ -374,7 +371,6 @@ export class Room {
     const vt = <{ [key: string]: any }>tracks.video;
     const at = <{ [key: string]: any }>tracks.audio;
     const st = <{ [key: string]: any }>tracks.screenVideo;
-    console.log("ST:", st);
 
     const videoTrack =
       vt?.state === playableState ? vt["persistentTrack"] : null;
@@ -383,7 +379,6 @@ export class Room {
     const screenTrack =
       st?.state === playableState ? st["persistentTrack"] : null;
 
-    console.log("screenTrack:", screenTrack);
     return {
       video: videoTrack,
       audio: audioTrack,

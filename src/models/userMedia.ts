@@ -319,7 +319,6 @@ export class UserMedia {
   }
 
   updateScreenSource(newTrack: MediaStreamTrack) {
-    console.log("updating screen source", this.userName, newTrack);
     if (newTrack) {
       showScreenShare(this.id, this.userName, newTrack);
       return;

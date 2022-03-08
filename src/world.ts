@@ -98,12 +98,10 @@ export class World {
   ) {
     const user = this.getUser(id);
     if (user) {
-      console.log("updateUser called", user, screen);
       user.updateTracks(video, audio, screen);
       if (!user.isLocal) {
         user.setUserName(name);
         if (screen && user.isZonemate(this.localUser)) {
-          console.log("disabling screen btn");
           enableScreenBtn(false);
         }
       }

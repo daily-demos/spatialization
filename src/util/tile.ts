@@ -25,7 +25,6 @@ export function showBroadcast(
 }
 
 export function stopBroadcast() {
-  console.log("Stopping broadcast");
   broadcastDiv.style.visibility = "hidden";
   broadcastVideo.srcObject = null;
   broadcastDiv.draggable = false;
@@ -99,7 +98,6 @@ export function showScreenShare(
   name: string,
   videoTrack?: MediaStreamTrack
 ) {
-  console.log("SHOWING screen share", name, videoTrack);
   let screenShare = <HTMLDivElement>(
     document.getElementById(getScreenShareTagID(sessionID))
   );

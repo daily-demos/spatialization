@@ -138,9 +138,6 @@ export class User extends Collider {
     audioTrack: MediaStreamTrack = null,
     screenTrack: MediaStreamTrack = null
   ) {
-    if (!this.isLocal) {
-      console.log("user updateTracks()", screenTrack);
-    }
     this.streamVideo(videoTrack);
     if (!this.isLocal) {
       this.streamAudio(audioTrack);

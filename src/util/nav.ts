@@ -83,7 +83,6 @@ export function updateScreenBtn(
   screenOn: boolean,
   disableBtn: boolean = false
 ) {
-  console.log("updating screen btn", screenOn, disableBtn);
   if (screenOn && !toggleScreenBtn.classList.contains("screen-on")) {
     toggleScreenBtn.classList.remove("screen-off");
     toggleScreenBtn.classList.add("screen-on");
