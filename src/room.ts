@@ -233,8 +233,8 @@ export class Room {
         this.setBandwidth(BandwidthLevel.Tile);
         if (this.localState.screen) {
           this.stopScreenShare();
-          enableScreenBtn(false);
         }
+        enableScreenBtn(false);
       } else {
         this.setBandwidth(BandwidthLevel.Focus);
         enableScreenBtn(true);
@@ -425,6 +425,9 @@ export class Room {
 
   private stopScreenShare() {
     this.callObject.stopScreenShare();
+    // We call the above for good measure, BUT daily-js only stops
+    // daily-managed track. Since we got our screen track ourselves,
+    // we must call stop on it manually.
     this.callObject.participants().local.screenVideoTrack?.stop();
   }
 }

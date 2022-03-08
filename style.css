@@ -185,11 +185,6 @@ body {
   cursor: pointer;
 }
 
-#controls button :disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
-}
-
 #controls .cam-on {
   background-image: url("./camera.svg");
   background-repeat: no-repeat;
@@ -215,13 +210,13 @@ body {
 }
 
 #controls .screen-off {
-  background-image: url("./camera-off.svg");
+  background-image: url("./screen-off.svg");
   background-repeat: no-repeat;
   background-position: center;
 }
 
 #controls .screen-on {
-  background-image: url("./camera-on.svg");
+  background-image: url("./screen-on.svg");
   background-repeat: no-repeat;
   background-position: center;
 }
@@ -231,6 +226,11 @@ body {
 #toggleScreen:hover {
   background-color: rgba(245, 245, 245, 0.6);
   border-radius: 5px;
+}
+
+#toggleScreenShare:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
 }
 
 #world {
