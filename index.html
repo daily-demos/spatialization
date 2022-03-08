@@ -7,7 +7,7 @@
 
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; frame-src 'self' https://*.daily.co; script-src 'self' https://unpkg.com/@daily-co/daily-js 'unsafe-eval'; connect-src https://*.daily.co https://*.pluot.blue wss:; worker-src 'self' blob:; style-src 'self' https://fonts.googleapis.com/css2; font-src 'self' https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu72xKKTU1Kvnz.woff2 https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2 https://*.gstatic.com"
+      content="default-src 'self'; frame-src 'self' https://*.daily.co; script-src 'self' 'unsafe-eval'; connect-src https://*.daily.co https://*.pluot.blue wss:; worker-src 'self' blob:; style-src 'self' https://fonts.googleapis.com/css2; font-src 'self' https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu72xKKTU1Kvnz.woff2 https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2 https://*.gstatic.com"
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -72,6 +72,11 @@
         <div id="controls">
           <button id="toggleCam"></button>
           <button id="toggleMic"></button>
+          <button
+            id="toggleScreenShare"
+            class="screen-disabled"
+            disabled
+          ></button>
           <button id="leave">Leave Call</button>
         </div>
         <div id="world"></div>
@@ -81,6 +86,7 @@
             <div id="broadcastName" class="name"></div>
           </div>
           <div id="zonemates"></div>
+          <div id="screenShares"></div>
         </div>
       </div>
     </div>

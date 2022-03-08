@@ -9,8 +9,10 @@ import {
 import { standardTileSize } from "../config";
 import { Loopback } from "../util/loopback";
 import {
+  removeScreenShare,
   removeZonemate,
   showBroadcast,
+  showScreenShare,
   showZonemate,
   stopBroadcast,
 } from "../util/tile";
@@ -316,6 +318,15 @@ export class UserMedia {
     }
   }
 
+  updateScreenSource(newTrack: MediaStreamTrack) {
+    console.log("updating screen source", this.userName, newTrack);
+    if (newTrack) {
+      showScreenShare(this.id, this.userName, newTrack);
+      return;
+    }
+    removeScreenShare(this.id);
+  }
+
   muteAudio() {
     if (!this.audioTag.muted) {
       this.audioTag.muted = true;
@@ -344,6 +355,7 @@ export class UserMedia {
   leaveZone() {
     this.currentAction = Action.Traversing;
     removeZonemate(this.id);
+    removeScreenShare(this.id);
   }
 
   enterBroadcast() {

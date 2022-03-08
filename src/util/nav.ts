@@ -24,6 +24,9 @@ export default class KeyListener {
 const joinForm = document.getElementById("enterCall");
 const toggleCamBtn = document.getElementById("toggleCam");
 const toggleMicBtn = document.getElementById("toggleMic");
+const toggleScreenBtn = <HTMLButtonElement>(
+  document.getElementById("toggleScreenShare")
+);
 
 export function registerCamBtnListener(f: () => void) {
   toggleCamBtn.addEventListener("click", f);
@@ -31,6 +34,10 @@ export function registerCamBtnListener(f: () => void) {
 
 export function registerMicBtnListener(f: () => void) {
   toggleMicBtn.addEventListener("click", f);
+}
+
+export function registerScreenShareBtnListener(f: () => void) {
+  toggleScreenBtn.addEventListener("click", f);
 }
 
 export function registerLeaveBtnListener(f: () => void) {
@@ -70,6 +77,41 @@ export function updateMicBtn(micOn: boolean) {
     toggleMicBtn.classList.remove("mic-on");
     toggleMicBtn.classList.add("mic-off");
   }
+}
+
+export function updateScreenBtn(
+  screenOn: boolean,
+  disableBtn: boolean = false
+) {
+  console.log("updating screen btn", screenOn, disableBtn);
+  if (screenOn && !toggleScreenBtn.classList.contains("screen-on")) {
+    toggleScreenBtn.classList.remove("screen-off");
+    toggleScreenBtn.classList.add("screen-on");
+    return;
+  }
+  if (!screenOn && !toggleScreenBtn.classList.contains("screen-off")) {
+    toggleScreenBtn.classList.remove("screen-on");
+    toggleScreenBtn.classList.add("screen-off");
+    if (disableBtn) {
+      enableScreenBtn(!disableBtn);
+    }
+  }
+}
+
+export function enableScreenBtn(doEnable: boolean) {
+  if (toggleScreenBtn.classList.contains("screen-on")) {
+    console.warn(
+      "Unable to disable screen button while user is sharing their screen"
+    );
+    return;
+  }
+  if (doEnable) {
+    toggleScreenBtn.classList.remove("screen-disabled");
+    toggleScreenBtn.disabled = false;
+    return;
+  }
+  toggleScreenBtn.classList.add("screen-disabled");
+  toggleScreenBtn.disabled = true;
 }
 
 export function showWorld() {

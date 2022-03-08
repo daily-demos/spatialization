@@ -5,7 +5,6 @@ const broadcastDiv = <HTMLDivElement>document.getElementById("broadcast");
 const broadcastVideo = <HTMLVideoElement>(
   document.getElementById("broadcastVideo")
 );
-
 setupDraggableElement(broadcastDiv);
 
 export function showBroadcast(
@@ -95,10 +94,73 @@ export function removeAllZonemates() {
   zonemates.textContent = "";
 }
 
+export function showScreenShare(
+  sessionID: string,
+  name: string,
+  videoTrack?: MediaStreamTrack
+) {
+  console.log("SHOWING screen share", name, videoTrack);
+  let screenShare = <HTMLDivElement>(
+    document.getElementById(getScreenShareTagID(sessionID))
+  );
+  if (!screenShare) {
+    screenShare = createScreenShare(sessionID, name);
+  }
+
+  const vid = <HTMLVideoElement>(
+    document.getElementById(getScreenShareVideoTagID(sessionID))
+  );
+
+  const tracks: Array<MediaStreamTrack> = [];
+  if (videoTrack) tracks.push(videoTrack);
+  if (tracks.length === 0) {
+    vid.srcObject = null;
+    return;
+  }
+  vid.srcObject = new MediaStream(tracks);
+}
+
+export function removeScreenShare(sessionID: string) {
+  const ele = document.getElementById(getScreenShareTagID(sessionID));
+  if (ele) ele.remove();
+}
+
+function createScreenShare(sessionID: string, name: string): HTMLDivElement {
+  const screenShares = document.getElementById("zonemates");
+  const zID = getScreenShareTagID(sessionID);
+  let screen = document.createElement("div");
+  screen.id = zID;
+  screen.classList.add("screen");
+  screenShares.appendChild(screen);
+
+  const nameTag = document.createElement("div");
+  nameTag.innerText = name;
+  nameTag.className = "name";
+  screen.appendChild(nameTag);
+
+  const vID = getScreenShareVideoTagID(sessionID);
+  const vid = document.createElement("video");
+  vid.classList.add("contain");
+  vid.autoplay = true;
+  vid.id = vID;
+  screen.appendChild(vid);
+  screen.draggable = true;
+  setupDraggableElement(screen);
+  return screen;
+}
+
 function getVideoTagID(sessionID: string): string {
   return `video-${sessionID}`;
 }
 
 function getZonemateTagID(sessionID: string): string {
   return `zonemate-${sessionID}`;
+}
+
+function getScreenShareTagID(sessionID: string): string {
+  return `screen-${sessionID}`;
+}
+
+function getScreenShareVideoTagID(sessionID: string): string {
+  return `video-screen-${sessionID}`;
 }

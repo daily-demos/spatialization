@@ -12,13 +12,16 @@ import {
 import { globalZoneID, standardTileSize } from "./config";
 
 import {
+  enableScreenBtn,
   registerCamBtnListener,
   registerLeaveBtnListener,
   registerMicBtnListener,
+  registerScreenShareBtnListener,
   showJoinForm,
   showWorld,
   updateCamBtn,
   updateMicBtn,
+  updateScreenBtn,
 } from "./util/nav";
 import { World } from "./world";
 import { Pos, ZoneData } from "./worldTypes";
@@ -36,6 +39,7 @@ type BroadcastData = {
 type State = {
   audio?: boolean;
   video?: boolean;
+  screen?: boolean;
 };
 
 enum BandwidthLevel {
@@ -91,6 +95,17 @@ export class Room {
       const current = this.callObject.participants().local.audio;
       console.log("toggling mic to:", !current);
       this.callObject.setLocalAudio(!current);
+    });
+
+    registerScreenShareBtnListener(() => {
+      const isSharing = this.callObject.participants().local.screen;
+      if (!isSharing) {
+        console.log("starting screen share");
+        this.startScreenShare();
+        return;
+      }
+      console.log("stopping screen share");
+      this.stopScreenShare();
     });
 
     registerLeaveBtnListener(() => {
@@ -166,6 +181,10 @@ export class Room {
       this.localState.video = p.video;
       updateCamBtn(this.localState.video);
     }
+    if (this.localState.screen != p.screen) {
+      this.localState.screen = p.screen;
+      updateScreenBtn(this.localState.screen);
+    }
   }
 
   private handleCameraError(event: DailyEventObjectCameraError) {
@@ -215,8 +234,13 @@ export class Room {
     const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
       if (zoneData.zoneID === globalZoneID) {
         this.setBandwidth(BandwidthLevel.Tile);
+        if (this.localState.screen) {
+          this.stopScreenShare();
+          enableScreenBtn(false);
+        }
       } else {
         this.setBandwidth(BandwidthLevel.Focus);
+        enableScreenBtn(true);
       }
       const data = {
         action: "zoneChange",
@@ -255,7 +279,7 @@ export class Room {
 
   private subToUserTracks(sessionID: string) {
     this.callObject.updateParticipant(sessionID, {
-      setSubscribedTracks: { audio: true, video: true, screenVideo: false },
+      setSubscribedTracks: { audio: true, video: true, screenVideo: true },
     });
   }
 
@@ -308,7 +332,13 @@ export class Room {
   private handleParticipantUpdated(event: DailyEventObjectParticipant) {
     const p = event.participant;
     const tracks = this.getParticipantTracks(p);
-    world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
+    world.updateUser(
+      p.session_id,
+      p.user_name,
+      tracks.video,
+      tracks.audio,
+      tracks.screen
+    );
     if (p.session_id === this.callObject.participants()?.local?.session_id) {
       this.updateLocal(p);
     }
@@ -339,18 +369,25 @@ export class Room {
 
   private getParticipantTracks(participant: DailyParticipant) {
     const tracks = participant?.tracks;
-    if (!tracks) return { video: null, audio: null };
+    if (!tracks) return { video: null, audio: null, screen: null };
 
     const vt = <{ [key: string]: any }>tracks.video;
     const at = <{ [key: string]: any }>tracks.audio;
+    const st = <{ [key: string]: any }>tracks.screenVideo;
+    console.log("ST:", st);
 
     const videoTrack =
       vt?.state === playableState ? vt["persistentTrack"] : null;
     const audioTrack =
       at?.state === playableState ? at["persistentTrack"] : null;
+    const screenTrack =
+      st?.state === playableState ? st["persistentTrack"] : null;
+
+    console.log("screenTrack:", screenTrack);
     return {
       video: videoTrack,
       audio: audioTrack,
+      screen: screenTrack,
     };
   }
 
@@ -373,5 +410,26 @@ export class Room {
         this.topology = Topology.SFU;
         break;
     }
+  }
+
+  private async startScreenShare() {
+    let captureStream = null;
+    const options = {
+      video: true,
+    };
+
+    try {
+      captureStream = await navigator.mediaDevices.getDisplayMedia(options);
+    } catch (err) {
+      console.error("Failed to get display media: " + err);
+    }
+    if (captureStream) {
+      this.callObject.startScreenShare({ mediaStream: captureStream });
+    }
+  }
+
+  private stopScreenShare() {
+    this.callObject.stopScreenShare();
+    this.callObject.participants().local.screenVideoTrack?.stop();
   }
 }
