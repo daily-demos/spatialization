@@ -341,7 +341,7 @@ body {
   line-height: 16px;
   color: #ffffff;
   position: absolute;
-  top: 140px;
+  top: calc(100% - 20px);
   box-sizing: border-box;
   text-align: center;
 }
@@ -363,9 +363,9 @@ body {
 }
 
 #focus .screen {
-  position: relative;
-  width: 600px;
-  height: 480px;
+  max-width: 800px;
+  display: flex;
+  justify-content: center;
 }
 
 #focus video {
