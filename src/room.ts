@@ -8,6 +8,7 @@ import {
   DailyEventObjectCameraError,
   DailyEventObjectParticipants,
   DailyEventObjectNetworkConnectionEvent,
+  DailyRoomInfo,
 } from "@daily-co/daily-js";
 import { globalZoneID, standardTileSize } from "./config";
 
@@ -94,15 +95,6 @@ export class Room {
     registerMicBtnListener(() => {
       const current = this.callObject.participants().local.audio;
       this.callObject.setLocalAudio(!current);
-    });
-
-    registerScreenShareBtnListener(() => {
-      const isSharing = this.callObject.participants().local.screen;
-      if (!isSharing) {
-        this.startScreenShare();
-        return;
-      }
-      this.stopScreenShare();
     });
 
     registerLeaveBtnListener(() => {
@@ -199,6 +191,25 @@ export class Room {
 
     // Get the local participant
     const p = event.participants["local"];
+
+    // Retrieve our room properties and check if screen sharing is enabled
+    const roomProperties = this.callObject
+      .room({ includeRoomConfigDefaults: true })
+      .then((roomInfo) => {
+        const info = roomInfo as DailyRoomInfo;
+        // If screen sharing is disabled, early out
+        if (!info || !info.config?.enable_screenshare) return;
+
+        // If screen sharing is enabled, enable our screen share controls
+        registerScreenShareBtnListener(() => {
+          const isSharing = this.callObject.participants().local.screen;
+          if (!isSharing) {
+            this.startScreenShare();
+            return;
+          }
+          this.stopScreenShare();
+        });
+      });
 
     // Retrieve the video and audio tracks of this participant
     const tracks = this.getParticipantTracks(p);

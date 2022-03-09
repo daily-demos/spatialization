@@ -221,6 +221,10 @@ body {
   background-position: center;
 }
 
+#controls .hidden {
+  display: none;
+}
+
 #toggleCam:hover,
 #toggleMic:hover,
 #toggleScreen:hover {

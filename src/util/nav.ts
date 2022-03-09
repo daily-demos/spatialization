@@ -37,6 +37,9 @@ export function registerMicBtnListener(f: () => void) {
 }
 
 export function registerScreenShareBtnListener(f: () => void) {
+  if (toggleScreenBtn.classList.contains("hidden")) {
+    toggleScreenBtn.classList.remove("hidden");
+  }
   toggleScreenBtn.addEventListener("click", f);
 }
 
@@ -92,15 +95,16 @@ export function updateScreenBtn(screenOn: boolean) {
 }
 
 export function enableScreenBtn(doEnable: boolean) {
+  if (toggleScreenBtn.classList.contains("hidden")) return;
+  if (doEnable) {
+    toggleScreenBtn.classList.remove("screen-disabled");
+    toggleScreenBtn.disabled = false;
+    return;
+  }
   if (toggleScreenBtn.classList.contains("screen-on")) {
     console.warn(
       "Unable to disable screen button while user is sharing their screen"
     );
-    return;
-  }
-  if (doEnable) {
-    toggleScreenBtn.classList.remove("screen-disabled");
-    toggleScreenBtn.disabled = false;
     return;
   }
   toggleScreenBtn.classList.add("screen-disabled");
