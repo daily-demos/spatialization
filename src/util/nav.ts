@@ -79,10 +79,7 @@ export function updateMicBtn(micOn: boolean) {
   }
 }
 
-export function updateScreenBtn(
-  screenOn: boolean,
-  disableBtn: boolean = false
-) {
+export function updateScreenBtn(screenOn: boolean) {
   if (screenOn && !toggleScreenBtn.classList.contains("screen-on")) {
     toggleScreenBtn.classList.remove("screen-off");
     toggleScreenBtn.classList.add("screen-on");
@@ -91,9 +88,6 @@ export function updateScreenBtn(
   if (!screenOn && !toggleScreenBtn.classList.contains("screen-off")) {
     toggleScreenBtn.classList.remove("screen-on");
     toggleScreenBtn.classList.add("screen-off");
-    if (disableBtn) {
-      enableScreenBtn(!disableBtn);
-    }
   }
 }
 
