@@ -7,6 +7,15 @@ const broadcastVideo = <HTMLVideoElement>(
 );
 setupDraggableElement(broadcastDiv);
 
+enum zonemateTileKind {
+  Screen = "screen",
+  Camera = "camera",
+}
+
+function getErrUnrecognizedTileKind(kind: zonemateTileKind): string {
+  return `unrecognized zonemate tile kind: ${kind}`;
+}
+
 export function showBroadcast(
   name: string,
   videoTrack?: MediaStreamTrack,
@@ -30,61 +39,61 @@ export function stopBroadcast() {
   broadcastDiv.draggable = false;
 }
 
-export function showZonemate(
+function showZonemate(
+  kind: zonemateTileKind,
+  sessionID: string,
+  name: string,
+  tracks: MediaStreamTrack[]
+) {
+  let tileID: string;
+  let videoTagID: string;
+  if (kind === zonemateTileKind.Camera) {
+    tileID = getCameraTileID(sessionID);
+    videoTagID = getCameraVidID(sessionID);
+  } else if (kind === zonemateTileKind.Screen) {
+    tileID = getScreenShareTileID(sessionID);
+    videoTagID = getScreenShareVidID(sessionID);
+  } else {
+    console.error(getErrUnrecognizedTileKind(kind));
+    return;
+  }
+  let zonemate = <HTMLDivElement>document.getElementById(tileID);
+  if (!zonemate) {
+    zonemate = createZonemateTile(kind, sessionID, name);
+  }
+
+  if (tracks.length === 0) {
+    return;
+  }
+
+  const vid = <HTMLVideoElement>document.getElementById(videoTagID);
+  vid.srcObject = new MediaStream(tracks);
+}
+
+export function showZonemateCamera(
   sessionID: string,
   name: string,
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack
 ) {
-  let zonemate = <HTMLDivElement>(
-    document.getElementById(getZonemateTagID(sessionID))
-  );
-  if (!zonemate) {
-    zonemate = createZonemate(sessionID, name);
-  }
-
-  const vid = <HTMLVideoElement>(
-    document.getElementById(getVideoTagID(sessionID))
-  );
-
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
   if (audioTrack) tracks.push(audioTrack);
-  if (tracks.length === 0) {
-    vid.srcObject = null;
-    return;
-  }
-
-  vid.srcObject = new MediaStream(tracks);
+  showZonemate(zonemateTileKind.Camera, sessionID, name, tracks);
 }
 
-function createZonemate(sessionID: string, name: string): HTMLDivElement {
-  const zonemates = document.getElementById("zonemates");
-  const zID = getZonemateTagID(sessionID);
-  let zonemate = document.createElement("div");
-  zonemate.id = zID;
-  zonemate.classList.add("tile");
-  zonemate.classList.add("zonemate");
-  zonemates.appendChild(zonemate);
-
-  const nameTag = document.createElement("div");
-  nameTag.innerText = name;
-  nameTag.className = "name";
-  zonemate.appendChild(nameTag);
-
-  const vID = getVideoTagID(sessionID);
-  const vid = document.createElement("video");
-  vid.classList.add("fit");
-  vid.autoplay = true;
-  vid.id = vID;
-  zonemate.appendChild(vid);
-  zonemate.draggable = true;
-  setupDraggableElement(zonemate);
-  return zonemate;
+export function showZonemateScreenShare(
+  sessionID: string,
+  name: string,
+  videoTrack?: MediaStreamTrack
+) {
+  const tracks: Array<MediaStreamTrack> = [];
+  if (videoTrack) tracks.push(videoTrack);
+  showZonemate(zonemateTileKind.Screen, sessionID, name, tracks);
 }
 
-export function removeZonemate(sessionID: string) {
-  const ele = document.getElementById(getZonemateTagID(sessionID));
+export function removeCamera(sessionID: string) {
+  const ele = document.getElementById(getCameraTileID(sessionID));
   if (ele) ele.remove();
 }
 
@@ -93,72 +102,64 @@ export function removeAllZonemates() {
   zonemates.textContent = "";
 }
 
-export function showScreenShare(
-  sessionID: string,
-  name: string,
-  videoTrack?: MediaStreamTrack
-) {
-  let screenShare = <HTMLDivElement>(
-    document.getElementById(getScreenShareTagID(sessionID))
-  );
-  if (!screenShare) {
-    screenShare = createScreenShare(sessionID, name);
-  }
-
-  const vid = <HTMLVideoElement>(
-    document.getElementById(getScreenShareVideoTagID(sessionID))
-  );
-
-  const tracks: Array<MediaStreamTrack> = [];
-  if (videoTrack) tracks.push(videoTrack);
-  if (tracks.length === 0) {
-    vid.srcObject = null;
-    return;
-  }
-  vid.srcObject = new MediaStream(tracks);
-}
-
 export function removeScreenShare(sessionID: string) {
-  const ele = document.getElementById(getScreenShareTagID(sessionID));
+  const ele = document.getElementById(getScreenShareTileID(sessionID));
   if (ele) ele.remove();
 }
 
-function createScreenShare(sessionID: string, name: string): HTMLDivElement {
-  const screenShares = document.getElementById("zonemates");
-  const zID = getScreenShareTagID(sessionID);
-  let screen = document.createElement("div");
-  screen.id = zID;
-  screen.classList.add("screen");
-  screenShares.appendChild(screen);
+function createZonemateTile(
+  kind: zonemateTileKind,
+  sessionID: string,
+  name: string
+) {
+  const zonemates = document.getElementById("zonemates");
+  let tileID, vidID, className: string;
+  if (kind === zonemateTileKind.Screen) {
+    tileID = getScreenShareTileID(sessionID);
+    vidID = getScreenShareVidID(sessionID);
+    className = "contain";
+  } else if (kind === zonemateTileKind.Camera) {
+    tileID = getCameraTileID(sessionID);
+    vidID = getCameraVidID(sessionID);
+    className = "fit";
+  } else {
+    console.error(getErrUnrecognizedTileKind(kind));
+    return;
+  }
+
+  let ele = document.createElement("div");
+  ele.id = tileID;
+  ele.classList.add(kind.toString());
+  zonemates.appendChild(ele);
+
+  const vid = document.createElement("video");
+  vid.autoplay = true;
+  vid.id = vidID;
+  vid.classList.add(className);
+  ele.appendChild(vid);
+  ele.draggable = true;
 
   const nameTag = document.createElement("div");
   nameTag.innerText = name;
   nameTag.className = "name";
-  screen.appendChild(nameTag);
+  ele.appendChild(nameTag);
 
-  const vID = getScreenShareVideoTagID(sessionID);
-  const vid = document.createElement("video");
-  vid.classList.add("contain");
-  vid.autoplay = true;
-  vid.id = vID;
-  screen.appendChild(vid);
-  screen.draggable = true;
-  setupDraggableElement(screen);
-  return screen;
+  setupDraggableElement(ele);
+  return ele;
 }
 
-function getVideoTagID(sessionID: string): string {
-  return `video-${sessionID}`;
+function getCameraTileID(sessionID: string): string {
+  return `camera-tile-${sessionID}`;
 }
 
-function getZonemateTagID(sessionID: string): string {
-  return `zonemate-${sessionID}`;
+function getCameraVidID(sessionID: string): string {
+  return `camera-vid-${sessionID}`;
 }
 
-function getScreenShareTagID(sessionID: string): string {
-  return `screen-${sessionID}`;
+function getScreenShareTileID(sessionID: string): string {
+  return `screen-tile-${sessionID}`;
 }
 
-function getScreenShareVideoTagID(sessionID: string): string {
-  return `video-screen-${sessionID}`;
+function getScreenShareVidID(sessionID: string): string {
+  return `screen-vid-${sessionID}`;
 }

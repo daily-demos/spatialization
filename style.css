@@ -346,7 +346,8 @@ body {
   text-align: center;
 }
 
-#focus .tile {
+#focus .camera {
+  position: relative;
   display: flex;
   z-index: 1;
   margin-bottom: 18px;
@@ -363,6 +364,7 @@ body {
 }
 
 #focus .screen {
+  position: relative;
   max-width: 800px;
   display: flex;
   justify-content: center;

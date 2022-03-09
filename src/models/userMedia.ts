@@ -10,10 +10,10 @@ import { standardTileSize } from "../config";
 import { Loopback } from "../util/loopback";
 import {
   removeScreenShare,
-  removeZonemate,
+  removeCamera,
   showBroadcast,
-  showScreenShare,
-  showZonemate,
+  showZonemateScreenShare,
+  showZonemateCamera,
   stopBroadcast,
 } from "../util/tile";
 
@@ -320,7 +320,7 @@ export class UserMedia {
 
   updateScreenSource(newTrack: MediaStreamTrack) {
     if (newTrack) {
-      showScreenShare(this.id, this.userName, newTrack);
+      showZonemateScreenShare(this.id, this.userName, newTrack);
       return;
     }
     removeScreenShare(this.id);
@@ -353,7 +353,7 @@ export class UserMedia {
 
   leaveZone() {
     this.currentAction = Action.Traversing;
-    removeZonemate(this.id);
+    removeCamera(this.id);
     removeScreenShare(this.id);
   }
 
@@ -406,7 +406,7 @@ export class UserMedia {
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
     }
-    showZonemate(this.id, this.userName, videoTrack, this.audioTrack);
+    showZonemateCamera(this.id, this.userName, videoTrack, this.audioTrack);
   }
 
   showOrUpdateBroadcast() {
