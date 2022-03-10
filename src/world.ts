@@ -101,9 +101,6 @@ export class World {
       user.updateTracks(video, audio, screen);
       if (!user.isLocal) {
         user.setUserName(name);
-        if (screen && user.isZonemate(this.localUser)) {
-          enableScreenBtn(false);
-        }
       }
     }
   }

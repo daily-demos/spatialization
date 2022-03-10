@@ -8,6 +8,7 @@ import {
 } from "standardized-audio-context";
 import { standardTileSize } from "../config";
 import { Loopback } from "../util/loopback";
+import { enableScreenBtn } from "../util/nav";
 import {
   removeScreenShare,
   removeCamera,
@@ -138,10 +139,12 @@ export class UserMedia {
   cameraDisabled: boolean;
   currentAction: Action = Action.Traversing;
   userName: string;
+  toggleScreenControls: boolean;
   videoDelayedPlayHandler: () => void;
 
   private videoTrack: MediaStreamTrack;
   private audioTrack: MediaStreamTrack;
+  private screenTrack: MediaStreamTrack;
   private _videoPlaying = false;
   private nodeChain = new NodeChain();
   private id: string;
@@ -155,6 +158,7 @@ export class UserMedia {
     this.createVideoTag();
     if (!isLocal) {
       this.createAudioTag();
+      this.toggleScreenControls = true;
     }
   }
 
@@ -258,7 +262,7 @@ export class UserMedia {
       // focus tiles accordingly.
       this.cameraDisabled = true;
       if (this.currentAction === Action.InZone) {
-        this.showOrUpdateZonemate();
+        this.showOrUpdateCamera();
         return;
       }
       if (this.currentAction === Action.Broadcasting) {
@@ -278,11 +282,21 @@ export class UserMedia {
     // If the user is in a focus zone or broadcasting,
     // update their focus tiles accordingly.
     if (this.currentAction === Action.InZone) {
-      this.showOrUpdateZonemate();
+      this.showOrUpdateCamera();
       return;
     }
     if (this.currentAction === Action.Broadcasting) {
       this.showOrUpdateBroadcast();
+    }
+  }
+
+  updateScreenSource(newTrack: MediaStreamTrack) {
+    const hadTrack = Boolean(this.screenTrack);
+    this.screenTrack = newTrack;
+    if (this.screenTrack) {
+      this.tryShowScreenShare();
+    } else if (hadTrack) {
+      this.tryRemoveScreenShare();
     }
   }
 
@@ -310,20 +324,12 @@ export class UserMedia {
     }
 
     if (this.currentAction === Action.InZone) {
-      this.showOrUpdateZonemate();
+      this.showOrUpdateCamera();
       return;
     }
     if (this.currentAction === Action.Broadcasting) {
       this.showOrUpdateBroadcast();
     }
-  }
-
-  updateScreenSource(newTrack: MediaStreamTrack) {
-    if (newTrack) {
-      showScreenShare(this.id, this.userName, newTrack);
-      return;
-    }
-    removeScreenShare(this.id);
   }
 
   muteAudio() {
@@ -348,24 +354,27 @@ export class UserMedia {
 
   enterZone() {
     this.currentAction = Action.InZone;
-    this.showOrUpdateZonemate();
+    this.showOrUpdateCamera();
+    this.tryShowScreenShare();
   }
 
   leaveZone() {
     this.currentAction = Action.Traversing;
     removeCamera(this.id);
-    removeScreenShare(this.id);
+    this.tryRemoveScreenShare();
   }
 
   enterBroadcast() {
     if (this.audioTag) this.muteAudio();
     this.currentAction = Action.Broadcasting;
     this.showOrUpdateBroadcast();
+    this.tryShowScreenShare();
   }
 
   leaveBroadcast() {
     this.currentAction = Action.Traversing;
     stopBroadcast();
+    this.tryRemoveScreenShare();
   }
 
   updateAudio(gainValue: number, panValue: number) {
@@ -401,7 +410,7 @@ export class UserMedia {
     this.audioTag.play();
   }
 
-  showOrUpdateZonemate() {
+  showOrUpdateCamera() {
     let videoTrack = null;
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
@@ -415,5 +424,20 @@ export class UserMedia {
       videoTrack = this.videoTrack;
     }
     showBroadcast(this.userName, videoTrack, this.audioTrack);
+  }
+
+  tryShowScreenShare() {
+    if (!this.screenTrack) return;
+    showScreenShare(this.id, this.userName, this.screenTrack);
+    if (this.toggleScreenControls && this.currentAction !== Action.Traversing) {
+      enableScreenBtn(false);
+    }
+  }
+
+  tryRemoveScreenShare() {
+    removeScreenShare(this.id);
+    if (this.toggleScreenControls && this.currentAction !== Action.Traversing) {
+      enableScreenBtn(true);
+    }
   }
 }
