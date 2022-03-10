@@ -293,9 +293,19 @@ export class UserMedia {
   updateScreenSource(newTrack: MediaStreamTrack) {
     const hadTrack = Boolean(this.screenTrack);
     this.screenTrack = newTrack;
+
+    // If this user is traversing, don't show their screen track
+    if (this.currentAction === Action.Traversing) return;
+
+    // Othewrise, if the user has a new track and is not traversing,
+    // try to show the screen track
     if (this.screenTrack) {
       this.tryShowScreenShare();
-    } else if (hadTrack) {
+      return;
+    }
+    // If we had a track previously and no longer do,
+    // try to remove any existing screen share DOM elements
+    if (hadTrack) {
       this.tryRemoveScreenShare();
     }
   }
@@ -428,15 +438,20 @@ export class UserMedia {
 
   tryShowScreenShare() {
     if (!this.screenTrack) return;
+
     showScreenShare(this.id, this.userName, this.screenTrack);
-    if (this.toggleScreenControls && this.currentAction !== Action.Traversing) {
+    // Someone in a relevant zone started screen sharing that is NOT the local user,
+    // disable the screen share button for the local user
+    if (this.toggleScreenControls && this.currentAction === Action.InZone) {
       enableScreenBtn(false);
     }
   }
 
   tryRemoveScreenShare() {
     removeScreenShare(this.id);
-    if (this.toggleScreenControls && this.currentAction !== Action.Traversing) {
+    // Someone in a relevant zone stopped screen sharing that is NOT the local user,
+    // so enable the screen share button for the local user.
+    if (this.toggleScreenControls && this.currentAction === Action.InZone) {
       enableScreenBtn(true);
     }
   }
