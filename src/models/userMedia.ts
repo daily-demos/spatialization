@@ -12,8 +12,8 @@ import {
   removeScreenShare,
   removeCamera,
   showBroadcast,
-  showZonemateScreenShare,
-  showZonemateCamera,
+  showScreenShare,
+  showCamera,
   stopBroadcast,
 } from "../util/tile";
 
@@ -320,7 +320,7 @@ export class UserMedia {
 
   updateScreenSource(newTrack: MediaStreamTrack) {
     if (newTrack) {
-      showZonemateScreenShare(this.id, this.userName, newTrack);
+      showScreenShare(this.id, this.userName, newTrack);
       return;
     }
     removeScreenShare(this.id);
@@ -406,7 +406,7 @@ export class UserMedia {
     if (this.videoTrack && !this.cameraDisabled) {
       videoTrack = this.videoTrack;
     }
-    showZonemateCamera(this.id, this.userName, videoTrack, this.audioTrack);
+    showCamera(this.id, this.userName, videoTrack, this.audioTrack);
   }
 
   showOrUpdateBroadcast() {

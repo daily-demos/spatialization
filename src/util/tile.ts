@@ -70,7 +70,7 @@ function showZonemate(
   vid.srcObject = new MediaStream(tracks);
 }
 
-export function showZonemateCamera(
+export function showCamera(
   sessionID: string,
   name: string,
   videoTrack?: MediaStreamTrack,
@@ -82,7 +82,7 @@ export function showZonemateCamera(
   showZonemate(zonemateTileKind.Camera, sessionID, name, tracks);
 }
 
-export function showZonemateScreenShare(
+export function showScreenShare(
   sessionID: string,
   name: string,
   videoTrack?: MediaStreamTrack
