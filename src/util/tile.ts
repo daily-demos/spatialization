@@ -7,12 +7,13 @@ const broadcastVideo = <HTMLVideoElement>(
 );
 setupDraggableElement(broadcastDiv);
 
-enum zonemateTileKind {
+enum ZonemateTileKind {
   Screen = "screen",
   Camera = "camera",
 }
 
-function getErrUnrecognizedTileKind(kind: zonemateTileKind): string {
+// getErrUnrecognizedTileKind returns a consistent tile kind error for reuse
+function getErrUnrecognizedTileKind(kind: ZonemateTileKind): string {
   return `unrecognized zonemate tile kind: ${kind}`;
 }
 
@@ -39,37 +40,7 @@ export function stopBroadcast() {
   broadcastDiv.draggable = false;
 }
 
-function showZonemate(
-  kind: zonemateTileKind,
-  sessionID: string,
-  name: string,
-  tracks: MediaStreamTrack[]
-) {
-  let tileID: string;
-  let videoTagID: string;
-  if (kind === zonemateTileKind.Camera) {
-    tileID = getCameraTileID(sessionID);
-    videoTagID = getCameraVidID(sessionID);
-  } else if (kind === zonemateTileKind.Screen) {
-    tileID = getScreenShareTileID(sessionID);
-    videoTagID = getScreenShareVidID(sessionID);
-  } else {
-    console.error(getErrUnrecognizedTileKind(kind));
-    return;
-  }
-  let zonemate = <HTMLDivElement>document.getElementById(tileID);
-  if (!zonemate) {
-    zonemate = createZonemateTile(kind, sessionID, name);
-  }
-
-  if (tracks.length === 0) {
-    return;
-  }
-
-  const vid = <HTMLVideoElement>document.getElementById(videoTagID);
-  vid.srcObject = new MediaStream(tracks);
-}
-
+// showCamera shows a camera video tile in the zonemates div
 export function showCamera(
   sessionID: string,
   name: string,
@@ -79,9 +50,10 @@ export function showCamera(
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
   if (audioTrack) tracks.push(audioTrack);
-  showZonemate(zonemateTileKind.Camera, sessionID, name, tracks);
+  showZonemate(ZonemateTileKind.Camera, sessionID, name, tracks);
 }
 
+// showScreenShare shows a screen share video tile in the zonemates div
 export function showScreenShare(
   sessionID: string,
   name: string,
@@ -89,7 +61,7 @@ export function showScreenShare(
 ) {
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
-  showZonemate(zonemateTileKind.Screen, sessionID, name, tracks);
+  showZonemate(ZonemateTileKind.Screen, sessionID, name, tracks);
 }
 
 export function removeCamera(sessionID: string) {
@@ -107,18 +79,56 @@ export function removeScreenShare(sessionID: string) {
   if (ele) ele.remove();
 }
 
+// showZonemate() shows either a camera or screen video tile for
+// the given participants and tracks. It relies on the `kind`
+// enum for a bit of screen or camera-specific behavior, but most
+// of the logic is shared.
+function showZonemate(
+  kind: ZonemateTileKind,
+  sessionID: string,
+  name: string,
+  tracks: MediaStreamTrack[]
+) {
+  let tileID: string;
+  let videoTagID: string;
+  if (kind === ZonemateTileKind.Camera) {
+    tileID = getCameraTileID(sessionID);
+    videoTagID = getCameraVidID(sessionID);
+  } else if (kind === ZonemateTileKind.Screen) {
+    tileID = getScreenShareTileID(sessionID);
+    videoTagID = getScreenShareVidID(sessionID);
+  } else {
+    console.error(getErrUnrecognizedTileKind(kind));
+    return;
+  }
+
+  let zonemate = <HTMLDivElement>document.getElementById(tileID);
+  if (!zonemate) {
+    zonemate = createZonemateTile(kind, sessionID, name);
+  }
+
+  if (tracks.length === 0) {
+    return;
+  }
+
+  const vid = <HTMLVideoElement>document.getElementById(videoTagID);
+  vid.srcObject = new MediaStream(tracks);
+}
+
+// createZonemateTile creates a div containing a video tag and a name
+// element for either a camera or screen share zonemate tile.
 function createZonemateTile(
-  kind: zonemateTileKind,
+  kind: ZonemateTileKind,
   sessionID: string,
   name: string
 ) {
   const zonemates = document.getElementById("zonemates");
   let tileID, vidID, className: string;
-  if (kind === zonemateTileKind.Screen) {
+  if (kind === ZonemateTileKind.Screen) {
     tileID = getScreenShareTileID(sessionID);
     vidID = getScreenShareVidID(sessionID);
     className = "contain";
-  } else if (kind === zonemateTileKind.Camera) {
+  } else if (kind === ZonemateTileKind.Camera) {
     tileID = getCameraTileID(sessionID);
     vidID = getCameraVidID(sessionID);
     className = "fit";

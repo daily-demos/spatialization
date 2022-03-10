@@ -37,6 +37,8 @@ export function registerMicBtnListener(f: () => void) {
 }
 
 export function registerScreenShareBtnListener(f: () => void) {
+  // If the screen share controls are entirely hidden, registering
+  // a listener unhindes them and makes them usable.
   if (toggleScreenBtn.classList.contains("hidden")) {
     toggleScreenBtn.classList.remove("hidden");
   }
@@ -95,12 +97,18 @@ export function updateScreenBtn(screenOn: boolean) {
 }
 
 export function enableScreenBtn(doEnable: boolean) {
+  // If this feature is completely disabled by hiding the controls,
+  // early out.
   if (toggleScreenBtn.classList.contains("hidden")) return;
+
   if (doEnable) {
     toggleScreenBtn.classList.remove("screen-disabled");
     toggleScreenBtn.disabled = false;
     return;
   }
+
+  // Prevent disabling the controls if a user's screen is already on,
+  // because they should always be able to stop sharing.
   if (toggleScreenBtn.classList.contains("screen-on")) {
     console.warn(
       "Unable to disable screen button while user is sharing their screen"
