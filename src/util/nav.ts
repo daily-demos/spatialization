@@ -42,7 +42,7 @@ export function registerScreenShareBtnListener(f: () => void) {
   if (toggleScreenBtn.classList.contains("hidden")) {
     toggleScreenBtn.classList.remove("hidden");
   }
-  toggleScreenBtn.addEventListener("click", f);
+  toggleScreenBtn.onclick = f;
 }
 
 export function registerLeaveBtnListener(f: () => void) {
@@ -135,4 +135,6 @@ export function showJoinForm() {
   callDiv.style.display = "none";
   entryDiv.style.display = "block";
   joinForm.style.display = "block";
+  toggleScreenBtn.classList.add("hidden");
+  toggleScreenBtn.onclick = null;
 }
