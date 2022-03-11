@@ -297,7 +297,7 @@ export class UserMedia {
     // If this user is traversing, don't show their screen track
     if (this.currentAction === Action.Traversing) return;
 
-    // Othewrise, if the user has a new track and is not traversing,
+    // Otherwise, if the user has a new track and is not traversing,
     // try to show the screen track
     if (this.screenTrack) {
       this.tryShowScreenShare();

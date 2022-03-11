@@ -194,8 +194,8 @@ export class Room {
 
     // Check if user's browser and current room meet requirements for
     // screen share support, and enable if so.
-
     this.maybeEnableScreenSharing();
+
     // Retrieve the video and audio tracks of this participant
     const tracks = this.getParticipantTracks(p);
 
