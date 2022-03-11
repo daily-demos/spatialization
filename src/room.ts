@@ -192,25 +192,10 @@ export class Room {
     // Get the local participant
     const p = event.participants["local"];
 
-    // Retrieve our room properties and check if screen sharing is enabled
-    const roomProperties = this.callObject
-      .room({ includeRoomConfigDefaults: true })
-      .then((roomInfo) => {
-        const info = roomInfo as DailyRoomInfo;
-        // If screen sharing is disabled, early out
-        if (!info || !info.config?.enable_screenshare) return;
+    // Check if user's browser and current room meet requirements for
+    // screen share support, and enable if so.
 
-        // If screen sharing is enabled, enable our screen share controls
-        registerScreenShareBtnListener(() => {
-          const isSharing = this.callObject.participants().local.screen;
-          if (!isSharing) {
-            this.startScreenShare();
-            return;
-          }
-          this.stopScreenShare();
-        });
-      });
-
+    this.maybeEnableScreenSharing();
     // Retrieve the video and audio tracks of this participant
     const tracks = this.getParticipantTracks(p);
 
@@ -283,6 +268,31 @@ export class Room {
 
     // Create and initialize the local user.
     world.initLocalUser(p.session_id, tracks.video);
+  }
+
+  private maybeEnableScreenSharing() {
+    // Retrieve our browser properties and check if screen sharing is possible
+    const browserInfo = DailyIframe.supportedBrowser();
+    if (!browserInfo.supportsScreenShare) return;
+
+    // Retrieve our room properties and check if screen sharing is enabled
+    this.callObject
+      .room({ includeRoomConfigDefaults: true })
+      .then((roomInfo) => {
+        const info = roomInfo as DailyRoomInfo;
+        // If screen sharing is disabled, early out
+        if (!info || !info.config?.enable_screenshare) return;
+
+        // If screen sharing is enabled, enable our screen share controls
+        registerScreenShareBtnListener(() => {
+          const isSharing = this.callObject.participants().local.screen;
+          if (!isSharing) {
+            this.startScreenShare();
+            return;
+          }
+          this.stopScreenShare();
+        });
+      });
   }
 
   private subToUserTracks(sessionID: string) {
