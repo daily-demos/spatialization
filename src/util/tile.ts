@@ -107,11 +107,12 @@ function showZonemate(
     zonemate = createZonemateTile(kind, sessionID, name);
   }
 
+  const vid = <HTMLVideoElement>document.getElementById(videoTagID);
   if (tracks.length === 0) {
+    vid.style.visibility = "hidden";
     return;
   }
-
-  const vid = <HTMLVideoElement>document.getElementById(videoTagID);
+  vid.style.visibility = "visible";
   vid.srcObject = new MediaStream(tracks);
 }
 
