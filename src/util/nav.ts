@@ -107,14 +107,6 @@ export function enableScreenBtn(doEnable: boolean) {
     return;
   }
 
-  // Prevent disabling the controls if a user's screen is already on,
-  // because they should always be able to stop sharing.
-  if (toggleScreenBtn.classList.contains("screen-on")) {
-    console.warn(
-      "Unable to disable screen button while user is sharing their screen"
-    );
-    return;
-  }
   toggleScreenBtn.classList.add("screen-disabled");
   toggleScreenBtn.disabled = true;
 }

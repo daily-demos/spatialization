@@ -446,9 +446,9 @@ export class Room {
 
   private stopScreenShare() {
     this.callObject.stopScreenShare();
-    // The above call performs relevant cleanup and ensures 
-    // associated events get fired, BUT daily-js only calls 
-    // stop() on daily-managed tracks. Since we got our screen 
+    // The above call performs relevant cleanup and ensures
+    // associated events get fired, BUT daily-js only calls
+    // stop() on daily-managed tracks. Since we got our screen
     // track ourselves, we must call stop on it manually.
     this.callObject.participants().local.screenVideoTrack?.stop();
   }
