@@ -5,8 +5,17 @@ const broadcastDiv = <HTMLDivElement>document.getElementById("broadcast");
 const broadcastVideo = <HTMLVideoElement>(
   document.getElementById("broadcastVideo")
 );
-
 setupDraggableElement(broadcastDiv);
+
+enum ZonemateTileKind {
+  Screen = "screen",
+  Camera = "camera",
+}
+
+// getErrUnrecognizedTileKind returns a consistent tile kind error for reuse
+function getErrUnrecognizedTileKind(kind: ZonemateTileKind): string {
+  return `unrecognized zonemate tile kind: ${kind}`;
+}
 
 export function showBroadcast(
   name: string,
@@ -26,67 +35,37 @@ export function showBroadcast(
 }
 
 export function stopBroadcast() {
-  console.log("Stopping broadcast");
   broadcastDiv.style.visibility = "hidden";
   broadcastVideo.srcObject = null;
   broadcastDiv.draggable = false;
 }
 
-export function showZonemate(
+// showCamera shows a camera video tile in the zonemates div
+export function showCamera(
   sessionID: string,
   name: string,
   videoTrack?: MediaStreamTrack,
   audioTrack?: MediaStreamTrack
 ) {
-  let zonemate = <HTMLDivElement>(
-    document.getElementById(getZonemateTagID(sessionID))
-  );
-  if (!zonemate) {
-    zonemate = createZonemate(sessionID, name);
-  }
-
-  const vid = <HTMLVideoElement>(
-    document.getElementById(getVideoTagID(sessionID))
-  );
-
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
   if (audioTrack) tracks.push(audioTrack);
-  if (tracks.length === 0) {
-    vid.srcObject = null;
-    return;
-  }
-
-  vid.srcObject = new MediaStream(tracks);
+  showZonemate(ZonemateTileKind.Camera, sessionID, name, tracks);
 }
 
-function createZonemate(sessionID: string, name: string): HTMLDivElement {
-  const zonemates = document.getElementById("zonemates");
-  const zID = getZonemateTagID(sessionID);
-  let zonemate = document.createElement("div");
-  zonemate.id = zID;
-  zonemate.classList.add("tile");
-  zonemate.classList.add("zonemate");
-  zonemates.appendChild(zonemate);
-
-  const nameTag = document.createElement("div");
-  nameTag.innerText = name;
-  nameTag.className = "name";
-  zonemate.appendChild(nameTag);
-
-  const vID = getVideoTagID(sessionID);
-  const vid = document.createElement("video");
-  vid.classList.add("fit");
-  vid.autoplay = true;
-  vid.id = vID;
-  zonemate.appendChild(vid);
-  zonemate.draggable = true;
-  setupDraggableElement(zonemate);
-  return zonemate;
+// showScreenShare shows a screen share video tile in the zonemates div
+export function showScreenShare(
+  sessionID: string,
+  name: string,
+  videoTrack?: MediaStreamTrack
+) {
+  const tracks: Array<MediaStreamTrack> = [];
+  if (videoTrack) tracks.push(videoTrack);
+  showZonemate(ZonemateTileKind.Screen, sessionID, name, tracks);
 }
 
-export function removeZonemate(sessionID: string) {
-  const ele = document.getElementById(getZonemateTagID(sessionID));
+export function removeCamera(sessionID: string) {
+  const ele = document.getElementById(getCameraTileID(sessionID));
   if (ele) ele.remove();
 }
 
@@ -95,10 +74,103 @@ export function removeAllZonemates() {
   zonemates.textContent = "";
 }
 
-function getVideoTagID(sessionID: string): string {
-  return `video-${sessionID}`;
+export function removeScreenShare(sessionID: string) {
+  const ele = document.getElementById(getScreenShareTileID(sessionID));
+  if (ele) ele.remove();
 }
 
-function getZonemateTagID(sessionID: string): string {
-  return `zonemate-${sessionID}`;
+// showZonemate() shows either a camera or screen video tile for
+// the given participants and tracks. It relies on the `kind`
+// enum for a bit of screen or camera-specific behavior, but most
+// of the logic is shared.
+function showZonemate(
+  kind: ZonemateTileKind,
+  sessionID: string,
+  name: string,
+  tracks: MediaStreamTrack[]
+) {
+  let tileID: string;
+  let videoTagID: string;
+  if (kind === ZonemateTileKind.Camera) {
+    tileID = getCameraTileID(sessionID);
+    videoTagID = getCameraVidID(sessionID);
+  } else if (kind === ZonemateTileKind.Screen) {
+    tileID = getScreenShareTileID(sessionID);
+    videoTagID = getScreenShareVidID(sessionID);
+  } else {
+    console.error(getErrUnrecognizedTileKind(kind));
+    return;
+  }
+
+  let zonemate = <HTMLDivElement>document.getElementById(tileID);
+  if (!zonemate) {
+    zonemate = createZonemateTile(kind, sessionID, name);
+  }
+
+  const vid = <HTMLVideoElement>document.getElementById(videoTagID);
+  if (tracks.length === 0) {
+    vid.style.visibility = "hidden";
+    return;
+  }
+  vid.style.visibility = "visible";
+  vid.srcObject = new MediaStream(tracks);
+}
+
+// createZonemateTile creates a div containing a video tag and a name
+// element for either a camera or screen share zonemate tile.
+function createZonemateTile(
+  kind: ZonemateTileKind,
+  sessionID: string,
+  name: string
+) {
+  const zonemates = document.getElementById("zonemates");
+  let tileID, vidID, className: string;
+  if (kind === ZonemateTileKind.Screen) {
+    tileID = getScreenShareTileID(sessionID);
+    vidID = getScreenShareVidID(sessionID);
+    className = "contain";
+  } else if (kind === ZonemateTileKind.Camera) {
+    tileID = getCameraTileID(sessionID);
+    vidID = getCameraVidID(sessionID);
+    className = "fit";
+  } else {
+    console.error(getErrUnrecognizedTileKind(kind));
+    return;
+  }
+
+  let ele = document.createElement("div");
+  ele.id = tileID;
+  ele.classList.add(kind.toString());
+  zonemates.appendChild(ele);
+
+  const vid = document.createElement("video");
+  vid.autoplay = true;
+  vid.id = vidID;
+  vid.classList.add(className);
+  ele.appendChild(vid);
+  ele.draggable = true;
+
+  const nameTag = document.createElement("div");
+  nameTag.innerText = name;
+  nameTag.className = "name";
+  ele.appendChild(nameTag);
+
+  setupDraggableElement(ele);
+  return ele;
+}
+
+function getCameraTileID(sessionID: string): string {
+  return `camera-tile-${sessionID}`;
+}
+
+function getCameraVidID(sessionID: string): string {
+  return `camera-vid-${sessionID}`;
+}
+
+function getScreenShareTileID(sessionID: string): string {
+  return `screen-tile-${sessionID}`;
+}
+
+function getScreenShareVidID(sessionID: string): string {
+  return `screen-vid-${sessionID}`;
 }

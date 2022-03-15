@@ -24,6 +24,9 @@ export default class KeyListener {
 const joinForm = document.getElementById("enterCall");
 const toggleCamBtn = document.getElementById("toggleCam");
 const toggleMicBtn = document.getElementById("toggleMic");
+const toggleScreenBtn = <HTMLButtonElement>(
+  document.getElementById("toggleScreenShare")
+);
 
 export function registerCamBtnListener(f: () => void) {
   toggleCamBtn.addEventListener("click", f);
@@ -31,6 +34,15 @@ export function registerCamBtnListener(f: () => void) {
 
 export function registerMicBtnListener(f: () => void) {
   toggleMicBtn.addEventListener("click", f);
+}
+
+export function registerScreenShareBtnListener(f: () => void) {
+  // If the screen share controls are entirely hidden, registering
+  // a listener unhindes them and makes them usable.
+  if (toggleScreenBtn.classList.contains("hidden")) {
+    toggleScreenBtn.classList.remove("hidden");
+  }
+  toggleScreenBtn.onclick = f;
 }
 
 export function registerLeaveBtnListener(f: () => void) {
@@ -72,6 +84,33 @@ export function updateMicBtn(micOn: boolean) {
   }
 }
 
+export function updateScreenBtn(screenOn: boolean) {
+  if (screenOn && !toggleScreenBtn.classList.contains("screen-on")) {
+    toggleScreenBtn.classList.remove("screen-off");
+    toggleScreenBtn.classList.add("screen-on");
+    return;
+  }
+  if (!screenOn && !toggleScreenBtn.classList.contains("screen-off")) {
+    toggleScreenBtn.classList.remove("screen-on");
+    toggleScreenBtn.classList.add("screen-off");
+  }
+}
+
+export function enableScreenBtn(doEnable: boolean) {
+  // If this feature is completely disabled by hiding the controls,
+  // early out.
+  if (toggleScreenBtn.classList.contains("hidden")) return;
+
+  if (doEnable) {
+    toggleScreenBtn.classList.remove("screen-disabled");
+    toggleScreenBtn.disabled = false;
+    return;
+  }
+
+  toggleScreenBtn.classList.add("screen-disabled");
+  toggleScreenBtn.disabled = true;
+}
+
 export function showWorld() {
   const callDiv = document.getElementById("call");
   const entryDiv = document.getElementById("entry");
@@ -88,4 +127,7 @@ export function showJoinForm() {
   callDiv.style.display = "none";
   entryDiv.style.display = "block";
   joinForm.style.display = "block";
+  toggleScreenBtn.onclick = null;
+  enableScreenBtn(false);
+  toggleScreenBtn.classList.add("hidden");
 }

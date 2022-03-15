@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 
-import KeyListener from "./util/nav";
+import KeyListener, { enableScreenBtn } from "./util/nav";
 import { User } from "./models/user";
 import { rand } from "./util/math";
 import Floor from "./models/floor";
@@ -93,12 +93,15 @@ export class World {
     id: string,
     name: string,
     video: MediaStreamTrack = null,
-    audio: MediaStreamTrack = null
+    audio: MediaStreamTrack = null,
+    screen: MediaStreamTrack = null
   ) {
     const user = this.getUser(id);
     if (user) {
-      user.updateTracks(video, audio);
-      if (!user.isLocal) user.setUserName(name);
+      user.updateTracks(video, audio, screen);
+      if (!user.isLocal) {
+        user.setUserName(name);
+      }
     }
   }
 
@@ -188,7 +191,7 @@ export class World {
     this.worldContainer.position.y =
       this.app.view.height / 2 - finalPos.y - this.localUser.height / 2;
 
-    user.updateTracks(videoTrack, null);
+    user.updateTracks(videoTrack);
     this.sendZoneData();
     this.sendPosData();
     this.keyListener.listenKeys();
