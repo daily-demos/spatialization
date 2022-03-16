@@ -27,8 +27,7 @@
   },
   "devDependencies": {
     "@types/jest": "^27.0.3",
-    "canvas": "^2.8.0",
-    "css-loader": "^6.5.1",
+    "canvas": "^2.9.0",
     "file-loader": "^6.2.0",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^27.4.5",
