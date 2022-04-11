@@ -10,11 +10,6 @@ export type Size = {
   height: number;
 };
 
-export type GenerateTexture = (
-  displayObject: PIXI.IRenderableObject,
-  options?: PIXI.IGenerateTextureOptions
-) => PIXI.RenderTexture;
-
 export type ZoneData = {
   zoneID: number;
   spotID: number;

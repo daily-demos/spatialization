@@ -8,21 +8,17 @@ import {
   DailyEventObjectCameraError,
   DailyEventObjectParticipants,
   DailyEventObjectNetworkConnectionEvent,
-  DailyRoomInfo,
 } from "@daily-co/daily-js";
 import { globalZoneID, standardTileSize } from "./config";
 
 import {
-  enableScreenBtn,
   registerCamBtnListener,
   registerLeaveBtnListener,
   registerMicBtnListener,
-  registerScreenShareBtnListener,
   showJoinForm,
   showWorld,
   updateCamBtn,
   updateMicBtn,
-  updateScreenBtn,
 } from "./util/nav";
 import { World } from "./world";
 import { Pos, ZoneData } from "./worldTypes";
@@ -40,7 +36,6 @@ type BroadcastData = {
 type State = {
   audio?: boolean;
   video?: boolean;
-  screen?: boolean;
 };
 
 enum BandwidthLevel {
@@ -170,10 +165,6 @@ export class Room {
       this.localState.video = p.video;
       updateCamBtn(this.localState.video);
     }
-    if (this.localState.screen != p.screen) {
-      this.localState.screen = p.screen;
-      updateScreenBtn(this.localState.screen);
-    }
   }
 
   private handleCameraError(event: DailyEventObjectCameraError) {
@@ -191,10 +182,6 @@ export class Room {
 
     // Get the local participant
     const p = event.participants["local"];
-
-    // Check if user's browser and current room meet requirements for
-    // screen share support, and enable if so.
-    this.maybeEnableScreenSharing();
 
     // Retrieve the video and audio tracks of this participant
     const tracks = this.getParticipantTracks(p);
@@ -227,13 +214,8 @@ export class Room {
     const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
       if (zoneData.zoneID === globalZoneID) {
         this.setBandwidth(BandwidthLevel.Tile);
-        if (this.localState.screen) {
-          this.stopScreenShare();
-        }
-        enableScreenBtn(false);
       } else {
         this.setBandwidth(BandwidthLevel.Focus);
-        enableScreenBtn(true);
       }
       const data = {
         action: "zoneChange",
@@ -268,31 +250,6 @@ export class Room {
 
     // Create and initialize the local user.
     world.initLocalUser(p.session_id, tracks.video);
-  }
-
-  private maybeEnableScreenSharing() {
-    // Retrieve our browser properties and check if screen sharing is possible
-    const browserInfo = DailyIframe.supportedBrowser();
-    if (!browserInfo.supportsScreenShare) return;
-
-    // Retrieve our room properties and check if screen sharing is enabled
-    this.callObject
-      .room({ includeRoomConfigDefaults: true })
-      .then((roomInfo) => {
-        const info = roomInfo as DailyRoomInfo;
-        // If screen sharing is disabled, early out
-        if (!info || !info.config?.enable_screenshare) return;
-
-        // If screen sharing is enabled, enable our screen share controls
-        registerScreenShareBtnListener(() => {
-          const isSharing = this.callObject.participants().local.screen;
-          if (!isSharing) {
-            this.startScreenShare();
-            return;
-          }
-          this.stopScreenShare();
-        });
-      });
   }
 
   private subToUserTracks(sessionID: string) {
@@ -350,13 +307,7 @@ export class Room {
   private handleParticipantUpdated(event: DailyEventObjectParticipant) {
     const p = event.participant;
     const tracks = this.getParticipantTracks(p);
-    world.updateUser(
-      p.session_id,
-      p.user_name,
-      tracks.video,
-      tracks.audio,
-      tracks.screen
-    );
+    world.updateUser(p.session_id, p.user_name, tracks.video, tracks.audio);
     if (p.session_id === this.callObject.participants()?.local?.session_id) {
       this.updateLocal(p);
     }
@@ -364,10 +315,6 @@ export class Room {
 
   private handleParticipantJoined(event: DailyEventObjectParticipant) {
     const sID = event.participant.session_id;
-    if (this.isRobot(event.participant.user_name)) {
-      world.createRobot(sID);
-      return;
-    }
     world.initRemoteParticpant(sID, event.participant.user_name);
 
     this.pendingAcks[sID] = setInterval(() => {
@@ -379,15 +326,9 @@ export class Room {
     }, 1000);
   }
 
-  private isRobot(userName: string): Boolean {
-    return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
-      userName
-    );
-  }
-
   private getParticipantTracks(participant: DailyParticipant) {
     const tracks = participant?.tracks;
-    if (!tracks) return { video: null, audio: null, screen: null };
+    if (!tracks) return { video: null, audio: null };
 
     const vt = <{ [key: string]: any }>tracks.video;
     const at = <{ [key: string]: any }>tracks.audio;
@@ -397,13 +338,10 @@ export class Room {
       vt?.state === playableState ? vt["persistentTrack"] : null;
     const audioTrack =
       at?.state === playableState ? at["persistentTrack"] : null;
-    const screenTrack =
-      st?.state === playableState ? st["persistentTrack"] : null;
 
     return {
       video: videoTrack,
       audio: audioTrack,
-      screen: screenTrack,
     };
   }
 
@@ -426,30 +364,5 @@ export class Room {
         this.topology = Topology.SFU;
         break;
     }
-  }
-
-  private async startScreenShare() {
-    let captureStream = null;
-    const options = {
-      video: true,
-    };
-
-    try {
-      captureStream = await navigator.mediaDevices.getDisplayMedia(options);
-    } catch (err) {
-      console.error("Failed to get display media: " + err);
-    }
-    if (captureStream) {
-      this.callObject.startScreenShare({ mediaStream: captureStream });
-    }
-  }
-
-  private stopScreenShare() {
-    this.callObject.stopScreenShare();
-    // The above call performs relevant cleanup and ensures
-    // associated events get fired, BUT daily-js only calls
-    // stop() on daily-managed tracks. Since we got our screen
-    // track ourselves, we must call stop on it manually.
-    this.callObject.participants().local.screenVideoTrack?.stop();
   }
 }

@@ -154,8 +154,7 @@ body {
 }
 
 #toggleCam,
-#toggleMic,
-#toggleScreenShare {
+#toggleMic {
   width: 30px;
   height: 30px;
   border: none;
@@ -230,11 +229,6 @@ body {
 #toggleScreen:hover {
   background-color: rgba(245, 245, 245, 0.6);
   border-radius: 5px;
-}
-
-#toggleScreenShare:disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
 }
 
 #world {
