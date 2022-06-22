@@ -135,12 +135,14 @@ export class User extends Collider {
   // earshot
   updateTracks(
     videoTrack: MediaStreamTrack = null,
-    audioTrack: MediaStreamTrack = null
+    audioTrack: MediaStreamTrack = null,
+    screenTrack: MediaStreamTrack = null
   ) {
     this.streamVideo(videoTrack);
     if (!this.isLocal) {
       this.streamAudio(audioTrack);
     }
+    this.media.updateScreenSource(screenTrack);
   }
 
   getPos(): Pos {
