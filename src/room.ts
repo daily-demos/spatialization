@@ -183,12 +183,6 @@ export class Room {
 
     // Get the local participant
     const p = event.participants["local"];
-    console.log(
-      "JOINED MEETING. session ID, pID",
-      p.session_id,
-      p.user_id,
-      this
-    );
 
     // Retrieve the video and audio tracks of this participant
     const tracks = this.getParticipantTracks(p);

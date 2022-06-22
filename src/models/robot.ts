@@ -1,9 +1,7 @@
 import { rand } from "../util/math";
 import { Pos } from "../worldTypes";
-import { BroadcastZone } from "./broadcastZone";
-import { ICollider } from "./collider";
+import { IInteractable } from "./collider";
 import { User } from "./user";
-import { DeskZone } from "./deskZone";
 
 export enum RobotRole {
   World = 0,
@@ -54,19 +52,9 @@ export class Robot extends User {
   // "Furniture" can be any non-user colliders in the world.
   // Eg: desks or broadcast spots. This overrides the user
   // furniture check.
-  checkFurnitures(others: Array<ICollider>) {
+  checkFurnitures(others: Array<IInteractable>) {
     for (let other of others) {
-      if (other instanceof BroadcastZone) {
-        const o = <BroadcastZone>other;
-        if (o) o.tryInteract(this);
-        continue;
-      }
-
-      if (other instanceof DeskZone) {
-        const o = <DeskZone>other;
-        if (o) o.tryInteract(this);
-        continue;
-      }
+      other.tryInteract(this);
     }
   }
 
