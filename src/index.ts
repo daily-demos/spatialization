@@ -1,3 +1,4 @@
+import "./env";
 import { Room } from "./room";
 import { registerJoinFormListener } from "./util/nav";
 

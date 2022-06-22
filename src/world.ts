@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
+import { install } from "@pixi/unsafe-eval";
 
-import KeyListener, { enableScreenBtn } from "./util/nav";
+import KeyListener from "./util/nav";
 import { User } from "./models/user";
 import { rand } from "./util/math";
 import Floor from "./models/floor";
@@ -12,6 +13,9 @@ import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
 import { DeskZone } from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
+
+// PIXI patch to avoid 'unsafe-eval'
+install(PIXI);
 
 declare global {
   interface Window {

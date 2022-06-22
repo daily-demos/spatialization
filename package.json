@@ -18,7 +18,8 @@
   "author": "Liza Shulyayeva",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "@daily-co/daily-js": "^0.23.0",
+    "@daily-co/daily-js": "^0.27.0",
+    "@pixi/unsafe-eval": "^6.4.2",
     "express": "^4.17.1",
     "http-server": "^14.0.0",
     "pixi.js": "^6.2.0",

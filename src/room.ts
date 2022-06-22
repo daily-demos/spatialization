@@ -74,6 +74,7 @@ export class Room {
       dailyConfig: {
         experimentalChromeVideoMuteLightOff: true,
         camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
+        avoidEval: true,
       },
     })
       .on("camera-error", (e) => this.handleCameraError(e))
@@ -86,25 +87,6 @@ export class Room {
       .on("network-connection", (e) => this.handleNetworkConnectionChanged(e));
 
     this.setBandwidth(BandwidthLevel.Tile);
-
-    registerCamBtnListener(() => {
-      const current = this.callObject.participants().local.video;
-      this.callObject.setLocalVideo(!current);
-    });
-
-    registerMicBtnListener(() => {
-      const current = this.callObject.participants().local.audio;
-      this.callObject.setLocalAudio(!current);
-    });
-
-    registerLeaveBtnListener(() => {
-      this.resetPendingAcks();
-      this.callObject.leave();
-      this.callObject.destroy();
-      world.destroy();
-      world = new World();
-      showJoinForm();
-    });
   }
 
   async join() {
@@ -191,6 +173,25 @@ export class Room {
 
     // Get the local participant
     const p = event.participants["local"];
+
+    registerCamBtnListener(() => {
+      const current = this.callObject.participants().local.video;
+      this.callObject.setLocalVideo(!current);
+    });
+
+    registerMicBtnListener(() => {
+      const current = this.callObject.participants().local.audio;
+      this.callObject.setLocalAudio(!current);
+    });
+
+    registerLeaveBtnListener(() => {
+      this.resetPendingAcks();
+      this.callObject.leave();
+      this.callObject.destroy();
+      world.destroy();
+      world = new World();
+      showJoinForm();
+    });
 
     // Check if user's browser and current room meet requirements for
     // screen share support, and enable if so.
