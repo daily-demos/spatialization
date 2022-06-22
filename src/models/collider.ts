@@ -1,7 +1,5 @@
 import * as PIXI from "pixi.js";
 import { Pos, Size } from "../worldTypes";
-import { Spot } from "./spot";
-import { User } from "./user";
 
 export interface ICollider {
   physics: boolean;

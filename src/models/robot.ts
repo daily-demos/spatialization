@@ -18,35 +18,40 @@ export class Robot extends User {
   reachedTargetAt: number;
 
   constructor(
-    name: string,
     userID: string,
     maxX: number,
     maxY: number,
     role: RobotRole = RobotRole.World
   ) {
-    super(name, userID, 0, 0);
+    const args = {
+      id: userID,
+      userName: userID,
+      x: 0,
+      y: 0,
+      emoji: "🤖",
+      gradientTextureName: "robot-gradient",
+    };
+    super(args);
     this.targetPos = { x: 0, y: 0 };
     this.maxCoords = { x: maxX, y: maxY };
     this.role = role;
-    this.emoji = "🤖";
-    this.gradientTextureName = "robot-gradient";
   }
 
   update() {
     const distance = this.distanceTo(this.targetPos);
-    if (distance <= 5) {
-      if (!this.reachedTargetAt) {
-        this.reachedTargetAt = Date.now();
-        return;
-      }
-      if (Date.now() - this.reachedTargetAt < 1000 * 10) {
-        return;
-      }
-      this.pickNewTargetPos();
-      this.reachedTargetAt = null;
+    if (distance > 5) {
+      this.stepToTarget();
       return;
     }
-    this.stepToTarget();
+    if (!this.reachedTargetAt) {
+      this.reachedTargetAt = Date.now();
+      return;
+    }
+    if (Date.now() - this.reachedTargetAt < 1000 * 10) {
+      return;
+    }
+    this.pickNewTargetPos();
+    this.reachedTargetAt = null;
   }
 
   // Focus zones include desks or broadcast spots.
@@ -59,6 +64,7 @@ export class Robot extends User {
 
   private pickNewTargetPos() {
     if (this.role === RobotRole.World) {
+      // In the world role, pick any random spot in the world
       this.targetPos = {
         x: rand(0, this.maxCoords.x),
         y: rand(0, this.maxCoords.y),
@@ -66,6 +72,8 @@ export class Robot extends User {
       return;
     }
 
+    // If not in world role, toggle target between persistent
+    // position and a spot just above it
     if (this.distanceTo(this.persistentPos) <= 5) {
       this.targetPos = {
         x: this.x,
