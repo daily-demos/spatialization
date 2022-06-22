@@ -2,23 +2,22 @@ import * as PIXI from "pixi.js";
 import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
 
-import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
+import { Collider, doesCollide } from "./collider";
 import { Spot } from "./spot";
 import { User } from "./user";
+import { IZone } from "./zone";
 
 const spotSize = standardTileSize;
 
 // BroadcastZone is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastZone
-  extends PIXI.Container
-  implements ICollider, IInteractable
-{
-  id: number;
+export class BroadcastZone extends PIXI.Container implements IZone {
   name: string;
   physics: false;
-  spot: Spot;
+
+  private id: number;
+  private spot: Spot;
 
   constructor(id: number, x: number, y: number) {
     super();
@@ -41,12 +40,16 @@ export class BroadcastZone
     this.sortableChildren = true;
   }
 
+  public getID(): number {
+    return this.id;
+  }
+
   public moveTo(pos: Pos) {
     this.x = pos.x;
     this.y = pos.y;
   }
 
-  public tryPlace(user: User) {
+  public tryPlace(user: User, _: number) {
     if (!this.spot.occupantID) {
       this.spot.occupantID = user.id;
       const np = {
@@ -57,7 +60,7 @@ export class BroadcastZone
     }
   }
 
-  public tryUnplace(userID: string) {
+  public tryUnplace(userID: string, _: number = -1) {
     if (this.spot.occupantID === userID) {
       this.spot.occupantID = null;
     }
@@ -79,14 +82,11 @@ export class BroadcastZone
   public tryInteract(other: User) {
     if (this.hits(other) && !this.spot.occupantID) {
       this.spot.occupantID = other.id;
-      other.media.enterBroadcast();
-      other.isInVicinity = false;
       other.updateZone(this.id);
       return;
     }
     if (other.id === this.spot.occupantID && !this.hits(other)) {
       this.spot.occupantID = null;
-      other.media.leaveBroadcast();
       other.updateZone(globalZoneID);
     }
   }

@@ -1,37 +1,33 @@
 import * as PIXI from "pixi.js";
 import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
-import { Collider, doesCollide, ICollider, IInteractable } from "./collider";
+import { Collider, doesCollide } from "./collider";
 import { Desk } from "./desk";
 import { Spot } from "./spot";
 import { User } from "./user";
+import { IZone } from "./zone";
 
 const spotSize = standardTileSize;
 const spotBuffer = 20;
 
 // DeskZone is a location that holds spots, through which a user can
 // join other users in an isolated zone.
-export class DeskZone
-  extends PIXI.Container
-  implements ICollider, IInteractable
-{
+export class DeskZone extends PIXI.Container implements IZone {
   physics = true;
-  id: number;
 
+  private id: number;
   private desk: Desk;
   private spots: Array<Spot> = [];
   private freeSeats: number;
-
-  staticBounds: PIXI.Rectangle;
-
+  private staticBounds: PIXI.Rectangle;
   private zoneMarker: PIXI.Graphics;
   private labelGraphics: PIXI.Text;
 
   constructor(id: number, name: string, numSpots: number, pos: Pos) {
     super();
 
-    if (this.id === 0) {
-      throw new Error("ID 0 is a reserved default zone ID");
+    if (id === globalZoneID) {
+      throw new Error(`ID ${id} is a reserved default zone ID`);
     }
     this.id = id;
     this.name = name;
@@ -74,6 +70,10 @@ export class DeskZone
     this.createZoneMarker();
     this.createLabel();
     this.sortableChildren = true;
+  }
+
+  public getID(): number {
+    return this.id;
   }
 
   public getSpots(): Array<Spot> {
@@ -139,17 +139,20 @@ export class DeskZone
     let hadPriorSpot: boolean;
     let hasNewSpot: boolean;
     const oldFreeSeats = this.freeSeats;
+
     for (let spot of this.spots) {
       // If the user is already registered in this spot...
       if (spot.occupantID === user.id) {
         // ...and is still in the spot, do nothing
-        if (spot.hits(user)) return;
+        if (spot.hits(user) && !hasNewSpot) return;
         // User is no longer in the spot - clear the spot
         spot.occupantID = null;
         hadPriorSpot = true;
         continue;
       }
 
+      // If this spot has no occupant but the user
+      // hits it, occupy it.
       if (!spot.occupantID && spot.hits(user)) {
         spot.occupantID = user.id;
         user.updateZone(this.id, spot.id);
@@ -159,6 +162,8 @@ export class DeskZone
       }
     }
 
+    // If the user has just left a spot and has not
+    // joined a new one, go back to the global zone.
     if (hadPriorSpot && !hasNewSpot) {
       this.freeSeats++;
       user.updateZone(globalZoneID);
@@ -167,6 +172,7 @@ export class DeskZone
       this.freeSeats--;
     }
 
+    // Update the label text if needed.
     if (oldFreeSeats !== this.freeSeats) {
       this.updateLabel();
     }

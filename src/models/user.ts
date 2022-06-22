@@ -1,12 +1,12 @@
-import { Collider, ICollider, IInteractable } from "./collider";
+import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject, MIPMAP_MODES } from "pixi.js";
-import { BroadcastZone } from "./broadcastZone";
 import { Action, UserMedia } from "./userMedia";
 import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
 import { broadcastZoneID, globalZoneID, standardTileSize } from "../config";
 import { clamp } from "../util/math";
+import { IZone } from "./zone";
 
 const minAlpha = 0.2;
 const inZoneAlpha = 0.5;
@@ -145,42 +145,65 @@ export class User extends Collider {
     const oldZoneID = this.zoneData.zoneID;
     const oldSpotID = this.zoneData.spotID;
 
+    // If the old zone is identical to this zone, there's
+    // nothing more to do - early out.
     if (zoneID === oldZoneID && spotID === oldSpotID) return;
 
+    // Update the user's zone data
     this.zoneData.zoneID = zoneID;
     this.zoneData.spotID = spotID;
 
+    // If the old zone was a broadcast zone, leave
+    // the broadcast. Otherwise if the new zone is
+    // a broadcast zone, enter the broadcast.
     if (oldZoneID === broadcastZoneID) {
       this.media.leaveBroadcast();
-    }
-
-    if (zoneID === broadcastZoneID) {
+    } else if (zoneID === broadcastZoneID) {
+      // If the user is already in another focus zone,
+      // leave that zone.
       if (this.media.currentAction === Action.InZone) {
         this.media.leaveZone();
       }
       this.alpha = maxAlpha;
       this.media.enterBroadcast();
+      this.isInVicinity = false;
     }
 
-    if (this.isLocal) {
-      if (oldZoneID !== globalZoneID) {
-        this.localZoneMates = {};
-      }
-      if (this.onJoinZone) this.onJoinZone({ zoneID: zoneID, spotID: spotID });
-      if (zoneID === globalZoneID) {
-        if (!this.media.cameraDisabled) {
-          this.setVideoTexture();
-        }
-        this.media.leaveZone();
-        return;
-      }
-      if (zoneID !== globalZoneID && zoneID !== broadcastZoneID) {
-        this.media.enterZone();
-      }
+    // If the new zone is not the global zone or broadcast zone,
+    // set the default sprite texture. We'll be showing video in
+    // separate, larger DOM elements.
+    if (zoneID !== globalZoneID && zoneID !== broadcastZoneID) {
       this.setDefaultTexture();
+    }
+
+    // The rest of the function is only relevant to the local user.
+    if (!this.isLocal) return;
+
+    // Reset the user's zonemates if they're not coming
+    // from the global zone.
+    if (oldZoneID !== globalZoneID) {
+      this.localZoneMates = {};
+    }
+    if (this.onJoinZone) {
+      this.onJoinZone({ zoneID: zoneID, spotID: spotID });
+    }
+    if (zoneID === globalZoneID) {
+      // If the local user's camera isn't disabled, set
+      // the video texture.
+      if (!this.media.cameraDisabled) {
+        this.setVideoTexture();
+      }
+      // Since their previous zone is not a global traversal zone,
+      // it must be a focus zone - leave it.
+      this.media.leaveZone();
       return;
     }
-    if (zoneID !== globalZoneID) this.setDefaultTexture();
+
+    // If the user is not in the global zone or the broadcast zone,
+    // they must be in an interactive focus zone - enter it.
+    if (zoneID !== globalZoneID && zoneID !== broadcastZoneID) {
+      this.media.enterZone();
+    }
   }
 
   getZoneData(): ZoneData {
@@ -236,11 +259,10 @@ export class User extends Collider {
     }
   }
 
-  // "Furniture" can be any non-user colliders in the world.
-  // Eg: desks or broadcast spots
-  checkFurnitures(others: Array<IInteractable>) {
+  // "Focus zones" can be anything that implements IZone
+  checkFocusZones(others: Array<IZone>) {
     for (let other of others) {
-      this.checkFurniture(other);
+      other.tryInteract(this);
     }
   }
 
@@ -401,10 +423,6 @@ export class User extends Collider {
       o.media.muteAudio();
       return;
     }
-  }
-
-  private async checkFurniture(other: IInteractable) {
-    other.tryInteract(this);
   }
 
   private streamVideo(newTrack: MediaStreamTrack) {
