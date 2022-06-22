@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import { DisplayObject } from "pixi.js";
 import { Textures } from "../textures";
 import { Pos, Size } from "../worldTypes";
 

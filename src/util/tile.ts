@@ -44,14 +44,19 @@ export function showZonemate(
   if (!zonemate) {
     zonemate = createZonemate(sessionID, name);
   }
-  const tracks: Array<MediaStreamTrack> = [];
-  if (videoTrack) tracks.push(videoTrack);
-  if (audioTrack) tracks.push(audioTrack);
-  if (tracks.length === 0) return;
 
   const vid = <HTMLVideoElement>(
     document.getElementById(getVideoTagID(sessionID))
   );
+
+  const tracks: Array<MediaStreamTrack> = [];
+  if (videoTrack) tracks.push(videoTrack);
+  if (audioTrack) tracks.push(audioTrack);
+  if (tracks.length === 0) {
+    vid.srcObject = null;
+    return;
+  }
+
   vid.srcObject = new MediaStream(tracks);
 }
 
