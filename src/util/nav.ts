@@ -29,11 +29,11 @@ const toggleScreenBtn = <HTMLButtonElement>(
 );
 
 export function registerCamBtnListener(f: () => void) {
-  toggleCamBtn.addEventListener("click", f);
+  toggleCamBtn.onclick = f;
 }
 
 export function registerMicBtnListener(f: () => void) {
-  toggleMicBtn.addEventListener("click", f);
+  toggleMicBtn.onclick = f;
 }
 
 export function registerScreenShareBtnListener(f: () => void) {
@@ -47,19 +47,19 @@ export function registerScreenShareBtnListener(f: () => void) {
 
 export function registerLeaveBtnListener(f: () => void) {
   const leaveBtn = document.getElementById("leave");
-  leaveBtn.addEventListener("click", f);
+  leaveBtn.onclick = f;
 }
 
 export function registerJoinFormListener(
   f: (name: string, url: string) => void
 ) {
-  joinForm.addEventListener("submit", (event) => {
+  joinForm.onsubmit = (event) => {
     event.preventDefault();
     joinForm.style.display = "none";
     const nameEle = <HTMLInputElement>document.getElementById("userName");
     const urlEle = <HTMLInputElement>document.getElementById("roomURL");
     f(nameEle.value, urlEle.value);
-  });
+  };
 }
 
 export function updateCamBtn(camOn: boolean) {
