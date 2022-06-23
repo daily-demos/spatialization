@@ -4,9 +4,9 @@
   "description": "Daily spatial video/audio demo",
   "main": "index.js",
   "scripts": {
-    "start": "http-server",
+    "start": "http-server ./dist",
     "build": "webpack",
-    "dev": "webpack && http-server",
+    "dev": "webpack && http-server ./dist",
     "test": "jest",
     "test-nc": "jest --clearCache && jest"
   },
