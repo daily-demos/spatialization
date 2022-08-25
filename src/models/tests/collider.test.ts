@@ -1,5 +1,16 @@
 import { Collider } from "../collider";
 
+class Sprite extends Collider {
+  constructor(width: number, height: number, x: number, y: number) {
+    super();
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y;
+    this.getBounds();
+  }
+}
+
 describe("Collider hit tests", () => {
   test("Identical position", () => {
     const s1 = new Sprite(10, 10, 0, 0);
@@ -28,14 +39,3 @@ describe("Collider hit tests", () => {
     expect(s1.hits(s2)).toBe(false);
   });
 });
-
-class Sprite extends Collider {
-  constructor(width: number, height: number, x: number, y: number) {
-    super();
-    this.width = width;
-    this.height = height;
-    this.x = x;
-    this.y = y;
-    this.getBounds();
-  }
-}

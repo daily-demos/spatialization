@@ -1,9 +1,14 @@
+/* eslint-disable prefer-destructuring,@typescript-eslint/dot-notation */
+
 import { mockBody } from "./mock";
-mockBody();
 
 import { User } from "../user";
 
 describe("User zone tests", () => {
+  beforeEach(() => {
+    mockBody();
+  });
+
   test("Users enter and leave proximity", () => {
     const lu = new User({
       id: "local",
@@ -23,14 +28,14 @@ describe("User zone tests", () => {
     // earshot distance. So they should be in the same vicinity
     // and earshot.
     lu.processUsers([ru]);
-    expect(ru.isInVicinity).toBe(true);
-    expect(ru.media.audioTag.muted).toBe(false);
+    expect(ru["isInVicinity"]).toBe(true);
+    expect(ru["media"].audioTag.muted).toBe(false);
 
     // Remote user steps away
     ru.moveTo({ x: 1000, y: 1000 });
     lu.processUsers([ru]);
-    expect(ru.isInVicinity).toBe(false);
-    expect(ru.media.audioTag.muted).toBe(true);
+    expect(ru["isInVicinity"]).toBe(false);
+    expect(ru["media"].audioTag.muted).toBe(true);
   });
 
   test("Remote user leaves default zone", () => {
@@ -52,8 +57,8 @@ describe("User zone tests", () => {
     // Since the user is now in a different zone, they should
     // not be in the vicinity or earshot, AND they should be
     // muted
-    expect(ru.isInVicinity).toBe(false);
-    expect(ru.media.audioTag.muted).toBe(true);
+    expect(ru["isInVicinity"]).toBe(false);
+    expect(ru["media"].audioTag.muted).toBe(true);
   });
 
   test("Local user joins non-default zone", () => {
@@ -72,7 +77,7 @@ describe("User zone tests", () => {
 
     // Both users are now within the same non-default zone.
     lu.processUsers([ru]);
-    expect(ru.isInVicinity).toBe(true);
-    expect(ru.media.audioTag.muted).toBe(true);
+    expect(ru["isInVicinity"]).toBe(true);
+    expect(ru["media"].audioTag.muted).toBe(true);
   });
 });

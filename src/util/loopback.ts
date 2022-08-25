@@ -10,11 +10,15 @@ const offerOptions = {
 // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
 // Implementation based on https://gist.github.com/alexciarlillo/4b9f75516f93c10d7b39282d10cd17bc
 // as well as loopback examples here: https://webrtc.github.io/samples/
-export class Loopback {
+export default class Loopback {
   peer1: RTCPeerConnection;
+
   peer2: RTCPeerConnection;
+
   loopbackStream: MediaStream;
+
   offer: any;
+
   answer: any;
 
   public async start(stream: MediaStream) {

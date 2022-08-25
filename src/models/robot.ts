@@ -12,9 +12,13 @@ export enum RobotRole {
 // Robot exists for testing purposes
 export class Robot extends User {
   targetPos: Pos;
+
   maxCoords: Pos;
+
   role: RobotRole;
+
   persistentPos: Pos;
+
   reachedTargetAt: number;
 
   constructor(
@@ -57,7 +61,8 @@ export class Robot extends User {
   // Focus zones include desks or broadcast spots.
   // This overrides the user focus zone check.
   checkFocusZones(others: Array<IZone>) {
-    for (let other of others) {
+    for (let i = 0; i < others.length; i += 1) {
+      const other = others[i];
       other.tryInteract(this);
     }
   }
@@ -82,7 +87,6 @@ export class Robot extends User {
       return;
     }
     this.targetPos = this.persistentPos;
-    return;
   }
 
   private stepToTarget() {

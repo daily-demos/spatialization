@@ -2,8 +2,8 @@ import * as PIXI from "pixi.js";
 import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
 import { Collider, doesCollide } from "./collider";
-import { Desk } from "./desk";
-import { Spot } from "./spot";
+import Desk from "./desk";
+import Spot from "./spot";
 import { User } from "./user";
 import { IZone } from "./zone";
 
@@ -12,15 +12,21 @@ const spotBuffer = 20;
 
 // DeskZone is a location that holds spots, through which a user can
 // join other users in an isolated zone.
-export class DeskZone extends PIXI.Container implements IZone {
+export default class DeskZone extends PIXI.Container implements IZone {
   physics = true;
 
   private id: number;
+
   private desk: Desk;
+
   private spots: Array<Spot> = [];
+
   private freeSeats: number;
+
   private staticBounds: PIXI.Rectangle;
+
   private zoneMarker: PIXI.Graphics;
+
   private labelGraphics: PIXI.Text;
 
   constructor(id: number, name: string, numSpots: number, pos: Pos) {
@@ -35,7 +41,7 @@ export class DeskZone extends PIXI.Container implements IZone {
     this.y = pos.y;
     this.freeSeats = numSpots;
 
-    const deskLength = this.getDeskLength(numSpots);
+    const deskLength = DeskZone.getDeskLength(numSpots);
 
     // The position is in relation to the container, not global
     // which is why we set it to 0,0
@@ -46,7 +52,7 @@ export class DeskZone extends PIXI.Container implements IZone {
     // Generate the sitting spots associated with this zone
     let px = spotBuffer;
     let py = -spotSize - spotBuffer;
-    for (let i = 0; i < numSpots; i++) {
+    for (let i = 0; i < numSpots; i += 1) {
       this.createSpot(i, { x: px, y: py });
       px += spotSize + spotBuffer;
       if (px + spotSize + spotBuffer > this.desk.width) {
@@ -81,10 +87,11 @@ export class DeskZone extends PIXI.Container implements IZone {
   }
 
   public tryPlace(user: User, spotID: number) {
-    for (let spot of this.spots) {
+    for (let i = 0; i < this.spots.length; i += 1) {
+      const spot = this.spots[i];
       if (spot.id === spotID && !spot.occupantID) {
         spot.occupantID = user.id;
-        this.freeSeats--;
+        this.freeSeats -= 1;
         const np = {
           x: this.x + spot.x,
           y: this.y + spot.y,
@@ -97,10 +104,11 @@ export class DeskZone extends PIXI.Container implements IZone {
   }
 
   public tryUnplace(userID: string, spotID: number) {
-    for (let spot of this.spots) {
+    for (let i = 0; i < this.spots.length; i += 1) {
+      const spot = this.spots[i];
       if (spot.id === spotID && spot.occupantID === userID) {
         spot.occupantID = null;
-        this.freeSeats++;
+        this.freeSeats += 1;
         this.updateLabel();
         return;
       }
@@ -115,8 +123,8 @@ export class DeskZone extends PIXI.Container implements IZone {
   public hits(other: Collider): boolean {
     // For the zone, the only collision we care about is the desk.
     // Since we'll be handling spot interaction separately.
-    let tb = this.desk.getBounds(true);
-    let ob = other.getBounds(true);
+    const tb = this.desk.getBounds(true);
+    const ob = other.getBounds(true);
 
     return doesCollide(
       { x: tb.x, y: tb.y },
@@ -127,7 +135,8 @@ export class DeskZone extends PIXI.Container implements IZone {
   }
 
   public hitsSpot(other: Collider): boolean {
-    for (let spot of this.spots) {
+    for (let i = 0; i < this.spots.length; i += 1) {
+      const spot = this.spots[i];
       if (spot.hits(other)) {
         return true;
       }
@@ -140,7 +149,8 @@ export class DeskZone extends PIXI.Container implements IZone {
     let hasNewSpot: boolean;
     const oldFreeSeats = this.freeSeats;
 
-    for (let spot of this.spots) {
+    for (let i = 0; i < this.spots.length; i += 1) {
+      const spot = this.spots[i];
       // If the user is already registered in this spot...
       if (spot.occupantID === user.id) {
         // ...and is still in the spot, do nothing
@@ -165,11 +175,11 @@ export class DeskZone extends PIXI.Container implements IZone {
     // If the user has just left a spot and has not
     // joined a new one, go back to the global zone.
     if (hadPriorSpot && !hasNewSpot) {
-      this.freeSeats++;
+      this.freeSeats += 1;
       user.updateZone(globalZoneID);
       if (user.isLocal) this.showZoneMarker();
     } else if (!hadPriorSpot && hasNewSpot) {
-      this.freeSeats--;
+      this.freeSeats -= 1;
     }
 
     // Update the label text if needed.
@@ -204,6 +214,7 @@ export class DeskZone extends PIXI.Container implements IZone {
   private getLabelTxt(): string {
     return `Room ${this.name} (${this.freeSeats}/${this.spots.length} seats available)`;
   }
+
   private hideZoneMarker() {
     this.zoneMarker.alpha = 0.1;
   }
@@ -232,7 +243,7 @@ export class DeskZone extends PIXI.Container implements IZone {
 
   // Desk length depends on the number of spots
   // at the desk.
-  private getDeskLength(numSpots: number): number {
+  private static getDeskLength(numSpots: number): number {
     const spotsPerSide = Math.round(numSpots / 2);
     return spotBuffer + spotsPerSide * (spotSize + spotBuffer);
   }

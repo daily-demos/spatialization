@@ -3,7 +3,7 @@ import { globalZoneID, standardTileSize } from "../config";
 import { Pos } from "../worldTypes";
 
 import { Collider, doesCollide } from "./collider";
-import { Spot } from "./spot";
+import Spot from "./spot";
 import { User } from "./user";
 import { IZone } from "./zone";
 
@@ -12,11 +12,13 @@ const spotSize = standardTileSize;
 // BroadcastZone is a location from which any user
 // can broadcast to all other users in the world regardless
 // of proximity or zone.
-export class BroadcastZone extends PIXI.Container implements IZone {
+export default class BroadcastZone extends PIXI.Container implements IZone {
   name: string;
+
   physics: false;
 
   private id: number;
+
   private spot: Spot;
 
   constructor(id: number, x: number, y: number) {
@@ -68,8 +70,8 @@ export class BroadcastZone extends PIXI.Container implements IZone {
 
   public hits(other: Collider): boolean {
     // For the zone, the only collision we care about is the spot.
-    let tb = this.spot.getBounds(true);
-    let ob = other.getBounds(true);
+    const tb = this.spot.getBounds(true);
+    const ob = other.getBounds(true);
 
     return doesCollide(
       { x: tb.x, y: tb.y },

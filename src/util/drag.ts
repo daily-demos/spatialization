@@ -1,9 +1,12 @@
 // drag.ts sets up draggable elements in our wrapper.
-const wrapper = document.getElementById("focus");
+let wrapper = document.getElementById("focus");
 
 // setupDraggableElement will ensure the wrapper is set up to allow drops,
 // and add a listener to the given element to detect a drag being started.
-export function setupDraggableElement(element: HTMLElement) {
+export default function setupDraggableElement(element: HTMLElement) {
+  if (!wrapper) {
+    wrapper = document.getElementById("focus");
+  }
   const dropSetupAttr = "dropSetupDone";
   if (!wrapper.getAttribute(dropSetupAttr)) {
     wrapper.addEventListener("drop", drop);
@@ -16,14 +19,15 @@ export function setupDraggableElement(element: HTMLElement) {
 // drop handles an element being dropped in another position on the wrapper
 function drop(ev: DragEvent) {
   ev.preventDefault();
-  const data = ev.dataTransfer.getData("targetID");
-  const relativeMouseX = parseInt(ev.dataTransfer.getData("relativeMouseX"));
-  const relativeMouseY = parseInt(ev.dataTransfer.getData("relativeMouseY"));
+  const dt = ev.dataTransfer;
+  const data = dt.getData("targetID");
+  const relativeMouseX = parseInt(dt.getData("relativeMouseX"), 10);
+  const relativeMouseY = parseInt(dt.getData("relativeMouseY"), 10);
 
   // Offset the new position based on the relative position of the mouse
   // which we saved on drag start.
-  let newTop = ev.clientY - relativeMouseY;
-  let newLeft = ev.clientX - relativeMouseX;
+  const newTop = ev.clientY - relativeMouseY;
+  const newLeft = ev.clientX - relativeMouseX;
 
   const ele = document.getElementById(data);
   ele.style.top = `${newTop}px`;

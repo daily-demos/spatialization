@@ -19,9 +19,8 @@ export class Textures {
   private static instance: Textures;
 
   catalog: { [key: string]: PIXI.Texture } = {};
-  queue: Array<PendingGenerator> = [];
 
-  private constructor() {}
+  queue: Array<PendingGenerator> = [];
 
   public static get(): Textures {
     if (!Textures.instance) {
@@ -32,9 +31,9 @@ export class Textures {
 
   public static destroy() {
     const i = Textures.get();
-    for (let t in i.catalog) {
-      i.catalog[t].destroy(true);
-    }
+    Object.values(i.catalog).forEach((texture) => {
+      texture.destroy(true);
+    });
     i.queue = [];
     i.catalog = {};
   }
@@ -57,10 +56,10 @@ export class Textures {
     setOnCreation = true
   ) {
     this.queue.push({
-      textureName: textureName,
-      generator: generator,
-      sprite: sprite,
-      setOnCreation: setOnCreation,
+      textureName,
+      generator,
+      sprite,
+      setOnCreation,
     });
   }
 

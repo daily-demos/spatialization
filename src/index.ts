@@ -1,5 +1,5 @@
 import "./env";
-import { Room } from "./room";
+import Room from "./room";
 import { registerJoinFormListener } from "./util/nav";
 
 // These imports are here to ensure they're bundled into
@@ -18,7 +18,7 @@ import "./assets/screen-on.svg";
 
 registerJoinFormListener(initCall);
 
-export function initCall(name: string, url: string) {
+export default function initCall(name: string, url: string) {
   // We will do this in rooms, in case we want to implement
   // breakout rooms later. Each room will have its own instance of
   // the daily call object. There is one "global" room. Note that Daily

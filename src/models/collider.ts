@@ -10,13 +10,14 @@ export interface ICollider {
 // against another collider.
 export class Collider extends PIXI.Sprite implements ICollider {
   physics: boolean;
+
   constructor(physics = false) {
     super();
     this.physics = physics;
   }
 
   hits(other: Collider): boolean {
-    let tb = this.getBounds(true);
+    const tb = this.getBounds(true);
     const ob = other.getBounds(true);
 
     return doesCollide(
