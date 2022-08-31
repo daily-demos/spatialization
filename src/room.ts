@@ -1,5 +1,4 @@
-import {
-  default as DailyIframe,
+import DailyIframe, {
   DailyCall,
   DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
@@ -24,7 +23,7 @@ import {
   updateMicBtn,
   updateScreenBtn,
 } from "./util/nav";
-import { World } from "./world";
+import World from "./world";
 import { Pos, ZoneData } from "./worldTypes";
 
 const playableState = "playable";
@@ -55,14 +54,21 @@ enum Topology {
   SFU,
 }
 
-export class Room {
+export default class Room {
   url: string;
+
   userName: string;
+
   isGlobal: boolean;
+
   callObject: DailyCall;
+
   pendingAcks: { [key: string]: ReturnType<typeof setInterval> } = {};
+
   localBandwidthLevel = BandwidthLevel.Unknown;
+
   localState: State = { audio: null, video: null };
+
   topology: Topology;
 
   constructor(url: string, userName: string, isGlobal = false) {
@@ -103,9 +109,9 @@ export class Room {
   }
 
   private resetPendingAcks() {
-    for (const ack in this.pendingAcks) {
-      clearInterval(this.pendingAcks[ack]);
-    }
+    Object.values(this.pendingAcks).forEach((ack) => {
+      clearInterval(ack);
+    });
     this.pendingAcks = {};
   }
 
@@ -144,15 +150,15 @@ export class Room {
   }
 
   private updateLocal(p: DailyParticipant) {
-    if (this.localState.audio != p.audio) {
+    if (this.localState.audio !== p.audio) {
       this.localState.audio = p.audio;
       updateMicBtn(this.localState.audio);
     }
-    if (this.localState.video != p.video) {
+    if (this.localState.video !== p.video) {
       this.localState.video = p.video;
       updateCamBtn(this.localState.video);
     }
-    if (this.localState.screen != p.screen) {
+    if (this.localState.screen !== p.screen) {
       this.localState.screen = p.screen;
       updateScreenBtn(this.localState.screen);
     }
@@ -172,7 +178,7 @@ export class Room {
     if (!this.isGlobal) return;
 
     // Get the local participant
-    const p = event.participants["local"];
+    const p = event.participants.local;
 
     registerCamBtnListener(() => {
       const current = this.callObject.participants().local.video;
@@ -198,7 +204,7 @@ export class Room {
     this.maybeEnableScreenSharing();
 
     // Retrieve the video and audio tracks of this participant
-    const tracks = this.getParticipantTracks(p);
+    const tracks = getParticipantTracks(p);
 
     // The function World will use to instruct the room to
     // subscribe to another user's track.
@@ -217,7 +223,7 @@ export class Room {
     const onMove = (pos: Pos, recipient: string = "*") => {
       const data = {
         action: "posChange",
-        pos: pos,
+        pos,
       };
       this.broadcast(data, recipient);
     };
@@ -238,7 +244,7 @@ export class Room {
       }
       const data = {
         action: "zoneChange",
-        zoneData: zoneData,
+        zoneData,
       };
       this.broadcast(data, recipient);
     };
@@ -249,7 +255,7 @@ export class Room {
       const data = {
         action: "dump",
         pos: posData,
-        zoneData: zoneData,
+        zoneData,
       };
       this.broadcast(data, recipient);
     };
@@ -338,19 +344,23 @@ export class Room {
           world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
         }
         break;
-      case "ack":
+      case "ack": {
         console.log(`Received acknowledgement from ${event.fromId}`);
         const pendingAck = this.pendingAcks[event.fromId];
         if (pendingAck) {
           this.clearPendingAck(event.fromId);
         }
         break;
+      }
+      default:
+        console.warn("Received unrecognized app message received", data);
+        break;
     }
   }
 
   private handleParticipantUpdated(event: DailyEventObjectParticipant) {
     const p = event.participant;
-    const tracks = this.getParticipantTracks(p);
+    const tracks = getParticipantTracks(p);
     world.updateUser(
       p.session_id,
       p.user_name,
@@ -365,11 +375,11 @@ export class Room {
 
   private handleParticipantJoined(event: DailyEventObjectParticipant) {
     const sID = event.participant.session_id;
-    if (this.isRobot(event.participant.user_name)) {
+    if (isRobot(event.participant.user_name)) {
       world.createRobot(sID);
       return;
     }
-    world.initRemoteParticpant(sID, event.participant.user_name);
+    world.initRemoteParticipant(sID, event.participant.user_name);
 
     this.pendingAcks[sID] = setInterval(() => {
       if (!this.callObject.participants()[sID]) {
@@ -378,34 +388,6 @@ export class Room {
       }
       world.sendDataDumpToParticipant(sID);
     }, 1000);
-  }
-
-  private isRobot(userName: string): Boolean {
-    return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
-      userName
-    );
-  }
-
-  private getParticipantTracks(participant: DailyParticipant) {
-    const tracks = participant?.tracks;
-    if (!tracks) return { video: null, audio: null, screen: null };
-
-    const vt = <{ [key: string]: any }>tracks.video;
-    const at = <{ [key: string]: any }>tracks.audio;
-    const st = <{ [key: string]: any }>tracks.screenVideo;
-
-    const videoTrack =
-      vt?.state === playableState ? vt["persistentTrack"] : null;
-    const audioTrack =
-      at?.state === playableState ? at["persistentTrack"] : null;
-    const screenTrack =
-      st?.state === playableState ? st["persistentTrack"] : null;
-
-    return {
-      video: videoTrack,
-      audio: audioTrack,
-      screen: screenTrack,
-    };
   }
 
   private handleParticipantLeft(event: DailyEventObjectParticipant) {
@@ -426,6 +408,9 @@ export class Room {
       case "sfu":
         this.topology = Topology.SFU;
         break;
+      default:
+        console.warn("Unrecognized network connection type", event.type);
+        break;
     }
   }
 
@@ -438,7 +423,7 @@ export class Room {
     try {
       captureStream = await navigator.mediaDevices.getDisplayMedia(options);
     } catch (err) {
-      console.error("Failed to get display media: " + err);
+      console.error(`Failed to get display media: ${err}`);
     }
     if (captureStream) {
       this.callObject.startScreenShare({ mediaStream: captureStream });
@@ -453,4 +438,29 @@ export class Room {
     // track ourselves, we must call stop on it manually.
     this.callObject.participants().local.screenVideoTrack?.stop();
   }
+}
+
+function isRobot(userName: string): Boolean {
+  return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+    userName
+  );
+}
+
+function getParticipantTracks(participant: DailyParticipant) {
+  const tracks = participant?.tracks;
+  if (!tracks) return { video: null, audio: null, screen: null };
+
+  const vt = <{ [key: string]: any }>tracks.video;
+  const at = <{ [key: string]: any }>tracks.audio;
+  const st = <{ [key: string]: any }>tracks.screenVideo;
+
+  const videoTrack = vt?.state === playableState ? vt.persistentTrack : null;
+  const audioTrack = at?.state === playableState ? at.persistentTrack : null;
+  const screenTrack = st?.state === playableState ? st.persistentTrack : null;
+
+  return {
+    video: videoTrack,
+    audio: audioTrack,
+    screen: screenTrack,
+  };
 }

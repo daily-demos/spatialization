@@ -1,10 +1,15 @@
+/* eslint-disable prefer-destructuring,@typescript-eslint/dot-notation */
+
 import { MockAudioContext, mockBody } from "./mock";
-mockBody();
 
 import { globalZoneID } from "../../config";
 import { User } from "../user";
 
 describe("User panner tests", () => {
+  beforeEach(() => {
+    mockBody();
+  });
+
   test("Pan: speaker on the max right of listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
@@ -14,7 +19,7 @@ describe("User panner tests", () => {
     local["zoneData"].zoneID = globalZoneID;
 
     const remote = new User({ id: "remote", x: 200, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
     remote["zoneData"].zoneID = globalZoneID;
 
     const wantPan = 1;
@@ -23,7 +28,7 @@ describe("User panner tests", () => {
 
     local.processUsers([remote]);
 
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getPan()).toBe(wantPan);
   });
 
@@ -35,7 +40,7 @@ describe("User panner tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 0, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const wantPan = -1;
     const pannerMod = local["getAudioMod"](100, remote.getPos());
@@ -43,7 +48,7 @@ describe("User panner tests", () => {
 
     local.processUsers([remote]);
 
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getPan()).toBe(wantPan);
   });
 
@@ -55,13 +60,13 @@ describe("User panner tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 150, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const pannerMod = local["getAudioMod"](50, remote.getPos());
     expect(pannerMod.pan).toBe(0.5);
 
     local.processUsers([remote]);
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getPan()).toBe(0.5);
   });
 
@@ -73,13 +78,13 @@ describe("User panner tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 50, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const pannerMod = local["getAudioMod"](50, remote.getPos());
     expect(pannerMod.pan).toBe(-0.5);
 
     local.processUsers([remote]);
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getPan()).toBe(-0.5);
   });
 
@@ -91,13 +96,13 @@ describe("User panner tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 100, y: 199 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const pannerMod = local["getAudioMod"](100, remote.getPos());
     expect(pannerMod.pan).toBe(0);
 
     local.processUsers([remote]);
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getPan()).toBe(0);
   });
 });

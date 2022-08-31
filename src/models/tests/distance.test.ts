@@ -1,13 +1,15 @@
+/* eslint-disable prefer-destructuring,@typescript-eslint/dot-notation */
+
 import { mockBody } from "./mock";
-mockBody();
 
 import { User } from "../user";
 
 describe("Distance and earshot tests", () => {
-  mockBody();
-  test("Distance calculation", () => {
+  beforeEach(() => {
     mockBody();
+  });
 
+  test("Distance calculation", () => {
     const u1 = new User({ id: "test1", x: 100, y: 100, isLocal: true });
     const u2 = new User({ id: "test2", x: 200, y: 200 });
     const wantDistance = 141;

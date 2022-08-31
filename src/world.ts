@@ -1,17 +1,17 @@
 import * as PIXI from "pixi.js";
 import { install } from "@pixi/unsafe-eval";
 
+import { IAudioContext, AudioContext } from "standardized-audio-context";
 import KeyListener from "./util/nav";
 import { User } from "./models/user";
 import { rand } from "./util/math";
 import Floor from "./models/floor";
-import { BroadcastZone } from "./models/broadcastZone";
-import { IAudioContext, AudioContext } from "standardized-audio-context";
+import BroadcastZone from "./models/broadcastZone";
 import { IZone } from "./models/zone";
 import { Robot, RobotRole } from "./models/robot";
 import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
-import { DeskZone } from "./models/deskZone";
+import DeskZone from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
 
 // PIXI patch to avoid 'unsafe-eval'
@@ -23,23 +23,32 @@ declare global {
   }
 }
 
-export class World {
+export default class World {
   subToTracks: (sessionID: string) => void = null;
+
   unsubFromTracks: (sessionID: string) => void = null;
+
   onMove: (pos: Pos, recipient?: string) => void = null;
+
   onJoinZone: (zoneData: ZoneData, recipient?: string) => void = null;
+
   onDataDump: (zoneData: ZoneData, posData: Pos, recipient?: string) => void =
     null;
 
   private keyListener = new KeyListener();
+
   private localUser: User = null;
 
   private app: PIXI.Application = null;
+
   private worldContainer: PIXI.Container = null;
+
   private usersContainer: PIXI.Container = null;
+
   private focusZonesContainer: PIXI.Container = null;
 
   private robots: Array<Robot> = [];
+
   private focusZones: Array<IZone> = [];
 
   constructor() {
@@ -57,7 +66,7 @@ export class World {
     this.app.ticker.maxFPS = 30;
 
     // Create window frame
-    let frame = new PIXI.Graphics();
+    const frame = new PIXI.Graphics();
     frame.beginFill(0x121a24);
     frame.drawRect(0, 0, this.app.renderer.width, this.app.renderer.height);
     frame.position.set(0, 0);
@@ -134,7 +143,8 @@ export class World {
     // communicated zone and spot as needed. "Placement" does not impact
     // user behavior itself (that is done via `user.updateZone()` above).
     // Placement affects zone spot occupation status and remote positioning.
-    for (let zone of this.focusZones) {
+    for (let i = 0; i < this.focusZones.length; i += 1) {
+      const zone = this.focusZones[i];
       if (oldZoneID === zone.getID()) {
         zone.tryUnplace(user.id, oldSpotID);
         // If the new zone is the global zone, don't bother
@@ -147,7 +157,7 @@ export class World {
     }
   }
 
-  initRemoteParticpant(sessionID: string, userName: string) {
+  initRemoteParticipant(sessionID: string, userName: string) {
     // User may have been created as part of an out of order
     // update.
     let user = this.getUser(sessionID);
@@ -210,11 +220,11 @@ export class World {
     this.updateParticipantZone(userId, globalZoneID);
     user.destroy();
     this.usersContainer.removeChild(user);
-    for (let i = 0; i < this.robots.length; i++) {
+    for (let i = 0; i < this.robots.length; i += 1) {
       const robot = this.robots[i];
       if (robot.id === userId) {
         this.robots.splice(i, 1);
-        i--;
+        i -= 1;
       }
     }
   }
@@ -263,7 +273,8 @@ export class World {
     let foundBroadcast = false;
 
     // Check if we already have a desk and broadcast robot
-    for (let robot of this.robots) {
+    for (let i = 0; i < this.robots.length; i += 1) {
+      const robot = this.robots[i];
       if (robot.role === RobotRole.Desk) {
         foundDesk = true;
         continue;
@@ -283,7 +294,9 @@ export class World {
 
     // Try to find a desk to assign this robot to
     if (!foundDesk) {
-      for (let item of this.focusZonesContainer.children) {
+      const focusZones = this.focusZonesContainer.children;
+      for (let i = 0; i < focusZones.length; i += 1) {
+        const item = focusZones[i];
         if (item instanceof DeskZone) {
           const desk = <DeskZone>item;
           role = RobotRole.Desk;
@@ -297,7 +310,9 @@ export class World {
     // Try to find a broadcast spot to assign this robot to
     if (!foundBroadcast && !persistentPos) {
       // Find a broadcast position
-      for (let item of this.focusZonesContainer.children) {
+      const focusZones = this.focusZonesContainer.children;
+      for (let i = 0; i < focusZones.length; i += 1) {
+        const item = focusZones[i];
         if (item instanceof BroadcastZone) {
           role = RobotRole.Broadcast;
           const spot = <BroadcastZone>item;
@@ -338,13 +353,13 @@ export class World {
     }
     const args = {
       id: userID,
-      userName: userName,
-      x: x,
-      y: y,
-      isLocal: isLocal,
-      onEnterVicinity: onEnterVicinity,
-      onLeaveVicinity: onLeaveVicinity,
-      onJoinZone: onJoinZone,
+      userName,
+      x,
+      y,
+      isLocal,
+      onEnterVicinity,
+      onLeaveVicinity,
+      onJoinZone,
     };
     const user = new User(args);
     this.usersContainer.addChild(user);
@@ -352,7 +367,8 @@ export class World {
   }
 
   private getFinalLocalPos(user: User): void {
-    for (let item of this.focusZones) {
+    for (let i = 0; i < this.focusZones.length; i += 1) {
+      const item = this.focusZones[i];
       let doesHit = false;
       if (item instanceof DeskZone) {
         const z = <DeskZone>item;
@@ -377,7 +393,8 @@ export class World {
         y: rand(worldCenter - 500, worldCenter + 500),
       };
       user.moveTo(np);
-      return this.getFinalLocalPos(user);
+      this.getFinalLocalPos(user);
+      return;
     }
   }
 
@@ -389,7 +406,8 @@ export class World {
     if (!this.localUser) return;
 
     // Update all robots
-    for (let robot of this.robots) {
+    for (let i = 0; i < this.robots.length; i += 1) {
+      const robot = this.robots[i];
       robot.update();
       robot.checkFocusZones(this.focusZones);
     }
@@ -459,8 +477,9 @@ export class World {
     // results in them colliding with an object that has
     // physics enabled, reset their pos to their previous
     // position and return.
-    for (let o of this.focusZones) {
-      if (o.physics && o.hits(this.localUser)) {
+    for (let i = 0; i < this.focusZones.length; i += 1) {
+      const z = this.focusZones[i];
+      if (z.physics && z.hits(this.localUser)) {
         this.localUser.moveTo(currentPos);
         return;
       }
@@ -497,9 +516,9 @@ export class World {
     // If we are in an isolated zone and have zonemates,
     // only broadcast to them
     const zonemates = lu.getZonemates();
-    for (let zm in zonemates) {
+    Object.keys(zonemates).forEach((zm) => {
       this.onMove(lu.getPos(), zm);
-    }
+    });
   }
 
   private async sendZoneData() {

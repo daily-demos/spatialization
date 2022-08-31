@@ -9,10 +9,13 @@ const deskTextureName = "desk";
 
 // Desk is part of a DeskZone which the user is unable to
 // walk through. Spots are positioned around it.
-export class Desk extends Collider {
+export default class Desk extends Collider {
   isPresenter = false;
+
   id: number;
+
   name: string;
+
   staticSize: Size;
 
   constructor(id: number, length: number, pos: Pos) {
@@ -38,9 +41,8 @@ export class Desk extends Collider {
       t.enqueue(
         this,
         deskTextureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
-          return this.generateTexture(renderer);
-        }
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture =>
+          this.generateTexture(renderer)
       );
       return;
     }

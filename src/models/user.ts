@@ -1,6 +1,6 @@
-import { Collider } from "./collider";
 import * as PIXI from "pixi.js";
 import { DisplayObject, MIPMAP_MODES } from "pixi.js";
+import { Collider } from "./collider";
 import { Action, UserMedia } from "./userMedia";
 import { Pos, Size, ZoneData } from "../worldTypes";
 import { Textures } from "../textures";
@@ -36,27 +36,39 @@ export type UserArgs = {
 // User is a participant in the world (and the call)
 export class User extends Collider {
   id: string;
+
   speed: number;
-  isInVicinity = false;
-  media: UserMedia;
+
   isLocal: boolean;
 
-  private userName: string;
-  private videoTextureAttemptPending: number = null;
-
   protected emoji: string = "😊";
+
   protected gradientTextureName: string = "user-gradient";
 
+  private userName: string;
+
+  private videoTextureAttemptPending: number = null;
+
+  private media: UserMedia;
+
   private textureType = TextureType.Unknown;
+
   private zoneData: ZoneData = { zoneID: 0, spotID: -1 };
 
   private earshotDistance: number;
+
   private onEnterVicinity: Function;
+
   private onLeaveVicinity: Function;
+
   private onJoinZone: (zoneData: ZoneData, recipient?: string) => void;
+
   private localZoneMates: { [key: string]: void } = {};
 
+  private isInVicinity = false;
+
   private nameGraphics: PIXI.Text;
+
   private staticBounds: PIXI.Rectangle;
 
   constructor(args: UserArgs) {
@@ -198,7 +210,7 @@ export class User extends Collider {
       this.localZoneMates = {};
     }
     if (this.onJoinZone) {
-      this.onJoinZone({ zoneID: zoneID, spotID: spotID });
+      this.onJoinZone({ zoneID, spotID });
     }
     if (zoneID === globalZoneID) {
       // If the local user's camera isn't disabled, set
@@ -267,14 +279,16 @@ export class User extends Collider {
   }
 
   async processUsers(others: Array<DisplayObject>) {
-    for (let other of others) {
+    for (let i = 0; i < others.length; i += 1) {
+      const other = others[i];
       this.processUser(<User>other);
     }
   }
 
   // "Focus zones" can be anything that implements IZone
   checkFocusZones(others: Array<IZone>) {
-    for (let other of others) {
+    for (let i = 0; i < others.length; i += 1) {
+      const other = others[i];
       other.tryInteract(this);
     }
   }
@@ -320,20 +334,20 @@ export class User extends Collider {
 
     // Create a base texture using our video tag as the
     // backing resource.
-    let texture = new PIXI.BaseTexture(this.media.videoTag, {
+    const texture = new PIXI.BaseTexture(this.media.videoTag, {
       mipmap: MIPMAP_MODES.OFF,
       resourceOptions: {
         updateFPS: 15,
       },
     });
-    texture.onError = (e) => this.textureError(e);
+    texture.onError = (e) => textureError(e);
 
     let textureMask: PIXI.Rectangle = null;
 
     // Set our texture mask to ensure correct dimensions
     // and aspect ratio based on the size of the backing
     // video track resource.
-    const resource = texture.resource;
+    const { resource } = texture;
 
     let x = 0;
     let y = 0;
@@ -358,10 +372,7 @@ export class User extends Collider {
     this.tryUpdateNameGraphics();
   }
 
-  private textureError(err: ErrorEvent) {
-    console.error("PIXI base texture error:", err);
-  }
-
+  /* eslint-disable no-param-reassign */
   private async processUser(o: User) {
     // If this is the local user verify texture and skip
     if (o.id === this.id) {
@@ -434,9 +445,9 @@ export class User extends Collider {
 
       // Mute the other user's default audio
       o.media.muteAudio();
-      return;
     }
   }
+  /* eslint-enable no-param-reassign */
 
   private streamVideo(newTrack: MediaStreamTrack) {
     this.media.updateVideoSource(newTrack);
@@ -470,9 +481,8 @@ export class User extends Collider {
       t.enqueue(
         this,
         this.gradientTextureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
-          return this.generateTexture(renderer);
-        },
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture =>
+          this.generateTexture(renderer),
         false
       );
       return;
@@ -482,6 +492,7 @@ export class User extends Collider {
     this.tryUpdateNameGraphics();
   }
 
+  /* eslint-disable no-param-reassign */
   private async proximityUpdate(other: User) {
     // Check that we aren't updating proximity against ourselves
     if (other.id === this.id) {
@@ -524,7 +535,7 @@ export class User extends Collider {
       other.media.unmuteAudio();
       if (
         !other.media.cameraDisabled &&
-        other.textureType != TextureType.Video
+        other.textureType !== TextureType.Video
       ) {
         other.setVideoTexture();
       }
@@ -534,10 +545,11 @@ export class User extends Collider {
     other.media.muteAudio();
     other.setDefaultTexture();
   }
+  /* eslint-enable no-param-reassign */
 
   // If the video is resized, we will need to recalculate
   // the texture dimensions and mask.
-  private videoTextureResized(e: UIEvent) {
+  private videoTextureResized(_e: UIEvent) {
     if (this.textureType === TextureType.Video) {
       this.setVideoTexture(true);
     }
@@ -547,7 +559,7 @@ export class User extends Collider {
     distance: number,
     otherPos: Pos
   ): { gain: number; pan: number } {
-    let gainValue = clamp(
+    const gainValue = clamp(
       ((this.earshotDistance - distance) * 0.5) / this.earshotDistance,
       0,
       0.5
@@ -651,4 +663,8 @@ export class User extends Collider {
     this.nameGraphics.position.y = (bounds.y + bounds.height - 8) * sy;
     this.nameGraphics.scale.set(sx, sy);
   }
+}
+
+function textureError(err: ErrorEvent) {
+  console.error("PIXI base texture error:", err);
 }

@@ -1,10 +1,15 @@
+/* eslint-disable prefer-destructuring,@typescript-eslint/dot-notation */
+
 import { MockAudioContext, mockBody } from "./mock";
-mockBody();
 
 import { globalZoneID } from "../../config";
 import { User } from "../user";
 
 describe("User gain tests", () => {
+  beforeEach(() => {
+    mockBody();
+  });
+
   test("Gain: speaker on the max right of listener", () => {
     const audioCtx = new MockAudioContext();
     window.audioContext = audioCtx;
@@ -14,7 +19,7 @@ describe("User gain tests", () => {
     local["zoneData"].zoneID = globalZoneID;
 
     const remote = new User({ id: "remote", x: 200, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
     remote["zoneData"].zoneID = globalZoneID;
 
     const wantGain = 0;
@@ -23,7 +28,7 @@ describe("User gain tests", () => {
 
     local.processUsers([remote]);
 
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getGain()).toBe(wantGain);
   });
 
@@ -35,7 +40,7 @@ describe("User gain tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 0, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const wantGain = 0;
     const audioMod = local["getAudioMod"](100, remote.getPos());
@@ -43,7 +48,7 @@ describe("User gain tests", () => {
 
     local.processUsers([remote]);
 
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getGain()).toBe(wantGain);
   });
 
@@ -55,14 +60,14 @@ describe("User gain tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 150, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const wantGain = 0.25;
     const audioMod = local["getAudioMod"](50, remote.getPos());
     expect(audioMod.gain).toBe(wantGain);
 
     local.processUsers([remote]);
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getGain()).toBe(wantGain);
   });
 
@@ -74,14 +79,14 @@ describe("User gain tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 50, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const wantGain = 0.25;
     const audioMod = local["getAudioMod"](50, remote.getPos());
     expect(audioMod.gain).toBe(wantGain);
 
     local.processUsers([remote]);
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getGain()).toBe(wantGain);
   });
 
@@ -93,14 +98,14 @@ describe("User gain tests", () => {
     local["earshotDistance"] = 100;
 
     const remote = new User({ id: "remote", x: 100, y: 100 });
-    remote.media["audioTrack"] = new MediaStreamTrack();
+    remote["media"]["audioTrack"] = new MediaStreamTrack();
 
     const wantGain = 0.5;
     const audioMod = local["getAudioMod"](0, remote.getPos());
     expect(audioMod.gain).toBe(wantGain);
 
     local.processUsers([remote]);
-    const nodeChain = remote.media["nodeChain"];
+    const nodeChain = remote["media"]["nodeChain"];
     expect(nodeChain.getGain()).toBe(wantGain);
   });
 });

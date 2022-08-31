@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { AudioContext } from "standardized-audio-context-mock";
 import {
   IAudioContext,
@@ -37,7 +38,7 @@ Object.defineProperty(global.window.HTMLMediaElement.prototype, "play", {
 
 Object.defineProperty(window, "RTCPeerConnection", {
   writable: true,
-  value: jest.fn().mockImplementation((query) => ({
+  value: jest.fn().mockImplementation((_query) => ({
     start: jest.fn(),
     createOffer: jest.fn(),
     createAnswer: jest.fn(),
@@ -47,10 +48,6 @@ Object.defineProperty(window, "RTCPeerConnection", {
 });
 
 export class MockAudioContext extends AudioContext {
-  constructor() {
-    super();
-  }
-
   createStereoPanner(): IStereoPannerNode<IAudioContext> {
     const node: any = {
       pan: <AudioParam>{
@@ -66,12 +63,10 @@ export class MockAudioContext extends AudioContext {
       disconnect: () => {},
       addEventListener: () => {},
       removeEventListener: () => {},
-      dispatchEvent: (): boolean => {
-        return true;
-      },
+      dispatchEvent: (): boolean => true,
     };
 
-    node.pan.setValueAtTime = (pan: number, time: number) => {
+    node.pan.setValueAtTime = (pan: number, _time: number) => {
       node.pan.value = pan;
     };
 
@@ -97,4 +92,5 @@ export function mockBody() {
     '<div id="broadcast"></div>' +
     '<div id="zonemates"></div>' +
     "</div>";
+  console.log("mocked body", document.body.innerHTML);
 }

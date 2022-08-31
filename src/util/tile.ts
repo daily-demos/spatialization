@@ -1,11 +1,15 @@
-import { setupDraggableElement } from "./drag";
+import setupDraggableElement from "./drag";
 
-const broadcastName = <HTMLDivElement>document.getElementById("broadcastName");
-const broadcastDiv = <HTMLDivElement>document.getElementById("broadcast");
-const broadcastVideo = <HTMLVideoElement>(
-  document.getElementById("broadcastVideo")
-);
-setupDraggableElement(broadcastDiv);
+let broadcastName: HTMLDivElement;
+let broadcastDiv: HTMLDivElement;
+let broadcastVideo: HTMLVideoElement;
+
+export function initBroadcastDOM() {
+  broadcastName = <HTMLDivElement>document.getElementById("broadcastName");
+  broadcastDiv = <HTMLDivElement>document.getElementById("broadcast");
+  broadcastVideo = <HTMLVideoElement>document.getElementById("broadcastVideo");
+  setupDraggableElement(broadcastDiv);
+}
 
 enum ZonemateTileKind {
   Screen = "screen",
@@ -122,9 +126,11 @@ function createZonemateTile(
   kind: ZonemateTileKind,
   sessionID: string,
   name: string
-) {
+): HTMLDivElement {
   const zonemates = document.getElementById("zonemates");
-  let tileID, vidID, className: string;
+  let tileID;
+  let vidID;
+  let className: string;
   if (kind === ZonemateTileKind.Screen) {
     tileID = getScreenShareTileID(sessionID);
     vidID = getScreenShareVidID(sessionID);
@@ -135,10 +141,10 @@ function createZonemateTile(
     className = "fit";
   } else {
     console.error(getErrUnrecognizedTileKind(kind));
-    return;
+    return null;
   }
 
-  let ele = document.createElement("div");
+  const ele = document.createElement("div");
   ele.id = tileID;
   ele.classList.add(kind.toString());
   zonemates.appendChild(ele);

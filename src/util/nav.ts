@@ -6,8 +6,6 @@ export default class KeyListener {
   on(key: string, f: Function) {
     if (this.pressedKeys[key]) {
       f();
-    } else {
-      return false;
     }
   }
 

@@ -7,10 +7,13 @@ import { Collider } from "./collider";
 const spotTextureName = "spot";
 
 // Spot is any location a user can interact with.
-export class Spot extends Collider {
+export default class Spot extends Collider {
   id: number;
+
   name: string;
+
   occupantID: string;
+
   private staticBounds: PIXI.Rectangle;
 
   constructor(id: number, pos: Pos, size: Size, emoji: string = null) {
@@ -40,9 +43,8 @@ export class Spot extends Collider {
       t.enqueue(
         this,
         textureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture => {
-          return this.generateTexture(renderer, emoji);
-        }
+        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture =>
+          this.generateTexture(renderer, emoji)
       );
       return;
     }

@@ -1,9 +1,9 @@
+import * as PIXI from "pixi.js";
 import { ICollider } from "./collider";
-import { User } from "./user";
 
 export interface IZone extends ICollider {
-  tryInteract: (user: User) => void;
-  tryPlace: (user: User, spotID: number) => void;
+  tryInteract: (user: PIXI.Sprite) => void;
+  tryPlace: (user: PIXI.Sprite, spotID: number) => void;
   tryUnplace: (userID: string, spotID: number) => void;
   getID: () => number;
 }

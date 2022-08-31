@@ -1,13 +1,4 @@
-import {
-  AudioContext,
-  IMediaStreamAudioDestinationNode,
-  IGainNode,
-  IStereoPannerNode,
-  IDynamicsCompressorNode,
-  IMediaStreamAudioSourceNode,
-} from "standardized-audio-context";
 import { standardTileSize } from "../config";
-import { Loopback } from "../util/loopback";
 import { enableScreenBtn } from "../util/nav";
 import {
   removeScreenShare,
@@ -16,7 +7,9 @@ import {
   showScreenShare,
   showCamera,
   stopBroadcast,
+  initBroadcastDOM,
 } from "../util/tile";
+import NodeChain from "./nodeChain";
 
 export const maxPannerDistance = 1000;
 
@@ -26,175 +19,83 @@ export enum Action {
   Broadcasting,
 }
 
-const isChrome: boolean = !!(navigator.userAgent.indexOf("Chrome") !== -1);
-
-// NodeChain is responsible for creating, destroying, and connecting our
-// Web Audio API nodes.
-class NodeChain {
-  initialized: boolean;
-
-  private source: IMediaStreamAudioSourceNode<AudioContext>;
-  private destination: IMediaStreamAudioDestinationNode<AudioContext>;
-  private gain: IGainNode<AudioContext>;
-  private stereoPanner: IStereoPannerNode<AudioContext>;
-  private compressor: IDynamicsCompressorNode<AudioContext>;
-  private loopback: Loopback;
-  // Apparently this is required due to a Chromium bug!
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
-  // https://stackoverflow.com/questions/55703316/audio-from-rtcpeerconnection-is-not-audible-after-processing-in-audiocontext
-  private mutedAudio: HTMLAudioElement;
-
-  constructor() {
-    this.mutedAudio = new Audio();
-    this.mutedAudio.muted = true;
-  }
-
-  getGain(): number {
-    return this.gain?.gain.value;
-  }
-
-  updateGain(val: number) {
-    if (this.gain.gain.value === val) return;
-    try {
-      this.gain.gain.setValueAtTime(val, window.audioContext.currentTime);
-    } catch (e) {
-      console.error(`failed to update gain: ${e} (gain value: ${val})`);
-    }
-  }
-
-  getPan(): number {
-    return this.stereoPanner?.pan.value;
-  }
-
-  updatePan(val: number) {
-    if (this.stereoPanner.pan.value === val) return;
-    try {
-      this.stereoPanner.pan.setValueAtTime(
-        val,
-        window.audioContext.currentTime
-      );
-    } catch (e) {
-      console.error(`failed to update pan: ${e} (pan value: ${val})`);
-    }
-  }
-
-  async init(track: MediaStreamTrack): Promise<MediaStream> {
-    const stream = new MediaStream([track]);
-
-    this.mutedAudio.srcObject = stream;
-    this.mutedAudio.play();
-
-    this.gain = window.audioContext.createGain();
-    this.stereoPanner = window.audioContext.createStereoPanner();
-    this.compressor = window.audioContext.createDynamicsCompressor();
-    this.source = window.audioContext.createMediaStreamSource(stream);
-    this.destination = window.audioContext.createMediaStreamDestination();
-
-    this.source.connect(this.gain);
-    this.gain.connect(this.stereoPanner);
-    this.stereoPanner.connect(this.compressor);
-    this.compressor.connect(this.destination);
-
-    let srcStream: MediaStream;
-
-    // This is a workaround for there being no noise cancellation
-    // when using Web Audio API in Chrome (another bug):
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
-    if (isChrome) {
-      this.loopback = new Loopback();
-      await this.loopback.start(this.destination.stream);
-      srcStream = this.loopback.getLoopback();
-    } else {
-      srcStream = this.destination.stream;
-    }
-    this.initialized = true;
-    return srcStream;
-  }
-
-  destroy() {
-    if (!this.initialized) return;
-    this.initialized = false;
-    this.source.disconnect();
-    this.destination.disconnect();
-    this.gain.disconnect();
-    this.stereoPanner.disconnect();
-    this.compressor.disconnect();
-    this.loopback?.destroy();
-    this.source = null;
-    this.destination = null;
-    this.gain = null;
-    this.stereoPanner = null;
-    this.compressor = null;
-    this.loopback = null;
-    this.mutedAudio.pause();
-    this.mutedAudio.srcObject = null;
-  }
-}
-
 // UserMedia holds all audio and video related tags,
 // streams, and panners for a user.
 export class UserMedia {
   videoTag: HTMLVideoElement;
+
   audioTag: HTMLAudioElement;
+
   cameraDisabled: boolean;
+
   currentAction: Action = Action.Traversing;
+
   userName: string;
-  toggleScreenControls: boolean;
-  videoDelayedPlayHandler: () => void;
 
   private videoTrack: MediaStreamTrack;
+
   private audioTrack: MediaStreamTrack;
+
   private screenTrack: MediaStreamTrack;
-  private _videoPlaying = false;
+
+  private isVideoPlaying = false;
+
+  private videoDelayedPlayHandler: () => void;
+
   private nodeChain = new NodeChain();
+
   private id: string;
+
+  private toggleScreenControls: boolean;
 
   constructor(id: string, userName: string, isLocal: boolean) {
     this.id = id;
-    if (!userName) {
-      userName = id;
+    let un = userName;
+    if (!un) {
+      un = id;
     }
-    this.userName = userName;
+    this.userName = un;
     this.createVideoTag();
     if (!isLocal) {
       this.createAudioTag();
       this.toggleScreenControls = true;
     }
+    initBroadcastDOM();
   }
 
   // This is called a "delayed" video play handler, because
   // it is intended specifically for not just the video "onpaying"
   // event firing, but the video ALSO having been playing for at
   // > 0s. Reasoning being that if video.currentTime is at 0,
-  // the Sprite video texture amy freeze.
+  // the Sprite video texture may freeze.
   public setDelayedVideoPlayHandler(f: () => void) {
     this.videoDelayedPlayHandler = f;
   }
 
   public addVideoResizeHandler(f: (e: UIEvent) => void) {
     this.videoTag.onresize = (e) => {
-      this.videoPlaying = false;
+      this.setVideoPlaying(false);
       this.registerPlay();
       f(e);
     };
   }
 
   public resetVideoResizeHandler() {
-    this.videoTag.onresize = (e) => {
+    this.videoTag.onresize = () => {
       // After resizing, video goes back to currentTime 0
       // Which for our purposes is NOT PLAYING.
       // So set bool to false and register play again.
-      this.videoPlaying = false;
+      this.setVideoPlaying(false);
       this.registerPlay();
     };
   }
 
   public get videoPlaying(): boolean {
-    return this._videoPlaying;
+    return this.isVideoPlaying;
   }
 
-  public set videoPlaying(value: boolean) {
-    this._videoPlaying = value;
+  public setVideoPlaying(value: boolean) {
+    this.isVideoPlaying = value;
     if (value === true && this.videoDelayedPlayHandler) {
       this.videoDelayedPlayHandler();
     }
@@ -202,9 +103,10 @@ export class UserMedia {
 
   private async registerPlay() {
     while (this.videoTag.currentTime === 0) {
+      // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
       await new Promise((r) => setTimeout(r, 10));
     }
-    this.videoPlaying = true;
+    this.setVideoPlaying(true);
   }
 
   private async createVideoTag() {
@@ -231,12 +133,12 @@ export class UserMedia {
     };
 
     video.onpause = () => {
-      this.videoPlaying = false;
+      this.setVideoPlaying(false);
       console.warn("video paused.", this.userName);
     };
 
     video.onended = () => {
-      this.videoPlaying = false;
+      this.setVideoPlaying(false);
       console.warn("video ended.", this.userName);
     };
 
