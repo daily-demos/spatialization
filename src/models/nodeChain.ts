@@ -85,7 +85,7 @@ export default class NodeChain {
 
     let srcStream: MediaStream;
 
-    // This is a workaround for there being no noise cancellation
+    // This is a workaround for there being no echo cancellation
     // when using Web Audio API in Chrome (another bug):
     // https://bugs.chromium.org/p/chromium/issues/detail?id=687574
     if (isChrome) {
