@@ -334,11 +334,11 @@ export class User extends Collider {
 
     // Create a base texture using our video tag as the
     // backing resource.
-    const texture = new PIXI.BaseTexture(this.media.videoTag, {
+    const resource = new PIXI.VideoResource(this.media.videoTag, {
+      updateFPS: 15,
+    });
+    const texture = new PIXI.BaseTexture(resource, {
       mipmap: MIPMAP_MODES.OFF,
-      resourceOptions: {
-        updateFPS: 15,
-      },
     });
     texture.onError = (e) => textureError(e);
 
@@ -347,8 +347,6 @@ export class User extends Collider {
     // Set our texture mask to ensure correct dimensions
     // and aspect ratio based on the size of the backing
     // video track resource.
-    const { resource } = texture;
-
     let x = 0;
     let y = 0;
     let size = baseSize;
@@ -481,7 +479,7 @@ export class User extends Collider {
       t.enqueue(
         this,
         this.gradientTextureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture =>
+        (renderer: PIXI.Renderer): PIXI.Texture =>
           this.generateTexture(renderer),
         false
       );
@@ -593,9 +591,7 @@ export class User extends Collider {
     return distance < this.earshotDistance * 2;
   }
 
-  private generateTexture(
-    renderer: PIXI.Renderer | PIXI.AbstractRenderer
-  ): PIXI.Texture {
+  private generateTexture(renderer: PIXI.Renderer): PIXI.Texture {
     const cont = new PIXI.Container();
     cont.x = 0;
     cont.y = 0;

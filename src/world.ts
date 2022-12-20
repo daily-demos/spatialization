@@ -99,7 +99,9 @@ export default class World {
     this.focusZonesContainer.height = this.worldContainer.height;
     this.worldContainer.addChild(this.focusZonesContainer);
 
-    document.getElementById("world").appendChild(this.app.view);
+    document
+      .getElementById("world")
+      .appendChild(this.app.view as HTMLCanvasElement);
   }
 
   updateUser(
@@ -401,7 +403,7 @@ export default class World {
   private update(delta: number) {
     // Process texture queue
     const textures = Textures.get();
-    textures.processQueue(this.app.renderer);
+    textures.processQueue(this.app.renderer as PIXI.Renderer);
 
     if (!this.localUser) return;
 

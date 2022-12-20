@@ -8,6 +8,7 @@ import DailyIframe, {
   DailyEventObjectParticipants,
   DailyEventObjectNetworkConnectionEvent,
   DailyRoomInfo,
+  DailyEventObjectParticipantLeft,
 } from "@daily-co/daily-js";
 import { globalZoneID, standardTileSize } from "./config";
 
@@ -390,7 +391,7 @@ export default class Room {
     }, 1000);
   }
 
-  private handleParticipantLeft(event: DailyEventObjectParticipant) {
+  private handleParticipantLeft(event: DailyEventObjectParticipantLeft) {
     const up = event.participant;
     this.clearPendingAck(up.session_id);
     world.removeUser(up.session_id);
@@ -441,7 +442,7 @@ export default class Room {
 }
 
 function isRobot(userName: string): Boolean {
-  return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+  return /^[a-zA-Z]{2}-[a-zA-Z0-9-]+-[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/.test(
     userName
   );
 }

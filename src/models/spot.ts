@@ -43,7 +43,7 @@ export default class Spot extends Collider {
       t.enqueue(
         this,
         textureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture =>
+        (renderer: PIXI.Renderer): PIXI.Texture =>
           this.generateTexture(renderer, emoji)
       );
       return;
@@ -52,10 +52,7 @@ export default class Spot extends Collider {
     this.getBounds();
   }
 
-  generateTexture(
-    renderer: PIXI.Renderer | PIXI.AbstractRenderer,
-    emoji: string = null
-  ): PIXI.Texture {
+  generateTexture(renderer: PIXI.Renderer, emoji: string = null): PIXI.Texture {
     const cont = new PIXI.Container();
     cont.x = 0;
     cont.y = 0;

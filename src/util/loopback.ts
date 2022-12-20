@@ -63,14 +63,9 @@ export default class Loopback {
   ) {
     this.getOtherConn(conn)
       .addIceCandidate(event.candidate)
-      .then(
-        () => {
-          console.log("added ice candidate");
-        },
-        (err) => {
-          console.error("failed to add ice candidate:", err);
-        }
-      );
+      .catch((err) => {
+        console.error("failed to add ice candidate:", err);
+      });
   }
 
   private getOtherConn(conn: RTCPeerConnection): RTCPeerConnection {

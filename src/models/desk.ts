@@ -41,7 +41,7 @@ export default class Desk extends Collider {
       t.enqueue(
         this,
         deskTextureName,
-        (renderer: PIXI.Renderer | PIXI.AbstractRenderer): PIXI.Texture =>
+        (renderer: PIXI.Renderer): PIXI.Texture =>
           this.generateTexture(renderer)
       );
       return;
@@ -50,9 +50,7 @@ export default class Desk extends Collider {
     this.getBounds();
   }
 
-  private generateTexture(
-    renderer: PIXI.Renderer | PIXI.AbstractRenderer
-  ): PIXI.Texture {
+  private generateTexture(renderer: PIXI.Renderer): PIXI.Texture {
     const graphics = new PIXI.Graphics();
     graphics.beginFill(0x2b3f56);
     //   graphics.lineStyle(10, 0x121a24, 1);
