@@ -1,8 +1,6 @@
 /* eslint-disable prefer-destructuring,@typescript-eslint/dot-notation */
-
-import { mockBody } from "./mock";
-
 import { User } from "../user";
+import mockBody from "./mock";
 
 describe("User zone tests", () => {
   beforeEach(() => {

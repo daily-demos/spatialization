@@ -1,8 +1,6 @@
 import * as PIXI from "pixi.js";
 
-export type GeneratorFunc = (
-  renderer: PIXI.Renderer | PIXI.AbstractRenderer
-) => PIXI.Texture;
+export type GeneratorFunc = (renderer: PIXI.Renderer) => PIXI.Texture;
 
 type PendingGenerator = {
   sprite: PIXI.Sprite;
@@ -64,7 +62,7 @@ export class Textures {
   }
 
   // processQueue processes all queued texture generation tasks.
-  public processQueue(renderer: PIXI.Renderer | PIXI.AbstractRenderer) {
+  public processQueue(renderer: PIXI.Renderer) {
     let next = this.queue.shift();
     while (next) {
       let texture = this.catalog[next.textureName];

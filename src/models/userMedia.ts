@@ -318,8 +318,8 @@ export class UserMedia {
     this.nodeChain.updatePan(panValue);
 
     this.audioTag.muted = false;
+    this.audioTag.autoplay = true;
     this.audioTag.srcObject = stream;
-    this.audioTag.play();
   }
 
   showOrUpdateCamera() {

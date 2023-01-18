@@ -70,7 +70,7 @@ export default class NodeChain {
     const stream = new MediaStream([track]);
 
     this.mutedAudio.srcObject = stream;
-    this.mutedAudio.play();
+    this.mutedAudio.autoplay = true;
 
     this.gain = window.audioContext.createGain();
     this.stereoPanner = window.audioContext.createStereoPanner();

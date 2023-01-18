@@ -1,13 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { AudioContext } from "standardized-audio-context-mock";
-import {
-  IAudioContext,
-  IMediaStreamAudioDestinationNode,
-  IMediaStreamAudioSourceNode,
-  IStereoPannerNode,
-  TChannelCountMode,
-  TChannelInterpretation,
-} from "standardized-audio-context";
+import { IAudioContext } from "standardized-audio-context";
 
 declare global {
   interface Window {
@@ -47,46 +39,7 @@ Object.defineProperty(window, "RTCPeerConnection", {
   })),
 });
 
-export class MockAudioContext extends AudioContext {
-  createStereoPanner(): IStereoPannerNode<IAudioContext> {
-    const node: any = {
-      pan: <AudioParam>{
-        value: 0,
-      },
-      channelCount: 1,
-      channelCountMode: <TChannelCountMode>{},
-      channelInterpretation: <TChannelInterpretation>{},
-      context: <IAudioContext>{},
-      numberOfInputs: 1,
-      numberOfOutputs: 1,
-      connect: () => {},
-      disconnect: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: (): boolean => true,
-    };
-
-    node.pan.setValueAtTime = (pan: number, _time: number) => {
-      node.pan.value = pan;
-    };
-
-    return node;
-  }
-
-  createMediaStreamSource(): IMediaStreamAudioSourceNode<this> {
-    const s = super.createMediaStreamSource();
-    s.connect = () => {};
-    return s;
-  }
-
-  createMediaStreamDestination(): IMediaStreamAudioDestinationNode<this> {
-    return <IMediaStreamAudioDestinationNode<this>>{
-      stream: new MediaStream(),
-    };
-  }
-}
-
-export function mockBody() {
+export default function mockBody() {
   document.body.innerHTML =
     '<div id="focus">' +
     '<div id="broadcast"></div>' +
