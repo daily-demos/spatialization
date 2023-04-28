@@ -342,8 +342,6 @@ export class User extends Collider {
     });
     texture.onError = (e) => textureError(e);
 
-    let textureMask: PIXI.Rectangle = null;
-
     // Set our texture mask to ensure correct dimensions
     // and aspect ratio based on the size of the backing
     // video track resource.
@@ -360,10 +358,11 @@ export class User extends Collider {
     } else {
       texture.setSize(baseSize, baseSize);
     }
-    textureMask = new PIXI.Rectangle(x, y, size, size);
+    const textureMask = new PIXI.Rectangle(x, y, size, size);
 
     // Create and set our video texture!
     this.texture = new PIXI.Texture(texture, textureMask);
+    this.updateTextureMask(size);
 
     // Ensure our name label is of the right size and position
     // for the new texture.
@@ -465,6 +464,27 @@ export class User extends Collider {
     this.media.updateAudioSource(newTrack);
   }
 
+  private updateTextureMask(size: number) {
+    // If a mask is already applied, just
+    // make sure it is appropriately scaled
+    // for current size
+    if (this.mask) {
+      const mask = <PIXI.Container>this.mask;
+      const scale = size / baseSize;
+      const pos = scale / 2;
+      mask.setTransform(pos, pos, scale, scale);
+      return;
+    }
+    // Configure circular mask for current sprite
+    const circularMask = new PIXI.Graphics();
+    circularMask.beginFill(0xffffff);
+    const halfSize = size / 2;
+    circularMask.drawCircle(halfSize, halfSize, halfSize);
+    circularMask.endFill();
+    this.addChild(circularMask);
+    this.mask = circularMask;
+  }
+
   private setDefaultTexture() {
     if (this.textureType === TextureType.Default) return;
 
@@ -487,6 +507,7 @@ export class User extends Collider {
     }
     this.texture = texture;
     this.textureType = TextureType.Default;
+    this.updateTextureMask(baseSize);
     this.tryUpdateNameGraphics();
   }
 

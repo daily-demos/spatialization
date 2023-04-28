@@ -58,8 +58,6 @@ enum Topology {
 export default class Room {
   url: string;
 
-  userName: string;
-
   isGlobal: boolean;
 
   callObject: DailyCall;
@@ -72,14 +70,10 @@ export default class Room {
 
   topology: Topology;
 
-  constructor(url: string, userName: string, isGlobal = false) {
-    this.url = url;
-    this.userName = userName;
-    this.isGlobal = isGlobal;
+  constructor() {
     this.callObject = DailyIframe.createCallObject({
       subscribeToTracksAutomatically: false,
       dailyConfig: {
-        experimentalChromeVideoMuteLightOff: true,
         camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
         avoidEval: true,
       },
@@ -96,9 +90,11 @@ export default class Room {
     this.setBandwidth(BandwidthLevel.Tile);
   }
 
-  async join() {
+  async join(url: string, userName: string, isGlobal = false) {
+    this.url = url;
+    this.isGlobal = isGlobal;
     try {
-      await this.callObject.join({ url: this.url, userName: this.userName });
+      await this.callObject.join({ url: this.url, userName });
     } catch (e) {
       console.error(e);
       showJoinForm();
