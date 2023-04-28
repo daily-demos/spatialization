@@ -345,9 +345,9 @@ export class User extends Collider {
     // Set our texture mask to ensure correct dimensions
     // and aspect ratio based on the size of the backing
     // video track resource.
-    let size = baseSize;
     let x = 0;
     let y = 0;
+    let size = baseSize;
     const aspect = resource.width / resource.height;
     if (aspect > 1) {
       x = resource.width / 2 - resource.height / 2;
