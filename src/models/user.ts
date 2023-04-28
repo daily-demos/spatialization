@@ -117,6 +117,7 @@ export class User extends Collider {
     }
 
     this.setDefaultTexture();
+    this.initTextureMask();
     this.sortableChildren = true;
   }
 
@@ -342,28 +343,20 @@ export class User extends Collider {
     });
     texture.onError = (e) => textureError(e);
 
-    let textureMask: PIXI.Rectangle = null;
-
     // Set our texture mask to ensure correct dimensions
     // and aspect ratio based on the size of the backing
     // video track resource.
-    let x = 0;
-    let y = 0;
     let size = baseSize;
     const aspect = resource.width / resource.height;
     if (aspect > 1) {
-      x = resource.width / 2 - resource.height / 2;
       size = resource.height;
     } else if (aspect < 1) {
-      y = resource.height / 2 - resource.width / 2;
       size = resource.width;
     } else {
       texture.setSize(baseSize, baseSize);
     }
-    textureMask = new PIXI.Rectangle(x, y, size, size);
 
-    // Create and set our video texture!
-    this.texture = new PIXI.Texture(texture, textureMask);
+    this.texture = new PIXI.Texture(texture);
 
     // Ensure our name label is of the right size and position
     // for the new texture.
@@ -463,6 +456,16 @@ export class User extends Collider {
 
   private streamAudio(newTrack: MediaStreamTrack) {
     this.media.updateAudioSource(newTrack);
+  }
+
+  private initTextureMask() {
+    // Configure circular mask for current sprite
+    const circularMask = new PIXI.Graphics();
+    circularMask.beginFill(0xffffff);
+    circularMask.drawCircle(baseSize / 2, baseSize / 2, baseSize / 2);
+    circularMask.endFill();
+    this.addChild(circularMask);
+    this.mask = circularMask;
   }
 
   private setDefaultTexture() {
