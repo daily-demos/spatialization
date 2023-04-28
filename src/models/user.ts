@@ -117,7 +117,6 @@ export class User extends Collider {
     }
 
     this.setDefaultTexture();
-    this.initTextureMask();
     this.sortableChildren = true;
   }
 
@@ -347,16 +346,23 @@ export class User extends Collider {
     // and aspect ratio based on the size of the backing
     // video track resource.
     let size = baseSize;
+    let x = 0;
+    let y = 0;
     const aspect = resource.width / resource.height;
     if (aspect > 1) {
+      x = resource.width / 2 - resource.height / 2;
       size = resource.height;
     } else if (aspect < 1) {
+      y = resource.height / 2 - resource.width / 2;
       size = resource.width;
     } else {
       texture.setSize(baseSize, baseSize);
     }
+    const textureMask = new PIXI.Rectangle(x, y, size, size);
 
-    this.texture = new PIXI.Texture(texture);
+    // Create and set our video texture!
+    this.texture = new PIXI.Texture(texture, textureMask);
+    this.updateTextureMask(size);
 
     // Ensure our name label is of the right size and position
     // for the new texture.
@@ -458,11 +464,22 @@ export class User extends Collider {
     this.media.updateAudioSource(newTrack);
   }
 
-  private initTextureMask() {
+  private updateTextureMask(size: number) {
+    // If a mask is already applied, just
+    // make sure it is appropriately scaled
+    // for current size
+    if (this.mask) {
+      const mask = <PIXI.Container>this.mask;
+      const scale = size / baseSize;
+      const pos = scale / 2;
+      mask.setTransform(pos, pos, scale, scale);
+      return;
+    }
     // Configure circular mask for current sprite
     const circularMask = new PIXI.Graphics();
     circularMask.beginFill(0xffffff);
-    circularMask.drawCircle(baseSize / 2, baseSize / 2, baseSize / 2);
+    const halfSize = size / 2;
+    circularMask.drawCircle(halfSize, halfSize, halfSize);
     circularMask.endFill();
     this.addChild(circularMask);
     this.mask = circularMask;
@@ -490,6 +507,7 @@ export class User extends Collider {
     }
     this.texture = texture;
     this.textureType = TextureType.Default;
+    this.updateTextureMask(baseSize);
     this.tryUpdateNameGraphics();
   }
 
