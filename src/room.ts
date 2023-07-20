@@ -79,7 +79,6 @@ export default class Room {
     this.callObject = DailyIframe.createCallObject({
       subscribeToTracksAutomatically: false,
       dailyConfig: {
-        experimentalChromeVideoMuteLightOff: true,
         camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
         avoidEval: true,
       },
@@ -437,7 +436,9 @@ export default class Room {
     // associated events get fired, BUT daily-js only calls
     // stop() on daily-managed tracks. Since we got our screen
     // track ourselves, we must call stop on it manually.
-    this.callObject.participants().local.screenVideoTrack?.stop();
+    this.callObject
+      .participants()
+      .local.tracks?.screenVideo?.persistentTrack?.stop();
   }
 }
 

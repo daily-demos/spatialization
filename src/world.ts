@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import { install } from "@pixi/unsafe-eval";
 
 import { IAudioContext, AudioContext } from "standardized-audio-context";
 import KeyListener from "./util/nav";
@@ -13,9 +12,6 @@ import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
 import DeskZone from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
-
-// PIXI patch to avoid 'unsafe-eval'
-install(PIXI);
 
 declare global {
   interface Window {
