@@ -183,6 +183,7 @@ export default {
   transform: {
     "^.+\\.ts?$": "ts-jest",
   },
+
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
   // transformIgnorePatterns: [
   //   "\\\\node_modules\\\\",
