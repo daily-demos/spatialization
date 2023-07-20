@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import "@pixi/unsafe-eval";
 
 import { IAudioContext, AudioContext } from "standardized-audio-context";
 import KeyListener from "./util/nav";
