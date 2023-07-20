@@ -48,11 +48,11 @@ function drag(ev: DragEvent) {
   const rect = target.getBoundingClientRect();
   ev.dataTransfer.setData(
     "relativeMouseX",
-    (ev.clientX - rect.left).toString()
+    (ev.clientX - rect.left).toString(),
   );
   // 52 is the height of our Daily header.
   ev.dataTransfer.setData(
     "relativeMouseY",
-    (ev.clientY - rect.top + 52).toString()
+    (ev.clientY - rect.top + 52).toString(),
   );
 }

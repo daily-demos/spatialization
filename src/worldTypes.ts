@@ -12,7 +12,7 @@ export type Size = {
 
 export type GenerateTexture = (
   displayObject: PIXI.IRenderableObject,
-  options?: PIXI.IGenerateTextureOptions
+  options?: PIXI.IGenerateTextureOptions,
 ) => PIXI.RenderTexture;
 
 export type ZoneData = {

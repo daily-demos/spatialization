@@ -42,7 +42,7 @@ export default class Desk extends Collider {
         this,
         deskTextureName,
         (renderer: PIXI.Renderer): PIXI.Texture =>
-          this.generateTexture(renderer)
+          this.generateTexture(renderer),
       );
       return;
     }

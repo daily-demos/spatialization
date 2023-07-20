@@ -148,7 +148,7 @@ export class User extends Collider {
   updateTracks(
     videoTrack: MediaStreamTrack = null,
     audioTrack: MediaStreamTrack = null,
-    screenTrack: MediaStreamTrack = null
+    screenTrack: MediaStreamTrack = null,
   ) {
     this.streamVideo(videoTrack);
     if (!this.isLocal) {
@@ -317,7 +317,7 @@ export class User extends Collider {
     if (!this.media.videoPlaying) {
       console.log(
         "video not playing; will set texture when play starts",
-        this.userName
+        this.userName,
       );
       this.videoTextureAttemptPending = Date.now();
       this.setDefaultTexture();
@@ -481,7 +481,7 @@ export class User extends Collider {
         this.gradientTextureName,
         (renderer: PIXI.Renderer): PIXI.Texture =>
           this.generateTexture(renderer),
-        false
+        false,
       );
       return;
     }
@@ -555,12 +555,12 @@ export class User extends Collider {
 
   private getAudioMod(
     distance: number,
-    otherPos: Pos
+    otherPos: Pos,
   ): { gain: number; pan: number } {
     const gainValue = clamp(
       ((this.earshotDistance - distance) * 0.5) / this.earshotDistance,
       0,
-      0.5
+      0.5,
     );
 
     const dx = otherPos.x - this.x;

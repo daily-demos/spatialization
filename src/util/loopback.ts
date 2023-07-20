@@ -59,7 +59,7 @@ export default class Loopback {
 
   private onIceCandidate(
     conn: RTCPeerConnection,
-    event: RTCPeerConnectionIceEvent
+    event: RTCPeerConnectionIceEvent,
   ) {
     this.getOtherConn(conn)
       .addIceCandidate(event.candidate)

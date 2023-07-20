@@ -14,7 +14,7 @@ export default class Floor extends PIXI.TilingSprite {
         this,
         textureName,
         (renderer: PIXI.Renderer): PIXI.Texture =>
-          this.generateTexture(renderer)
+          this.generateTexture(renderer),
       );
       return;
     }
