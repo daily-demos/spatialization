@@ -29,7 +29,7 @@ export default class Spot extends Collider {
       pos.x,
       pos.y,
       size.width,
-      size.height
+      size.height,
     );
 
     const t = Textures.get();
@@ -44,7 +44,7 @@ export default class Spot extends Collider {
         this,
         textureName,
         (renderer: PIXI.Renderer): PIXI.Texture =>
-          this.generateTexture(renderer, emoji)
+          this.generateTexture(renderer, emoji),
       );
       return;
     }

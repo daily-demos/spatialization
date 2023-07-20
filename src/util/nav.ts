@@ -49,7 +49,7 @@ export function registerLeaveBtnListener(f: () => void) {
 }
 
 export function registerJoinFormListener(
-  f: (name: string, url: string) => void
+  f: (name: string, url: string) => void,
 ) {
   joinForm.onsubmit = (event) => {
     event.preventDefault();

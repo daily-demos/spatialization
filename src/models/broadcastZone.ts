@@ -35,7 +35,7 @@ export default class BroadcastZone extends PIXI.Container implements IZone {
       0,
       { x: 0, y: 0 },
       { width: spotSize, height: spotSize },
-      "📣"
+      "📣",
     );
     this.addChild(this.spot);
     this.createLabel();
@@ -77,7 +77,7 @@ export default class BroadcastZone extends PIXI.Container implements IZone {
       { x: tb.x, y: tb.y },
       { x: ob.x, y: ob.y },
       { width: tb.width, height: tb.height },
-      { width: ob.width, height: ob.height }
+      { width: ob.width, height: ob.height },
     );
   }
 

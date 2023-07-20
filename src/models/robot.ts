@@ -25,7 +25,7 @@ export class Robot extends User {
     userID: string,
     maxX: number,
     maxY: number,
-    role: RobotRole = RobotRole.World
+    role: RobotRole = RobotRole.World,
   ) {
     const args = {
       id: userID,

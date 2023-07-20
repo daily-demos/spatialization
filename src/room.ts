@@ -79,7 +79,6 @@ export default class Room {
     this.callObject = DailyIframe.createCallObject({
       subscribeToTracksAutomatically: false,
       dailyConfig: {
-        experimentalChromeVideoMuteLightOff: true,
         camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
         avoidEval: true,
       },
@@ -145,7 +144,7 @@ export default class Room {
         break;
       default:
         console.warn(
-          `setBandwidth called with unrecognized level (${level}). Not modifying any constraints.`
+          `setBandwidth called with unrecognized level (${level}). Not modifying any constraints.`,
         );
     }
   }
@@ -330,7 +329,7 @@ export default class Room {
         world.updateParticipantZone(
           event.fromId,
           data.zoneData.zoneID,
-          data.zoneData.spotID
+          data.zoneData.spotID,
         );
         break;
       case "dump":
@@ -339,7 +338,7 @@ export default class Room {
         world.updateParticipantZone(
           event.fromId,
           data.zoneData.zoneID,
-          data.zoneData.spotID
+          data.zoneData.spotID,
         );
         if (data.zoneData.zoneID === globalZoneID) {
           world.updateParticipantPos(event.fromId, data.pos.x, data.pos.y);
@@ -367,7 +366,7 @@ export default class Room {
       p.user_name,
       tracks.video,
       tracks.audio,
-      tracks.screen
+      tracks.screen,
     );
     if (p.session_id === this.callObject.participants()?.local?.session_id) {
       this.updateLocal(p);
@@ -398,7 +397,7 @@ export default class Room {
   }
 
   private handleNetworkConnectionChanged(
-    event: DailyEventObjectNetworkConnectionEvent
+    event: DailyEventObjectNetworkConnectionEvent,
   ) {
     if (event.event !== "connected") return;
     console.log("Network connection changed. Type:", event.type);
@@ -437,13 +436,15 @@ export default class Room {
     // associated events get fired, BUT daily-js only calls
     // stop() on daily-managed tracks. Since we got our screen
     // track ourselves, we must call stop on it manually.
-    this.callObject.participants().local.screenVideoTrack?.stop();
+    this.callObject
+      .participants()
+      .local.tracks?.screenVideo?.persistentTrack?.stop();
   }
 }
 
 function isRobot(userName: string): Boolean {
   return /^[a-zA-Z]{2}-[a-zA-Z0-9-]+-[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/.test(
-    userName
+    userName,
   );
 }
 

@@ -70,7 +70,7 @@ export default class DeskZone extends PIXI.Container implements IZone {
       0,
       0 - spotSize - spotBuffer,
       deskSize.width,
-      deskSize.height + (spotSize + spotBuffer) * 2
+      deskSize.height + (spotSize + spotBuffer) * 2,
     );
 
     this.createZoneMarker();
@@ -130,7 +130,7 @@ export default class DeskZone extends PIXI.Container implements IZone {
       { x: tb.x, y: tb.y },
       { x: ob.x, y: ob.y },
       { width: tb.width, height: tb.height },
-      { width: ob.width, height: ob.height }
+      { width: ob.width, height: ob.height },
     );
   }
 
@@ -232,7 +232,7 @@ export default class DeskZone extends PIXI.Container implements IZone {
       bounds.y - 10,
       bounds.width + 20,
       bounds.height + 20,
-      8
+      8,
     );
     graphics.endFill();
 

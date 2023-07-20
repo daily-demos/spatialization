@@ -24,7 +24,7 @@ export class Collider extends PIXI.Sprite implements ICollider {
       { x: tb.x, y: tb.y },
       { x: ob.x, y: ob.y },
       { width: tb.width, height: tb.height },
-      { width: ob.width, height: ob.height }
+      { width: ob.width, height: ob.height },
     );
   }
 }
@@ -33,7 +33,7 @@ export function doesCollide(
   thisPos: Pos,
   otherPos: Pos,
   thisSize: Size,
-  otherSize: Size
+  otherSize: Size,
 ): boolean {
   return (
     thisPos.x < otherPos.x + otherSize.width &&

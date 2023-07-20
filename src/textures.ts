@@ -51,7 +51,7 @@ export class Textures {
     sprite: PIXI.Sprite,
     textureName: string,
     generator: GeneratorFunc,
-    setOnCreation = true
+    setOnCreation = true,
   ) {
     this.queue.push({
       textureName,

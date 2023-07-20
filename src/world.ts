@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { install } from "@pixi/unsafe-eval";
+import "@pixi/unsafe-eval";
 
 import { IAudioContext, AudioContext } from "standardized-audio-context";
 import KeyListener from "./util/nav";
@@ -13,9 +13,6 @@ import { Pos, ZoneData } from "./worldTypes";
 import { Textures } from "./textures";
 import DeskZone from "./models/deskZone";
 import { broadcastZoneID, defaultWorldSize, globalZoneID } from "./config";
-
-// PIXI patch to avoid 'unsafe-eval'
-install(PIXI);
 
 declare global {
   interface Window {
@@ -109,7 +106,7 @@ export default class World {
     name: string,
     video: MediaStreamTrack = null,
     audio: MediaStreamTrack = null,
-    screen: MediaStreamTrack = null
+    screen: MediaStreamTrack = null,
   ) {
     const user = this.getUser(id);
     if (user) {
@@ -123,7 +120,7 @@ export default class World {
   updateParticipantZone(
     sessionID: string,
     zoneID: number,
-    spotID: number = -1
+    spotID: number = -1,
   ) {
     let user = this.getUser(sessionID);
     if (!user) {
@@ -243,7 +240,7 @@ export default class World {
     const zoneBroadcast = new BroadcastZone(
       broadcastZoneID,
       0,
-      defaultWorldSize / 2
+      defaultWorldSize / 2,
     );
     zoneBroadcast.moveTo({
       x: defaultWorldSize / 2 - zoneBroadcast.width / 2,
@@ -343,7 +340,7 @@ export default class World {
     x: number,
     y: number,
     userName: string = null,
-    isLocal = false
+    isLocal = false,
   ): User {
     let onEnterVicinity = null;
     let onLeaveVicinity = null;
@@ -386,7 +383,7 @@ export default class World {
 
       console.log(
         "User will hit focus zone; finding new position:",
-        user.getPos()
+        user.getPos(),
       );
 
       const worldCenter = defaultWorldSize / 2;

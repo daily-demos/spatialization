@@ -85,6 +85,7 @@ export default {
   moduleNameMapper: {
     ".+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$":
       "identity-obj-proxy",
+    "^sinon$": "sinon"
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader

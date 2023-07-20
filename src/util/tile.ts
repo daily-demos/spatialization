@@ -24,7 +24,7 @@ function getErrUnrecognizedTileKind(kind: ZonemateTileKind): string {
 export function showBroadcast(
   name: string,
   videoTrack?: MediaStreamTrack,
-  audioTrack?: MediaStreamTrack
+  audioTrack?: MediaStreamTrack,
 ) {
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
@@ -49,7 +49,7 @@ export function showCamera(
   sessionID: string,
   name: string,
   videoTrack?: MediaStreamTrack,
-  audioTrack?: MediaStreamTrack
+  audioTrack?: MediaStreamTrack,
 ) {
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
@@ -61,7 +61,7 @@ export function showCamera(
 export function showScreenShare(
   sessionID: string,
   name: string,
-  videoTrack?: MediaStreamTrack
+  videoTrack?: MediaStreamTrack,
 ) {
   const tracks: Array<MediaStreamTrack> = [];
   if (videoTrack) tracks.push(videoTrack);
@@ -91,7 +91,7 @@ function showZonemate(
   kind: ZonemateTileKind,
   sessionID: string,
   name: string,
-  tracks: MediaStreamTrack[]
+  tracks: MediaStreamTrack[],
 ) {
   let tileID: string;
   let videoTagID: string;
@@ -125,7 +125,7 @@ function showZonemate(
 function createZonemateTile(
   kind: ZonemateTileKind,
   sessionID: string,
-  name: string
+  name: string,
 ): HTMLDivElement {
   const zonemates = document.getElementById("zonemates");
   let tileID;

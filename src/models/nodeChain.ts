@@ -59,7 +59,7 @@ export default class NodeChain {
     try {
       this.stereoPanner.pan.setValueAtTime(
         val,
-        window.audioContext.currentTime
+        window.audioContext.currentTime,
       );
     } catch (e) {
       console.error(`failed to update pan: ${e} (pan value: ${val})`);
