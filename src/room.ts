@@ -10,7 +10,7 @@ import DailyIframe, {
   DailyRoomInfo,
   DailyEventObjectParticipantLeft,
 } from "@daily-co/daily-js";
-import { globalZoneID, standardTileSize } from "./config";
+import { globalZoneID } from "./config";
 
 import {
   enableScreenBtn,
