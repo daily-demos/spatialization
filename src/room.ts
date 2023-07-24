@@ -78,9 +78,31 @@ export default class Room {
     this.isGlobal = isGlobal;
     this.callObject = DailyIframe.createCallObject({
       subscribeToTracksAutomatically: false,
+      sendSettings: {
+        vieo: {
+          encodings: {
+            low: {
+              maxBitrate: 75000,
+              scaleResolutionDownBy: 4,
+              maxFramerate: 25,
+            },
+            medium: {
+              maxBitrate: 300000,
+              scaleResolutionDownBy: 2,
+              maxFramerate: 30,
+            },
+            // This is a temporary workaround until medium and high encodings become
+            // optional in the next `daily-js` release:
+            high: null,
+          },
+        },
+      },
       dailyConfig: {
-        camSimulcastEncodings: [{ maxBitrate: 600000, maxFramerate: 30 }],
         avoidEval: true,
+        userMediaVideoConstraints: {
+          width: 400,
+          height: 400,
+        },
       },
     })
       .on("camera-error", (e) => this.handleCameraError(e))
@@ -124,21 +146,17 @@ export default class Room {
     switch (level) {
       case BandwidthLevel.Tile:
         this.localBandwidthLevel = level;
-        this.callObject.setBandwidth({
-          trackConstraints: {
-            width: standardTileSize,
-            height: standardTileSize,
-            frameRate: 15,
+        this.callObject.updateSendSettings({
+          video: {
+            maxQuality: "low",
           },
         });
         break;
       case BandwidthLevel.Focus:
         this.localBandwidthLevel = level;
-        this.callObject.setBandwidth({
-          trackConstraints: {
-            width: 200,
-            height: 200,
-            frameRate: 30,
+        this.callObject.updateSendSettings({
+          video: {
+            maxQuality: "medium",
           },
         });
         break;
