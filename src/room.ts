@@ -87,7 +87,7 @@ export default class Room {
             low: {
               maxBitrate: 75000,
               scaleResolutionDownBy: 4,
-              maxFramerate: 25,
+              maxFramerate: 15,
             },
             medium: {
               maxBitrate: 300000,
