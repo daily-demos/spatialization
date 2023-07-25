@@ -66,8 +66,6 @@ export default class Room {
 
   pendingAcks: { [key: string]: ReturnType<typeof setInterval> } = {};
 
-  localBandwidthLevel = BandwidthLevel.Unknown;
-
   localState: State = { audio: null, video: null };
 
   topology: Topology;
@@ -145,7 +143,6 @@ export default class Room {
   private setBandwidth(level: BandwidthLevel) {
     switch (level) {
       case BandwidthLevel.Tile:
-        this.localBandwidthLevel = level;
         this.callObject.updateSendSettings({
           video: {
             maxQuality: "low",
@@ -153,7 +150,6 @@ export default class Room {
         });
         break;
       case BandwidthLevel.Focus:
-        this.localBandwidthLevel = level;
         this.callObject.updateSendSettings({
           video: {
             maxQuality: "medium",
