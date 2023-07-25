@@ -112,7 +112,7 @@ export default class Room {
       .on("app-message", (e) => this.handleAppMessage(e))
       .on("network-connection", (e) => this.handleNetworkConnectionChanged(e));
 
-    this.setBandwidth(BandwidthLevel.Tile);
+    this.setVideoQuality(BandwidthLevel.Tile);
   }
 
   async join() {
@@ -140,7 +140,7 @@ export default class Room {
     delete this.pendingAcks[sessionID];
   }
 
-  private setBandwidth(level: BandwidthLevel) {
+  private setVideoQuality(level: BandwidthLevel) {
     switch (level) {
       case BandwidthLevel.Tile:
         this.callObject.updateSendSettings({
@@ -158,7 +158,7 @@ export default class Room {
         break;
       default:
         console.warn(
-          `setBandwidth called with unrecognized level (${level}). Not modifying any constraints.`,
+          `setVideoQuality() called with unrecognized level (${level}). This is a no-op.`,
         );
     }
   }
@@ -179,11 +179,11 @@ export default class Room {
   }
 
   private handleCameraError(event: DailyEventObjectCameraError) {
-    console.error(`camera error in room ${this.url}": ${event}`);
+    console.error(`camera error in room ${this.url}`, event);
   }
 
   private handleError(event: DailyEventObjectFatalError) {
-    console.error(`error in room ${this.url}": ${event}`);
+    console.error(`error in room ${this.url}`, event);
   }
 
   private handleJoinedMeeting(event: DailyEventObjectParticipants) {
@@ -247,13 +247,13 @@ export default class Room {
     // to other participants.
     const onJoinZone = (zoneData: ZoneData, recipient: string = "*") => {
       if (zoneData.zoneID === globalZoneID) {
-        this.setBandwidth(BandwidthLevel.Tile);
+        this.setVideoQuality(BandwidthLevel.Tile);
         if (this.localState.screen) {
           this.stopScreenShare();
         }
         enableScreenBtn(false);
       } else {
-        this.setBandwidth(BandwidthLevel.Focus);
+        this.setVideoQuality(BandwidthLevel.Focus);
         enableScreenBtn(true);
       }
       const data = {
