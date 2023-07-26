@@ -78,9 +78,6 @@ export default class Room {
       subscribeToTracksAutomatically: false,
       sendSettings: {
         video: {
-          // This is a temporary workaround until medium and high encodings become
-          // optional in the next `daily-js` release:
-          // @ts-ignore
           encodings: {
             low: {
               maxBitrate: 75000,
